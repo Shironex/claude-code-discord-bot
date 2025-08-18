@@ -2,18 +2,24 @@ import { NecordModule } from 'necord';
 import { Module } from '@nestjs/common';
 import { AppCommands } from './app.commands';
 import { IntentsBitField } from 'discord.js';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
 	imports: [
-		NecordModule.forRoot({
-			token: process.env.DISCORD_TOKEN,
-			development: [process.env.DEV_GUILD],
-			intents: [
-				IntentsBitField.Flags.Guilds,
-				IntentsBitField.Flags.GuildMessages,
-				IntentsBitField.Flags.DirectMessages
-			]
-		})
+		ConfigModule.forRoot(), // Load .env file
+		NecordModule.forRootAsync({
+			imports: [ConfigModule],
+			useFactory: (configService: ConfigService) => ({
+				token: configService.get('DISCORD_TOKEN'),
+				development: [configService.get('DEV_GUILD')],
+				intents: [
+					IntentsBitField.Flags.Guilds,
+					IntentsBitField.Flags.GuildMessages,
+					IntentsBitField.Flags.DirectMessages
+				]
+			}),
+			inject: [ConfigService],
+		  }),
 	],
 	providers: [AppCommands]
 })
