@@ -10,6 +10,7 @@ import { CUSTOM_IDS } from '../../utils/discord.constants';
 import { MESSAGES } from '../../utils/messages.constants';
 import { DiscordUtils } from '../../utils/discord.utils';
 import { FileTreeUtils } from '../../utils/file-tree.utils';
+import { TypeGuards } from '../../utils/type-guards';
 
 @Injectable()
 export class ClaudePromptModalHandler extends BaseService {
@@ -37,21 +38,47 @@ export class ClaudePromptModalHandler extends BaseService {
 		await interaction.deferReply();
 
 		try {
-			const prompt = interaction.fields.getTextInputValue(CUSTOM_IDS.CLAUDE_PROMPT_INPUT);
-			const branch = interaction.fields.getTextInputValue(CUSTOM_IDS.CLAUDE_BRANCH_INPUT) || 'main';
+			const rawPrompt = this.sanitizeInput(interaction.fields.getTextInputValue(CUSTOM_IDS.CLAUDE_PROMPT_INPUT));
+			const rawBranch = this.sanitizeInput(interaction.fields.getTextInputValue(CUSTOM_IDS.CLAUDE_BRANCH_INPUT) || 'main');
+
+			// Validate prompt with type guard
+			if (!TypeGuards.isValidPrompt(rawPrompt)) {
+				return interaction.editReply({
+					content: '❌ Invalid prompt. Please provide a prompt between 10 and 6000 characters.',
+				});
+			}
+
+			// Validate branch name with type guard
+			if (!TypeGuards.isValidBranchName(rawBranch)) {
+				return interaction.editReply({
+					content: '❌ Invalid branch name. Please provide a valid Git branch name.',
+				});
+			}
+
+			const prompt = rawPrompt;
+			const branch = rawBranch;
 
 			// Get file context input (optional)
 			let fileContextInput = '';
 			try {
-				fileContextInput = interaction.fields.getTextInputValue(CUSTOM_IDS.CLAUDE_FILE_CONTEXT_INPUT) || '';
+				fileContextInput = this.sanitizeInput(interaction.fields.getTextInputValue(CUSTOM_IDS.CLAUDE_FILE_CONTEXT_INPUT) || '');
 			} catch {
 				// Field might not exist in older modal instances
 			}
 
-			// Parse and combine file paths from session and modal input
-			const sessionPaths = session.selectedFilePaths || [];
+			// Parse and combine file paths from session and modal input with validation
+			const sessionPaths = TypeGuards.getFilePathArray(session.selectedFilePaths);
 			const modalPaths = FileTreeUtils.parseFilePathsString(fileContextInput);
-			const allFilePaths = [...new Set([...sessionPaths, ...modalPaths])]; // Remove duplicates
+			const combinedPaths = [...sessionPaths, ...modalPaths];
+			
+			// Validate all file paths for security
+			const validatedPaths = combinedPaths.filter(path => TypeGuards.isValidFilePath(path));
+			const allFilePaths = [...new Set(validatedPaths)]; // Remove duplicates
+
+			// Log warning if any paths were filtered out
+			if (combinedPaths.length !== allFilePaths.length) {
+				this.logger.warn(`Filtered out ${combinedPaths.length - allFilePaths.length} invalid file paths`);
+			}
 
 			const [owner, repo] = session.repository.fullName.split('/');
 
@@ -67,6 +94,13 @@ export class ClaudePromptModalHandler extends BaseService {
 			if (allFilePaths.length > 0) {
 				const contextSection = FileTreeUtils.generateContextPrompt(allFilePaths);
 				enhancedPrompt = contextSection + prompt;
+				
+				// Validate total prompt length including context
+				if (enhancedPrompt.length > 6000) { // Conservative limit including context
+					return interaction.editReply({
+						content: '❌ Combined prompt and file context is too long. Please reduce your file selections or shorten your prompt.',
+					});
+				}
 			}
 
 			// Dispatch the workflow
@@ -146,5 +180,26 @@ export class ClaudePromptModalHandler extends BaseService {
 			);
 			return interaction.editReply({ embeds: [embed] });
 		}
+	}
+
+	/**
+	 * Sanitize user input to prevent injection attacks and normalize content
+	 */
+	private sanitizeInput(input: string): string {
+		if (!input) return '';
+		
+		// Remove or replace potentially dangerous characters
+		return input
+			.trim()
+			// Remove null bytes and other control characters except newlines and tabs
+			.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+			// Normalize whitespace (but preserve newlines for prompts)
+			.replace(/\s+/g, ' ')
+			// Remove leading/trailing whitespace from each line
+			.split('\n')
+			.map(line => line.trim())
+			.join('\n')
+			// Remove excessive newlines (max 2 consecutive)
+			.replace(/\n{3,}/g, '\n\n');
 	}
 }

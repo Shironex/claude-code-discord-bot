@@ -1,10 +1,11 @@
 import { FileTreeItem } from '../services/file-explorer.service';
+import * as path from 'path';
 
 export class FileTreeUtils {
 	/**
 	 * Format file paths from comma-separated string to array, removing empty entries
 	 */
-	static parseFilePathsString(pathsString: string): string[] {
+	static parseFilePathsString(pathsString: string): readonly string[] {
 		if (!pathsString?.trim()) {
 			return [];
 		}
@@ -19,7 +20,7 @@ export class FileTreeUtils {
 	/**
 	 * Format array of file paths to comma-separated string
 	 */
-	static formatFilePathsString(paths: string[]): string {
+	static formatFilePathsString(paths: readonly string[]): string {
 		if (!paths || paths.length === 0) {
 			return '';
 		}
@@ -31,11 +32,11 @@ export class FileTreeUtils {
 	}
 
 	/**
-	 * Validate that file paths exist in the provided file tree
+	 * Validate that file paths exist in the provided file tree and are safe
 	 */
 	static validateFilePaths(
-		paths: string[],
-		fileTree: FileTreeItem[]
+		paths: readonly string[],
+		fileTree: ReadonlyArray<FileTreeItem>
 	): {
 		valid: string[];
 		invalid: string[];
@@ -47,9 +48,17 @@ export class FileTreeUtils {
 
 		const treePaths = new Set(fileTree.map(item => item.path));
 
-		for (const path of paths) {
-			const cleanPath = path.trim();
+		for (const inputPath of paths) {
+			const cleanPath = inputPath.trim();
 			if (!cleanPath) continue;
+
+			// Security: Check for path traversal attempts
+			const securityResult = this.validatePathSecurity(cleanPath);
+			if (!securityResult.isValid) {
+				invalid.push(cleanPath);
+				warnings.push(securityResult.reason);
+				continue;
+			}
 
 			// Check exact match
 			if (treePaths.has(cleanPath)) {
@@ -88,9 +97,89 @@ export class FileTreeUtils {
 	}
 
 	/**
+	 * Validate path security to prevent path traversal attacks
+	 */
+	private static validatePathSecurity(inputPath: string): { isValid: boolean; reason: string } {
+		// Normalize the path to resolve any . and .. segments
+		const normalizedPath = path.normalize(inputPath);
+
+		// Check for path traversal attempts
+		if (normalizedPath.includes('../') || normalizedPath.startsWith('../')) {
+			return {
+				isValid: false,
+				reason: `Path "${inputPath}" contains path traversal sequences (../)`
+			};
+		}
+
+		// Check for absolute paths (should be relative within repository)
+		if (path.isAbsolute(normalizedPath)) {
+			return {
+				isValid: false,
+				reason: `Path "${inputPath}" is an absolute path, only relative paths allowed`
+			};
+		}
+
+		// Check for paths trying to access parent directories
+		if (normalizedPath.startsWith('/') || normalizedPath.startsWith('\\')) {
+			return {
+				isValid: false,
+				reason: `Path "${inputPath}" starts with root directory separator`
+			};
+		}
+
+		// Check for suspicious characters that could be used for path manipulation
+		const suspiciousChars = /[<>:"|?*\x00-\x1f]/;
+		if (suspiciousChars.test(inputPath)) {
+			return {
+				isValid: false,
+				reason: `Path "${inputPath}" contains invalid characters`
+			};
+		}
+
+		// Additional whitelist check - ensure path stays within reasonable bounds
+		const pathSegments = normalizedPath.split(path.sep);
+		for (const segment of pathSegments) {
+			// Check for hidden system directories that shouldn't be accessed
+			if (segment.startsWith('.') && segment.length > 1 && !this.isAllowedHiddenFile(segment)) {
+				return {
+					isValid: false,
+					reason: `Path "${inputPath}" accesses hidden directory "${segment}"`
+				};
+			}
+		}
+
+		return { isValid: true, reason: '' };
+	}
+
+	/**
+	 * Check if a hidden file/directory is allowed
+	 */
+	private static isAllowedHiddenFile(segment: string): boolean {
+		const allowedHiddenFiles = [
+			'.env.example',
+			'.env.template', 
+			'.gitignore',
+			'.gitattributes',
+			'.github',
+			'.eslintrc',
+			'.eslintrc.js',
+			'.eslintrc.json',
+			'.prettierrc',
+			'.prettierrc.js',
+			'.prettierrc.json',
+			'.editorconfig',
+			'.nvmrc',
+			'.node-version'
+		];
+
+		return allowedHiddenFiles.includes(segment) || 
+			   allowedHiddenFiles.some(allowed => segment.startsWith(allowed));
+	}
+
+	/**
 	 * Get file tree items that match the specified paths
 	 */
-	static getMatchingItems(paths: string[], fileTree: FileTreeItem[]): FileTreeItem[] {
+	static getMatchingItems(paths: readonly string[], fileTree: ReadonlyArray<FileTreeItem>): FileTreeItem[] {
 		if (!paths || paths.length === 0) {
 			return [];
 		}
@@ -206,9 +295,9 @@ export class FileTreeUtils {
 	}
 
 	/**
-	 * Generate context prompt section for Claude Code
+	 * Generate context prompt section for Claude Code with length validation
 	 */
-	static generateContextPrompt(paths: string[]): string {
+	static generateContextPrompt(paths: readonly string[]): string {
 		if (!paths || paths.length === 0) {
 			return '';
 		}
@@ -218,7 +307,28 @@ export class FileTreeUtils {
 			return '';
 		}
 
-		return `Context files/folders to focus on:\n${cleanPaths.map(path => `- ${path}`).join('\n')}\n\n`;
+		// GitHub Actions has input limits, be conservative with context size
+		const MAX_CONTEXT_LENGTH = 1000; // Conservative limit for GitHub Actions inputs
+		let contextPrompt = 'Context files/folders to focus on:\n';
+		let currentLength = contextPrompt.length + 2; // Account for final \n\n
+		const includedPaths: string[] = [];
+
+		for (const filePath of cleanPaths) {
+			const pathEntry = `- ${filePath}\n`;
+			if (currentLength + pathEntry.length > MAX_CONTEXT_LENGTH) {
+				// Add truncation notice if we hit the limit
+				const remaining = cleanPaths.length - includedPaths.length;
+				if (remaining > 0) {
+					contextPrompt += `- ... and ${remaining} more files\n`;
+				}
+				break;
+			}
+			contextPrompt += pathEntry;
+			currentLength += pathEntry.length;
+			includedPaths.push(filePath);
+		}
+
+		return contextPrompt + '\n';
 	}
 
 	/**
@@ -285,7 +395,7 @@ export class FileTreeUtils {
 	/**
 	 * Sort file tree items for display in select menu
 	 */
-	static sortItemsForDisplay(items: FileTreeItem[]): FileTreeItem[] {
+	static sortItemsForDisplay(items: ReadonlyArray<FileTreeItem>): FileTreeItem[] {
 		return [...items].sort((a, b) => {
 			// Common paths first
 			if (a.isCommon && !b.isCommon) return -1;

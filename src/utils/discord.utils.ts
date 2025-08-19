@@ -86,7 +86,7 @@ export class DiscordUtils {
 			.setEmoji('❌');
 	}
 
-	static createFileSelectMenu(fileItems: FileTreeItem[]): StringSelectMenuBuilder {
+	static createFileSelectMenu(fileItems: ReadonlyArray<FileTreeItem>): StringSelectMenuBuilder {
 		const selectMenu = new StringSelectMenuBuilder()
 			.setCustomId(CUSTOM_IDS.FILE_PATH_SELECT)
 			.setPlaceholder('📁 Choose files/folders for context...')
@@ -112,7 +112,7 @@ export class DiscordUtils {
 	}
 
 	static createFileSelectionComponents(
-		fileItems: FileTreeItem[]
+		fileItems: ReadonlyArray<FileTreeItem>
 	): ActionRowBuilder<StringSelectMenuBuilder | ButtonBuilder>[] {
 		const components: ActionRowBuilder<StringSelectMenuBuilder | ButtonBuilder>[] = [];
 

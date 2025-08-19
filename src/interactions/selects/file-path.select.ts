@@ -7,6 +7,7 @@ import { FileExplorerService } from '../../services/file-explorer.service';
 import { CUSTOM_IDS } from '../../utils/discord.constants';
 import { MESSAGES } from '../../utils/messages.constants';
 import { FileTreeUtils } from '../../utils/file-tree.utils';
+import { ErrorCategorizer } from '../../utils/error.types';
 
 @Injectable()
 export class FilePathSelectHandler extends BaseService {
@@ -46,10 +47,22 @@ export class FilePathSelectHandler extends BaseService {
 			await interaction.showModal(modal);
 
 			this.logger.log(`Prompt modal displayed with ${selectedPaths.length} pre-selected file paths`);
-		} catch (error) {
-			this.logger.error(`Failed to handle file path selection: ${error.message}`, error);
+		} catch (error: any) {
+			// Categorize the error for proper handling and logging
+			const categorizedError = ErrorCategorizer.categorizeError(error);
+			const logLevel = ErrorCategorizer.getLogLevel(categorizedError.category);
+			
+			// Log with appropriate level
+			if (logLevel === 'error') {
+				this.logger.error(`Failed to handle file path selection (${categorizedError.category}): ${categorizedError.message}`, error);
+			} else if (logLevel === 'warn') {
+				this.logger.warn(`File path selection warning (${categorizedError.category}): ${categorizedError.message}`);
+			} else {
+				this.logger.log(`File path selection info (${categorizedError.category}): ${categorizedError.message}`);
+			}
+			
 			return interaction.reply({
-				content: 'Failed to process file selection. Please try again.',
+				content: categorizedError.userMessage,
 				flags: [MessageFlags.Ephemeral]
 			});
 		}
