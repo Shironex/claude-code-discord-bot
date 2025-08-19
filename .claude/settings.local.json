@@ -6,7 +6,8 @@
       "Bash(pnpm add:*)",
       "Bash(mkdir:*)",
       "Bash(pnpm build:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(pnpm install:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -1,0 +1,174 @@
+# Docker Compose Configuration for Claude Code Discord Bot
+# This configuration provides the foundation for running Claude Code instances
+# in isolated containers with proper networking and resource management
+
+version: '3.8'
+
+services:
+  # Main Discord bot service
+  discord-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: claude-discord-bot
+    environment:
+      - NODE_ENV=production
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - DEV_GUILD=${DEV_GUILD}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+    volumes:
+      # Mount Docker socket for container management
+      - /var/run/docker.sock:/var/run/docker.sock
+      - claude-data:/app/data
+    networks:
+      - claude-network
+    restart: unless-stopped
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Redis for job queue and session management
+  redis:
+    image: redis:7-alpine
+    container_name: claude-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    networks:
+      - claude-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Claude Code Runner Template (dynamically created instances)
+  # This service definition serves as a template for dynamic container creation
+  claude-runner-template:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.claude-runner
+    image: claude-runner:latest
+    # This container is not started by default
+    # It serves as a template for dynamically created instances
+    profiles:
+      - template
+    environment:
+      # These will be set dynamically when containers are created
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - REPO_FULL_NAME=placeholder
+      - USER_PROMPT=placeholder
+      - CONTEXT_FILES=
+    volumes:
+      # Temporary volume for repository data
+      - type: tmpfs
+        target: /workspace
+        tmpfs:
+          size: 2G
+          mode: 1777
+    networks:
+      - claude-network
+    # Resource limits for each Claude Code instance
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+    # Security settings
+    security_opt:
+      - no-new-privileges:true
+    read_only: false  # Claude Code needs to write files
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+    # Automatic cleanup
+    labels:
+      - "claude-bot.service=runner"
+      - "claude-bot.managed=true"
+
+  # Development database (optional, for session persistence)
+  postgres:
+    image: postgres:15-alpine
+    container_name: claude-postgres
+    environment:
+      - POSTGRES_DB=claude_bot
+      - POSTGRES_USER=claude
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-claude_dev_password}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - claude-network
+    restart: unless-stopped
+    profiles:
+      - database
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U claude -d claude_bot"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Monitoring and logging (optional)
+  # Uncomment for production monitoring
+  # prometheus:
+  #   image: prom/prometheus:latest
+  #   container_name: claude-prometheus
+  #   command:
+  #     - '--config.file=/etc/prometheus/prometheus.yml'
+  #     - '--storage.tsdb.path=/prometheus'
+  #   volumes:
+  #     - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+  #     - prometheus-data:/prometheus
+  #   networks:
+  #     - claude-network
+  #   profiles:
+  #     - monitoring
+
+networks:
+  claude-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
+    driver_opts:
+      com.docker.network.bridge.name: claude-br0
+      com.docker.network.bridge.enable_icc: "false"  # Disable inter-container communication
+
+volumes:
+  # Persistent data for the Discord bot
+  claude-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data
+
+  # Redis data persistence
+  redis-data:
+    driver: local
+
+  # PostgreSQL data (optional)
+  postgres-data:
+    driver: local
+
+  # Prometheus data (optional)
+  # prometheus-data:
+  #   driver: local
+
+# Additional configuration for development
+# Override with docker-compose.override.yml
+x-development-overrides: &dev-overrides
+  environment:
+    - NODE_ENV=development
+  volumes:
+    - .:/app
+    - /app/node_modules
+  command: npm run start:dev

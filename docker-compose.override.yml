@@ -1,0 +1,69 @@
+# Docker Compose Override for Development
+# This file provides development-specific configurations
+# It automatically merges with docker-compose.yml when running locally
+
+version: '3.8'
+
+services:
+  discord-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development  # Use development build stage if available
+    environment:
+      - NODE_ENV=development
+    volumes:
+      # Mount source code for hot reloading
+      - ./src:/app/src
+      - ./package.json:/app/package.json
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./eslint.config.js:/app/eslint.config.js
+      # Preserve node_modules
+      - /app/node_modules
+    command: npm run start:dev
+    ports:
+      # Expose debug port for development
+      - "9229:9229"
+    # Enable development debugging
+    stdin_open: true
+    tty: true
+
+  # Enable development database by default
+  postgres:
+    profiles: []  # Remove profile restriction for dev
+
+  # Development-specific Redis configuration
+  redis:
+    ports:
+      - "6379:6379"  # Expose Redis port for development tools
+
+  # Development monitoring (lightweight)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: claude-redis-commander
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8081:8081"
+    networks:
+      - claude-network
+    depends_on:
+      - redis
+    profiles:
+      - dev-tools
+
+# Development-specific volumes
+volumes:
+  # Use bind mount for faster development
+  claude-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./dev-data
+
+# Development network configuration
+networks:
+  claude-network:
+    driver_opts:
+      com.docker.network.bridge.enable_icc: "true"  # Allow inter-container communication in dev

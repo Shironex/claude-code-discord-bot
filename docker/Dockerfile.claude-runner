@@ -1,0 +1,70 @@
+# Claude Code Runner Container
+# This container provides an isolated environment for running Claude Code
+# with GitHub repository access and all necessary dependencies
+
+FROM node:20-alpine AS base
+
+# Install system dependencies
+RUN apk add --no-cache \
+    git \
+    curl \
+    bash \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/cache/apk/*
+
+# Install GitHub CLI for Alpine Linux
+RUN apk add --no-cache github-cli
+
+# Create non-root user for security
+RUN addgroup claude && \
+    adduser -G claude -s /bin/bash -D claude
+
+# Create workspace directory
+RUN mkdir -p /workspace && \
+    chown -R claude:claude /workspace
+
+# Install Claude Code CLI globally
+# Note: This will need to be updated with actual installation method
+RUN npm install -g @anthropic/claude-code-cli || \
+    echo "Claude Code CLI will be installed when available"
+
+# Set up workspace structure
+WORKDIR /workspace
+RUN mkdir -p repo context output logs scripts && \
+    chown -R claude:claude /workspace
+
+# Copy utility scripts
+COPY docker/scripts/ /workspace/scripts/
+# Convert Windows line endings to Unix and make executable
+RUN sed -i 's/\r$//' /workspace/scripts/*.sh && \
+    chmod +x /workspace/scripts/*.sh && \
+    chown -R claude:claude /workspace/scripts
+
+# Switch to non-root user
+USER claude
+
+# Set up Git configuration
+RUN git config --global user.name "Claude Code Bot" && \
+    git config --global user.email "claude-bot@anthropic.com" && \
+    git config --global init.defaultBranch main
+
+# Configure environment
+ENV NODE_ENV=production
+ENV WORKSPACE_DIR=/workspace
+ENV REPO_DIR=/workspace/repo
+ENV CONTEXT_DIR=/workspace/context
+ENV OUTPUT_DIR=/workspace/output
+ENV LOGS_DIR=/workspace/logs
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD ["bash", "/workspace/scripts/healthcheck.sh"]
+
+# Default command runs the main runner script with bash
+CMD ["bash", "/workspace/scripts/run-claude.sh"]
+
+# Labels for container management
+LABEL maintainer="claude-code-discord-bot"
+LABEL version="1.0.0"
+LABEL description="Isolated Claude Code execution environment"

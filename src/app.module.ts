@@ -7,6 +7,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { GitHubService } from './services/github.service';
 import { SessionService } from './services/session.service';
 import { EmbedService } from './services/embed.service';
+import { ContainerService } from './services/container.service';
 
 // Commands
 import { RunCommand } from './commands/repository/run.command';
@@ -39,6 +40,7 @@ import { CancelButtonHandler } from './interactions/buttons/cancel.button';
 		GitHubService,
 		SessionService,
 		EmbedService,
+		ContainerService,
 		// Commands
 		RunCommand,
 		SearchCommand,

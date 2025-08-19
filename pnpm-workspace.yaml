@@ -1,2 +1,5 @@
 onlyBuiltDependencies:
   - '@nestjs/core'
+  - cpu-features
+  - protobufjs
+  - ssh2
