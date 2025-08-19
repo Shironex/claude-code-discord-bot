@@ -54,16 +54,8 @@ RUN chown -R discord:discord /app
 # Switch to non-root user
 USER discord
 
-# Expose port (if needed for health checks)
-EXPOSE 3000
-
-# Health check (optional - can be used by Coolify for monitoring)
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD node -e "console.log('Health check passed')" || exit 1
-
 # Set environment variables
 ENV NODE_ENV=production
-ENV PORT=3000
 
 # Start the application
 CMD ["node", "dist/main.js"]
