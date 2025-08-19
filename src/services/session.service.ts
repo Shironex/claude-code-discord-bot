@@ -20,6 +20,7 @@ export class SessionService extends BaseService implements ISessionService {
 			paginatedData: null,
 			searchQuery: null,
 			action: null,
+			selectedFilePaths: [],
 			workflowRuns: [],
 			createdAt: new Date()
 		};
@@ -80,6 +81,21 @@ export class SessionService extends BaseService implements ISessionService {
 			this.updateSession(userId, { workflowRuns });
 			this.logger.debug(`Added workflow run ${workflowRun.runId} for user ${userId}`);
 		}
+	}
+
+	setSelectedFilePaths(userId: string, filePaths: string[]): void {
+		this.updateSession(userId, { selectedFilePaths: filePaths });
+		this.logger.debug(`Updated selected file paths for user ${userId}: ${filePaths.join(', ')}`);
+	}
+
+	getSelectedFilePaths(userId: string): string[] {
+		const session = this.getSession(userId);
+		return session?.selectedFilePaths || [];
+	}
+
+	clearSelectedFilePaths(userId: string): void {
+		this.updateSession(userId, { selectedFilePaths: [] });
+		this.logger.debug(`Cleared selected file paths for user ${userId}`);
 	}
 
 	updateWorkflowRun(userId: string, runId: number, updates: Partial<UserWorkflowRun>): void {

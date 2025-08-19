@@ -133,7 +133,8 @@ export class EmbedService extends BaseService implements IEmbedService {
 		repository: string,
 		branch: string,
 		prompt: string,
-		workflowRun: WorkflowRun
+		workflowRun: WorkflowRun,
+		filePaths?: string[]
 	): EmbedBuilder {
 		const embed = new EmbedBuilder()
 			.setTitle('🚀 Claude Code Workflow Started')
@@ -159,9 +160,25 @@ export class EmbedService extends BaseService implements IEmbedService {
 					value: `<t:${Math.floor(new Date(workflowRun.created_at).getTime() / 1000)}:R>`,
 					inline: true
 				}
-			])
-			.setColor(DISCORD_COLORS.INFO)
-			.setTimestamp();
+			]);
+
+		// Add file context if provided
+		if (filePaths && filePaths.length > 0) {
+			const fileContext =
+				filePaths.length > 5
+					? `${filePaths.slice(0, 5).join(', ')} (and ${filePaths.length - 5} more)`
+					: filePaths.join(', ');
+
+			embed.addFields([
+				{
+					name: '📁 File Context',
+					value: `\`${fileContext}\``,
+					inline: false
+				}
+			]);
+		}
+
+		embed.setColor(DISCORD_COLORS.INFO).setTimestamp();
 
 		return embed;
 	}
@@ -260,6 +277,64 @@ export class EmbedService extends BaseService implements IEmbedService {
 				inline: false
 			});
 		}
+
+		return embed;
+	}
+
+	createFileSelectionEmbed(repository: Repository, fileTree: any): EmbedBuilder {
+		const embed = new EmbedBuilder()
+			.setTitle('📁 Select Files/Folders for Context')
+			.setDescription(
+				`Choose files or folders to include as context for Claude's analysis of **${repository.name}**.\n\n` +
+					`Select specific files/folders that are relevant to your task, or skip to enter file paths manually in the next step.`
+			)
+			.addFields([
+				{
+					name: '📊 Repository Info',
+					value:
+						`**Files Found:** ${fileTree.items.length}${fileTree.truncated ? ` (showing first ${fileTree.items.length} of ${fileTree.totalItems})` : ''}\n` +
+						`**Language:** ${repository.language || 'Unknown'}\n` +
+						`**Updated:** ${new Date(repository.updatedAt).toLocaleDateString()}`,
+					inline: false
+				},
+				{
+					name: '💡 Tips',
+					value:
+						'• ⭐ indicates commonly important files/folders\n' +
+						'• You can select up to 25 items\n' +
+						'• Skip if you want to enter paths manually\n' +
+						'• Selected paths will be pre-filled in the next step',
+					inline: false
+				}
+			])
+			.setColor(DISCORD_COLORS.PRIMARY)
+			.setFooter({ text: 'Choose relevant files and folders for better context' });
+
+		return embed;
+	}
+
+	createPromptReadyEmbed(repository: Repository, selectedPaths: string[]): EmbedBuilder {
+		const embed = new EmbedBuilder()
+			.setTitle('✅ Ready for Analysis Prompt')
+			.setDescription(
+				`File selection complete for **${repository.name}**. Click the button below to enter your analysis prompt.`
+			)
+			.addFields([
+				{
+					name: '📁 Selected Files/Folders',
+					value:
+						selectedPaths.length > 0
+							? `\`${selectedPaths.slice(0, 10).join('`, `')}\`${selectedPaths.length > 10 ? `\n*...and ${selectedPaths.length - 10} more*` : ''}`
+							: '*No files selected - you can add them manually in the prompt*',
+					inline: false
+				},
+				{
+					name: '📝 Next Step',
+					value: 'Click **"Enter Analysis Prompt"** to specify what you want Claude to do with these files.',
+					inline: false
+				}
+			])
+			.setColor(DISCORD_COLORS.SUCCESS);
 
 		return embed;
 	}

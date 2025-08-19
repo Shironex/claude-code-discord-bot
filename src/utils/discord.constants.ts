@@ -13,10 +13,14 @@ export const CUSTOM_IDS = {
 	CANCEL: 'cancel',
 	WORKFLOW_STATUS: 'workflow-status',
 	VIEW_WORKFLOW: 'view-workflow',
+	// File selection
+	FILE_PATH_SELECT: 'file-path-select',
+	SKIP_FILE_SELECTION: 'skip-file-selection',
 	// Modal IDs
 	CLAUDE_REPO_SEARCH_MODAL: 'claude-repo-search-modal',
 	CLAUDE_PROMPT_MODAL: 'claude-prompt-modal',
 	CLAUDE_REPO_SEARCH_INPUT: 'claude-repo-search-input',
 	CLAUDE_PROMPT_INPUT: 'claude-prompt-input',
-	CLAUDE_BRANCH_INPUT: 'claude-branch-input'
+	CLAUDE_BRANCH_INPUT: 'claude-branch-input',
+	CLAUDE_FILE_CONTEXT_INPUT: 'claude-file-context-input'
 } as const;

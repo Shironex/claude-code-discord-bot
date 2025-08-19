@@ -1,7 +1,9 @@
 import { ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { Repository } from '../interfaces/models/repository.interface';
+import { FileTreeItem } from '../services/file-explorer.service';
 import { CUSTOM_IDS } from './discord.constants';
 import { LANGUAGE_EMOJIS } from './github.constants';
+import { FileTreeUtils } from './file-tree.utils';
 
 export class DiscordUtils {
 	static createRepositorySelectMenu(repositories: Repository[]): StringSelectMenuBuilder {
@@ -82,5 +84,65 @@ export class DiscordUtils {
 			.setLabel('Cancel')
 			.setStyle(ButtonStyle.Danger)
 			.setEmoji('❌');
+	}
+
+	static createFileSelectMenu(fileItems: ReadonlyArray<FileTreeItem>): StringSelectMenuBuilder {
+		const selectMenu = new StringSelectMenuBuilder()
+			.setCustomId(CUSTOM_IDS.FILE_PATH_SELECT)
+			.setPlaceholder('📁 Choose files/folders for context...')
+			.setMinValues(0)
+			.setMaxValues(Math.min(fileItems.length, 25)); // Discord limit
+
+		// Sort items for better display
+		const sortedItems = FileTreeUtils.sortItemsForDisplay(fileItems);
+
+		sortedItems.forEach(item => {
+			const emoji = FileTreeUtils.getFileEmoji(item);
+			const description = FileTreeUtils.createItemDescription(item);
+
+			selectMenu.addOptions({
+				label: item.name.length > 100 ? item.name.substring(0, 97) + '...' : item.name,
+				value: item.path,
+				description: description,
+				emoji: emoji
+			});
+		});
+
+		return selectMenu;
+	}
+
+	static createFileSelectionComponents(
+		fileItems: ReadonlyArray<FileTreeItem>
+	): ActionRowBuilder<StringSelectMenuBuilder | ButtonBuilder>[] {
+		const components: ActionRowBuilder<StringSelectMenuBuilder | ButtonBuilder>[] = [];
+
+		// Add select menu if we have files
+		if (fileItems.length > 0) {
+			const selectMenu = this.createFileSelectMenu(fileItems);
+			const selectRow = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu);
+			components.push(selectRow);
+		}
+
+		// Add skip button
+		const skipButton = new ButtonBuilder()
+			.setCustomId(CUSTOM_IDS.SKIP_FILE_SELECTION)
+			.setLabel('Skip File Selection')
+			.setStyle(ButtonStyle.Secondary)
+			.setEmoji('⏭️');
+
+		const cancelButton = this.createCancelButton();
+
+		const buttonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(skipButton, cancelButton);
+		components.push(buttonRow);
+
+		return components;
+	}
+
+	static createSkipFileSelectionButton(): ButtonBuilder {
+		return new ButtonBuilder()
+			.setCustomId(CUSTOM_IDS.SKIP_FILE_SELECTION)
+			.setLabel('Skip File Selection')
+			.setStyle(ButtonStyle.Secondary)
+			.setEmoji('⏭️');
 	}
 }
