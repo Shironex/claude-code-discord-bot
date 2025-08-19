@@ -57,18 +57,26 @@ jobs:
           # Version packages based on changesets
           pnpm changeset version
           
-          # Get the new version
-          NEW_VERSION=$(node -p "require('./apps/discord-bot/package.json').version")
-          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          # Get the new versions
+          DISCORD_BOT_VERSION=$(node -p "require('./apps/discord-bot/package.json').version")
+          ROOT_VERSION=$(node -p "require('./package.json').version")
+          
+          # Update root package version to match the latest package version
+          # This keeps the root version in sync with major releases
+          npm version $DISCORD_BOT_VERSION --no-git-tag-version
+          
+          echo "DISCORD_BOT_VERSION=$DISCORD_BOT_VERSION" >> $GITHUB_ENV
+          echo "ROOT_VERSION=$DISCORD_BOT_VERSION" >> $GITHUB_ENV
           
           # Commit the version changes
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add .
-          git commit -m "chore(release): version packages to $NEW_VERSION"
+          git commit -m "chore(release): version packages to $DISCORD_BOT_VERSION"
           
-          # Create git tag
-          git tag "@claude-code/discord-bot@$NEW_VERSION" -m "Release @claude-code/discord-bot@$NEW_VERSION"
+          # Create git tags for both root and packages
+          git tag "v$ROOT_VERSION" -m "Release v$ROOT_VERSION"
+          git tag "@claude-code/discord-bot@$DISCORD_BOT_VERSION" -m "Release @claude-code/discord-bot@$DISCORD_BOT_VERSION"
           
           # Push changes and tags
           git push origin master --follow-tags
@@ -77,10 +85,10 @@ jobs:
         if: steps.changesets.outputs.has_changesets == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "@claude-code/discord-bot@${{ env.NEW_VERSION }}"
-          name: "Discord Bot v${{ env.NEW_VERSION }}"
+          tag_name: "v${{ env.ROOT_VERSION }}"
+          name: "Claude Code Discord Bot v${{ env.ROOT_VERSION }}"
           body: |
-            🚀 **Discord Bot Release v${{ env.NEW_VERSION }}**
+            🚀 **Discord Bot Release v${{ env.ROOT_VERSION }}**
             
             This release includes the latest updates to the Claude Code Discord Bot.
             
