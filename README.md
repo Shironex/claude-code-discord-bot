@@ -1,5 +1,10 @@
 # Claude Code Discord Bot
 
+[![CI](https://github.com/Shironex/claude-code-discord-bot/workflows/CI/badge.svg)](https://github.com/Shironex/claude-code-discord-bot/actions/workflows/ci.yml)
+[![Release](https://github.com/Shironex/claude-code-discord-bot/workflows/Release/badge.svg)](https://github.com/Shironex/claude-code-discord-bot/actions/workflows/release.yml)
+[![Version](https://img.shields.io/github/package-json/v/Shironex/claude-code-discord-bot)](https://github.com/Shironex/claude-code-discord-bot/releases)
+[![License](https://img.shields.io/github/license/Shironex/claude-code-discord-bot)](LICENSE)
+
 A Discord bot that integrates with GitHub to browse repositories and trigger Claude Code analysis workflows. Built with NestJS, Necord, and organized as a Turborepo monorepo.
 
 ## Architecture
@@ -99,6 +104,12 @@ pnpm format                 # Format code with Prettier
 pnpm dev --filter=@claude-code/discord-bot      # Start only Discord bot
 pnpm build --filter=@claude-code/discord-bot    # Build only Discord bot
 pnpm lint --filter=@claude-code/discord-bot     # Lint only Discord bot
+
+# Release management
+pnpm changeset                  # Create a new changeset
+pnpm changeset:status           # Check changeset status
+pnpm version                    # Version packages (automated in CI)
+pnpm release                    # Publish packages (automated in CI)
 ```
 
 ### GitHub Token Permissions
@@ -125,6 +136,38 @@ Your GitHub token needs these scopes:
 - **Package Manager**: pnpm with workspaces
 - **Language**: TypeScript with strict type checking
 
+## CI/CD & Release Management
+
+This project uses automated CI/CD workflows:
+
+- **Continuous Integration**: Runs on every push and PR
+  - Commit message validation (Commitlint)
+  - Code quality checks (ESLint, TypeScript, Prettier)
+  - Build verification and security audit
+  
+- **Automated Releases**: Triggered on merges to master
+  - Version bumping based on changesets
+  - Automatic changelog generation
+  - GitHub releases with detailed changelogs
+  - Git tagging for version tracking
+
+- **Pull Request Validation**: Enhanced PR checks
+  - Changeset detection and preview
+  - Version impact analysis
+  - Automated bot comments with release information
+
+### Making Changes
+
+1. Create a feature branch
+2. Make your changes following [conventional commits](https://conventionalcommits.org/)
+3. Add a changeset: `pnpm changeset`
+4. Commit your changes: `git commit -m "feat(scope): description"`
+5. Push and create a PR
+
+Git hooks will automatically run quality checks before commits.
+
 ## Contributing
 
-See [CLAUDE.md](./CLAUDE.md) for detailed development patterns, architecture documentation, and contribution guidelines.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed contribution guidelines, commit conventions, and development workflows.
+
+See [CLAUDE.md](./CLAUDE.md) for detailed development patterns, architecture documentation, and technical specifications.
