@@ -144,7 +144,7 @@ export class FileExplorerService extends BaseService {
 			return result;
 		} catch (error: any) {
 			this.logger.error(`Failed to fetch file tree for ${owner}/${repo}: ${error.message}`, error);
-			
+
 			// Preserve original error details for better debugging and user messages
 			if (error.status) {
 				// Re-throw with status code preserved for proper categorization
@@ -154,7 +154,7 @@ export class FileExplorerService extends BaseService {
 				(enhancedError as any).code = error.code;
 				throw enhancedError;
 			}
-			
+
 			throw new Error(`Failed to fetch repository file tree: ${error.message}`);
 		}
 	}
@@ -177,29 +177,36 @@ export class FileExplorerService extends BaseService {
 				if (rateLimitRemaining === '0' && rateLimitReset) {
 					const resetTime = new Date(parseInt(rateLimitReset) * 1000);
 					const waitTime = Math.max(resetTime.getTime() - Date.now(), 0);
-					
+
 					throw new Error(
 						`GitHub API rate limit exceeded. ` +
-						`Rate limit resets at ${resetTime.toISOString()}. ` +
-						`Please wait ${Math.ceil(waitTime / 1000)} seconds before trying again.`
+							`Rate limit resets at ${resetTime.toISOString()}. ` +
+							`Please wait ${Math.ceil(waitTime / 1000)} seconds before trying again.`
 					);
 				}
 
 				// If it's a different 403 error (not rate limit), check if we should retry
 				if (retryCount < MAX_RETRIES) {
 					const delay = BASE_DELAY * Math.pow(2, retryCount); // Exponential backoff
-					this.logger.warn(`GitHub API request failed (403), retrying in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})`);
-					
+					this.logger.warn(
+						`GitHub API request failed (403), retrying in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})`
+					);
+
 					await new Promise(resolve => setTimeout(resolve, delay));
 					return this.makeGitHubRequest(request, retryCount + 1);
 				}
 			}
 
 			// Handle other temporary errors with retry
-			if ((error.status >= 500 || error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT') && retryCount < MAX_RETRIES) {
+			if (
+				(error.status >= 500 || error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT') &&
+				retryCount < MAX_RETRIES
+			) {
 				const delay = BASE_DELAY * Math.pow(2, retryCount); // Exponential backoff
-				this.logger.warn(`GitHub API request failed (${error.status || error.code}), retrying in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})`);
-				
+				this.logger.warn(
+					`GitHub API request failed (${error.status || error.code}), retrying in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})`
+				);
+
 				await new Promise(resolve => setTimeout(resolve, delay));
 				return this.makeGitHubRequest(request, retryCount + 1);
 			}
@@ -210,11 +217,15 @@ export class FileExplorerService extends BaseService {
 			}
 
 			if (error.status === 404) {
-				throw new Error(`Repository ${error.request?.path || 'not found'}. Please check the repository exists and you have access.`);
+				throw new Error(
+					`Repository ${error.request?.path || 'not found'}. Please check the repository exists and you have access.`
+				);
 			}
 
 			if (error.status === 422) {
-				throw new Error(`Invalid request to GitHub API. ${error.message || 'Please check the repository and branch names.'}`);
+				throw new Error(
+					`Invalid request to GitHub API. ${error.message || 'Please check the repository and branch names.'}`
+				);
 			}
 
 			// Re-throw original error if we can't handle it
@@ -229,24 +240,24 @@ export class FileExplorerService extends BaseService {
 
 		// Normalize path separators and remove trailing slashes for processing
 		const normalizedPath = filePath.replace(/[\\\/]+/g, '/').replace(/\/+$/, '');
-		
+
 		if (!normalizedPath) {
 			return '';
 		}
 
 		const parts = normalizedPath.split('/').filter(part => part.length > 0);
-		
+
 		if (parts.length === 0) {
 			return filePath.endsWith('/') ? '/' : filePath;
 		}
 
 		const lastPart = parts[parts.length - 1];
-		
+
 		// If original path ended with '/', treat as directory
 		if (filePath.endsWith('/')) {
 			return lastPart + '/';
 		}
-		
+
 		return lastPart;
 	}
 

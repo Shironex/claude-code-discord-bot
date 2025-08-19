@@ -157,7 +157,7 @@ export class FileTreeUtils {
 	private static isAllowedHiddenFile(segment: string): boolean {
 		const allowedHiddenFiles = [
 			'.env.example',
-			'.env.template', 
+			'.env.template',
 			'.gitignore',
 			'.gitattributes',
 			'.github',
@@ -172,8 +172,7 @@ export class FileTreeUtils {
 			'.node-version'
 		];
 
-		return allowedHiddenFiles.includes(segment) || 
-			   allowedHiddenFiles.some(allowed => segment.startsWith(allowed));
+		return allowedHiddenFiles.includes(segment) || allowedHiddenFiles.some(allowed => segment.startsWith(allowed));
 	}
 
 	/**

@@ -99,18 +99,29 @@ export class RepositorySelectHandler extends BaseService {
 			// Categorize the error for proper handling and logging
 			const categorizedError = ErrorCategorizer.categorizeError(error);
 			const logLevel = ErrorCategorizer.getLogLevel(categorizedError.category);
-			
+
 			// Log with appropriate level
 			if (logLevel === 'error') {
-				this.logger.error(`Failed to show file selection for ${repository.fullName} (${categorizedError.category}): ${categorizedError.message}`, error);
+				this.logger.error(
+					`Failed to show file selection for ${repository.fullName} (${categorizedError.category}): ${categorizedError.message}`,
+					error
+				);
 			} else if (logLevel === 'warn') {
-				this.logger.warn(`File selection warning for ${repository.fullName} (${categorizedError.category}): ${categorizedError.message}`);
+				this.logger.warn(
+					`File selection warning for ${repository.fullName} (${categorizedError.category}): ${categorizedError.message}`
+				);
 			} else {
-				this.logger.log(`File selection info for ${repository.fullName} (${categorizedError.category}): ${categorizedError.message}`);
+				this.logger.log(
+					`File selection info for ${repository.fullName} (${categorizedError.category}): ${categorizedError.message}`
+				);
 			}
 
 			// For certain error types, show error message; for others, fallback to prompt ready
-			if (categorizedError.category === 'rate_limit' || categorizedError.category === 'authentication' || categorizedError.category === 'permission') {
+			if (
+				categorizedError.category === 'rate_limit' ||
+				categorizedError.category === 'authentication' ||
+				categorizedError.category === 'permission'
+			) {
 				await interaction.reply({
 					content: categorizedError.userMessage,
 					flags: [MessageFlags.Ephemeral]

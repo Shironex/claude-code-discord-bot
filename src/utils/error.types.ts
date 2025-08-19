@@ -4,7 +4,7 @@
 
 export enum ErrorCategory {
 	NETWORK = 'network',
-	AUTHENTICATION = 'authentication', 
+	AUTHENTICATION = 'authentication',
 	RATE_LIMIT = 'rate_limit',
 	NOT_FOUND = 'not_found',
 	VALIDATION = 'validation',
@@ -75,7 +75,11 @@ export class ErrorCategorizer {
 		}
 
 		// Validation errors
-		if (lowerMessage.includes('validation') || lowerMessage.includes('invalid') || lowerMessage.includes('path traversal')) {
+		if (
+			lowerMessage.includes('validation') ||
+			lowerMessage.includes('invalid') ||
+			lowerMessage.includes('path traversal')
+		) {
 			return {
 				category: ErrorCategory.VALIDATION,
 				message,
@@ -86,12 +90,14 @@ export class ErrorCategorizer {
 		}
 
 		// Network errors
-		if (lowerMessage.includes('network') || 
-			lowerMessage.includes('timeout') || 
+		if (
+			lowerMessage.includes('network') ||
+			lowerMessage.includes('timeout') ||
 			lowerMessage.includes('connection') ||
-			error.code === 'ECONNRESET' || 
-			error.code === 'ETIMEDOUT' || 
-			error.code === 'ENOTFOUND') {
+			error.code === 'ECONNRESET' ||
+			error.code === 'ETIMEDOUT' ||
+			error.code === 'ENOTFOUND'
+		) {
 			return {
 				category: ErrorCategory.NETWORK,
 				message,
@@ -127,7 +133,8 @@ export class ErrorCategorizer {
 		return {
 			category: ErrorCategory.UNKNOWN,
 			message,
-			userMessage: '❓ An unexpected error occurred. Please try again or contact support if the problem persists.',
+			userMessage:
+				'❓ An unexpected error occurred. Please try again or contact support if the problem persists.',
 			originalError: error,
 			isRetryable: false
 		};
@@ -153,10 +160,6 @@ export class ErrorCategorizer {
 	 * Determine if an error should trigger retry logic
 	 */
 	static shouldRetry(category: ErrorCategory): boolean {
-		return [
-			ErrorCategory.NETWORK,
-			ErrorCategory.RATE_LIMIT,
-			ErrorCategory.GITHUB_API
-		].includes(category);
+		return [ErrorCategory.NETWORK, ErrorCategory.RATE_LIMIT, ErrorCategory.GITHUB_API].includes(category);
 	}
 }

@@ -96,11 +96,7 @@ export class TypeGuards {
 	/**
 	 * Assert that a value matches a type guard, throwing if not
 	 */
-	static assert<T>(
-		value: unknown,
-		guard: (value: unknown) => value is T,
-		message: string
-	): asserts value is T {
+	static assert<T>(value: unknown, guard: (value: unknown) => value is T, message: string): asserts value is T {
 		if (!guard(value)) {
 			throw new Error(message);
 		}

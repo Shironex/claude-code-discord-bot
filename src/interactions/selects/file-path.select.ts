@@ -51,16 +51,21 @@ export class FilePathSelectHandler extends BaseService {
 			// Categorize the error for proper handling and logging
 			const categorizedError = ErrorCategorizer.categorizeError(error);
 			const logLevel = ErrorCategorizer.getLogLevel(categorizedError.category);
-			
+
 			// Log with appropriate level
 			if (logLevel === 'error') {
-				this.logger.error(`Failed to handle file path selection (${categorizedError.category}): ${categorizedError.message}`, error);
+				this.logger.error(
+					`Failed to handle file path selection (${categorizedError.category}): ${categorizedError.message}`,
+					error
+				);
 			} else if (logLevel === 'warn') {
-				this.logger.warn(`File path selection warning (${categorizedError.category}): ${categorizedError.message}`);
+				this.logger.warn(
+					`File path selection warning (${categorizedError.category}): ${categorizedError.message}`
+				);
 			} else {
 				this.logger.log(`File path selection info (${categorizedError.category}): ${categorizedError.message}`);
 			}
-			
+
 			return interaction.reply({
 				content: categorizedError.userMessage,
 				flags: [MessageFlags.Ephemeral]

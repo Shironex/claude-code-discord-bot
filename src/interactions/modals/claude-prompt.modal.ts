@@ -39,19 +39,21 @@ export class ClaudePromptModalHandler extends BaseService {
 
 		try {
 			const rawPrompt = this.sanitizeInput(interaction.fields.getTextInputValue(CUSTOM_IDS.CLAUDE_PROMPT_INPUT));
-			const rawBranch = this.sanitizeInput(interaction.fields.getTextInputValue(CUSTOM_IDS.CLAUDE_BRANCH_INPUT) || 'main');
+			const rawBranch = this.sanitizeInput(
+				interaction.fields.getTextInputValue(CUSTOM_IDS.CLAUDE_BRANCH_INPUT) || 'main'
+			);
 
 			// Validate prompt with type guard
 			if (!TypeGuards.isValidPrompt(rawPrompt)) {
 				return interaction.editReply({
-					content: '❌ Invalid prompt. Please provide a prompt between 10 and 6000 characters.',
+					content: '❌ Invalid prompt. Please provide a prompt between 10 and 6000 characters.'
 				});
 			}
 
 			// Validate branch name with type guard
 			if (!TypeGuards.isValidBranchName(rawBranch)) {
 				return interaction.editReply({
-					content: '❌ Invalid branch name. Please provide a valid Git branch name.',
+					content: '❌ Invalid branch name. Please provide a valid Git branch name.'
 				});
 			}
 
@@ -61,7 +63,9 @@ export class ClaudePromptModalHandler extends BaseService {
 			// Get file context input (optional)
 			let fileContextInput = '';
 			try {
-				fileContextInput = this.sanitizeInput(interaction.fields.getTextInputValue(CUSTOM_IDS.CLAUDE_FILE_CONTEXT_INPUT) || '');
+				fileContextInput = this.sanitizeInput(
+					interaction.fields.getTextInputValue(CUSTOM_IDS.CLAUDE_FILE_CONTEXT_INPUT) || ''
+				);
 			} catch {
 				// Field might not exist in older modal instances
 			}
@@ -70,7 +74,7 @@ export class ClaudePromptModalHandler extends BaseService {
 			const sessionPaths = TypeGuards.getFilePathArray(session.selectedFilePaths);
 			const modalPaths = FileTreeUtils.parseFilePathsString(fileContextInput);
 			const combinedPaths = [...sessionPaths, ...modalPaths];
-			
+
 			// Validate all file paths for security
 			const validatedPaths = combinedPaths.filter(path => TypeGuards.isValidFilePath(path));
 			const allFilePaths = [...new Set(validatedPaths)]; // Remove duplicates
@@ -94,11 +98,13 @@ export class ClaudePromptModalHandler extends BaseService {
 			if (allFilePaths.length > 0) {
 				const contextSection = FileTreeUtils.generateContextPrompt(allFilePaths);
 				enhancedPrompt = contextSection + prompt;
-				
+
 				// Validate total prompt length including context
-				if (enhancedPrompt.length > 6000) { // Conservative limit including context
+				if (enhancedPrompt.length > 6000) {
+					// Conservative limit including context
 					return interaction.editReply({
-						content: '❌ Combined prompt and file context is too long. Please reduce your file selections or shorten your prompt.',
+						content:
+							'❌ Combined prompt and file context is too long. Please reduce your file selections or shorten your prompt.'
 					});
 				}
 			}
@@ -187,19 +193,21 @@ export class ClaudePromptModalHandler extends BaseService {
 	 */
 	private sanitizeInput(input: string): string {
 		if (!input) return '';
-		
+
 		// Remove or replace potentially dangerous characters
-		return input
-			.trim()
-			// Remove null bytes and other control characters except newlines and tabs
-			.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
-			// Normalize whitespace (but preserve newlines for prompts)
-			.replace(/\s+/g, ' ')
-			// Remove leading/trailing whitespace from each line
-			.split('\n')
-			.map(line => line.trim())
-			.join('\n')
-			// Remove excessive newlines (max 2 consecutive)
-			.replace(/\n{3,}/g, '\n\n');
+		return (
+			input
+				.trim()
+				// Remove null bytes and other control characters except newlines and tabs
+				.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+				// Normalize whitespace (but preserve newlines for prompts)
+				.replace(/\s+/g, ' ')
+				// Remove leading/trailing whitespace from each line
+				.split('\n')
+				.map(line => line.trim())
+				.join('\n')
+				// Remove excessive newlines (max 2 consecutive)
+				.replace(/\n{3,}/g, '\n\n')
+		);
 	}
 }
