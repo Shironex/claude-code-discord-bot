@@ -1,5 +1,5 @@
 {
-	"name": "02-slash-commands",
+	"name": "claude-code-discord-bot",
 	"version": "1.0.0",
 	"license": "MIT",
 	"scripts": {
@@ -16,6 +16,7 @@
 		"@nestjs/common": "^11.0.6",
 		"@nestjs/config": "^4.0.2",
 		"@nestjs/core": "^11.0.6",
+		"@octokit/rest": "^22.0.0",
 		"discord.js": "14.21.0",
 		"necord": "6.9.1",
 		"reflect-metadata": "0.2.2",
