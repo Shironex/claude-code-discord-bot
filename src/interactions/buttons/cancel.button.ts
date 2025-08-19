@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { Context, Button, ButtonContext } from 'necord';
 import { SessionService } from '../../services/session.service';
-import { CUSTOM_IDS, MESSAGES } from '../../utils/constants';
+import { CUSTOM_IDS } from '../../utils/discord.constants';
+import { MESSAGES } from '../../utils/messages.constants';
 
 @Injectable()
 export class CancelButtonHandler {

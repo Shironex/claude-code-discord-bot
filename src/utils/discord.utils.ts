@@ -1,7 +1,8 @@
 import { ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
-import { Repository } from '../services/github.service';
-import { PaginationInfo } from '../interfaces/discord.interface';
-import { CUSTOM_IDS, LANGUAGE_EMOJIS } from './constants';
+import { Repository } from '../interfaces/models/repository.interface';
+import { PaginationInfo } from '../interfaces/discord/discord.interface';
+import { CUSTOM_IDS } from './discord.constants';
+import { LANGUAGE_EMOJIS } from './github.constants';
 
 export class DiscordUtils {
 	static createRepositorySelectMenu(repositories: Repository[]): StringSelectMenuBuilder {

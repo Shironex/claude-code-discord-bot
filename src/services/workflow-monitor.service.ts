@@ -1,4 +1,5 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { BaseService } from './base/base.service';
 import { WorkflowService } from './workflow.service';
 import { SessionService } from './session.service';
 import { EmbedService } from './embed.service';
@@ -16,8 +17,7 @@ interface MonitoredWorkflow {
 }
 
 @Injectable()
-export class WorkflowMonitorService implements OnModuleInit, OnModuleDestroy {
-	private readonly logger = new Logger(WorkflowMonitorService.name);
+export class WorkflowMonitorService extends BaseService implements OnModuleInit, OnModuleDestroy {
 	private monitoredWorkflows: Map<string, MonitoredWorkflow> = new Map();
 	private monitorInterval: NodeJS.Timeout | null = null;
 	private readonly POLL_INTERVAL = 30000; // 30 seconds
@@ -28,7 +28,9 @@ export class WorkflowMonitorService implements OnModuleInit, OnModuleDestroy {
 		private readonly sessionService: SessionService,
 		private readonly embedService: EmbedService,
 		private readonly client: Client
-	) {}
+	) {
+		super(WorkflowMonitorService.name);
+	}
 
 	onModuleInit() {
 		this.startMonitoring();
@@ -204,7 +206,7 @@ export class WorkflowMonitorService implements OnModuleInit, OnModuleDestroy {
 
 			// Try to find recent PRs that might be from this workflow
 			// This is a best-effort attempt since we don't have direct PR link from workflow
-			const octokit = (this.workflowService as any).octokit;
+			const octokit = this.workflowService.getOctokit();
 			if (!octokit) return null;
 
 			const { data: prs } = await octokit.rest.pulls.list({

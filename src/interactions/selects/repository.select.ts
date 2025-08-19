@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { Context, StringSelect, StringSelectContext } from 'necord';
 import { ActionRowBuilder, ButtonBuilder, MessageFlags } from 'discord.js';
-import { Repository } from '../../services/github.service';
+import { Repository } from '../../interfaces/models/repository.interface';
 import { SessionService } from '../../services/session.service';
 import { EmbedService } from '../../services/embed.service';
 import { WorkflowService } from '../../services/workflow.service';
-import { CUSTOM_IDS, MESSAGES } from '../../utils/constants';
+import { CUSTOM_IDS } from '../../utils/discord.constants';
+import { MESSAGES } from '../../utils/messages.constants';
 import { DiscordUtils } from '../../utils/discord.utils';
 
 @Injectable()

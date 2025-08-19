@@ -1,23 +1,24 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Context, Modal, ModalContext } from 'necord';
 import { ActionRowBuilder, ButtonBuilder, MessageFlags } from 'discord.js';
+import { BaseService } from '../../services/base/base.service';
 import { SessionService } from '../../services/session.service';
 import { WorkflowService } from '../../services/workflow.service';
 import { EmbedService } from '../../services/embed.service';
 import { WorkflowMonitorService } from '../../services/workflow-monitor.service';
-import { MESSAGES } from '../../utils/constants';
+import { MESSAGES } from '../../utils/messages.constants';
 import { DiscordUtils } from '../../utils/discord.utils';
 
 @Injectable()
-export class ClaudePromptModalHandler {
-	private readonly logger = new Logger(ClaudePromptModalHandler.name);
-
+export class ClaudePromptModalHandler extends BaseService {
 	constructor(
 		private readonly sessionService: SessionService,
 		private readonly workflowService: WorkflowService,
 		private readonly embedService: EmbedService,
 		private readonly workflowMonitorService: WorkflowMonitorService
-	) {}
+	) {
+		super(ClaudePromptModalHandler.name);
+	}
 
 	@Modal('claude-prompt-modal')
 	public async onClaudePromptModal(@Context() [interaction]: ModalContext) {

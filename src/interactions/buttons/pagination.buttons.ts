@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { Context, Button, ButtonContext } from 'necord';
-import { GitHubService, PaginatedRepositories } from '../../services/github.service';
+import { GitHubService } from '../../services/github.service';
+import { PaginatedRepositories } from '../../interfaces/models/repository.interface';
 import { SessionService } from '../../services/session.service';
 import { EmbedService } from '../../services/embed.service';
-import { CUSTOM_IDS, MESSAGES } from '../../utils/constants';
+import { CUSTOM_IDS } from '../../utils/discord.constants';
+import { MESSAGES } from '../../utils/messages.constants';
 import { MessageFlags } from 'discord.js';
 
 @Injectable()

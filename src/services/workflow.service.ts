@@ -1,19 +1,21 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Octokit } from '@octokit/rest';
+import { BaseService } from './base/base.service';
+import { IWorkflowService } from '../interfaces/services/workflow.interface';
 import {
 	WorkflowDispatchRequest,
 	WorkflowRun,
 	WorkflowRunsResponse,
 	WorkflowFile
-} from '../interfaces/workflow.interface';
+} from '../interfaces/models/workflow.interface';
 
 @Injectable()
-export class WorkflowService {
-	private readonly logger = new Logger(WorkflowService.name);
+export class WorkflowService extends BaseService implements IWorkflowService {
 	private octokit: Octokit | null = null;
 
 	constructor(private configService: ConfigService) {
+		super(WorkflowService.name);
 		const token = this.configService.get<string>('GITHUB_TOKEN');
 
 		if (token) {
@@ -150,60 +152,8 @@ export class WorkflowService {
 		}
 	}
 
-	getWorkflowStatusEmoji(status: string, conclusion: string | null): string {
-		if (status === 'completed') {
-			switch (conclusion) {
-				case 'success':
-					return '✅';
-				case 'failure':
-					return '❌';
-				case 'cancelled':
-					return '🚫';
-				case 'skipped':
-					return '⏭️';
-				default:
-					return '❓';
-			}
-		}
-
-		switch (status) {
-			case 'queued':
-				return '⏳';
-			case 'in_progress':
-				return '🔄';
-			case 'waiting':
-				return '⏸️';
-			default:
-				return '❓';
-		}
-	}
-
-	getWorkflowStatusText(status: string, conclusion: string | null): string {
-		if (status === 'completed') {
-			switch (conclusion) {
-				case 'success':
-					return 'Completed Successfully';
-				case 'failure':
-					return 'Failed';
-				case 'cancelled':
-					return 'Cancelled';
-				case 'skipped':
-					return 'Skipped';
-				default:
-					return 'Completed';
-			}
-		}
-
-		switch (status) {
-			case 'queued':
-				return 'Queued';
-			case 'in_progress':
-				return 'Running';
-			case 'waiting':
-				return 'Waiting';
-			default:
-				return 'Unknown';
-		}
+	getOctokit(): Octokit | null {
+		return this.octokit;
 	}
 
 	isConfigured(): boolean {

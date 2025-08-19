@@ -1,13 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder } from 'discord.js';
-import { Repository, PaginatedRepositories } from './github.service';
-import { WorkflowRun } from '../interfaces/workflow.interface';
-import { MessageComponents } from '../interfaces/discord.interface';
-import { DISCORD_COLORS, MESSAGES } from '../utils/constants';
+import { BaseService } from './base/base.service';
+import { IEmbedService } from '../interfaces/services/embed.interface';
+import { Repository, PaginatedRepositories } from '../interfaces/models/repository.interface';
+import { WorkflowRun } from '../interfaces/models/workflow.interface';
+import { MessageComponents } from '../interfaces/discord/discord.interface';
+import { DISCORD_COLORS } from '../utils/discord.constants';
+import { MESSAGES } from '../utils/messages.constants';
 import { DiscordUtils } from '../utils/discord.utils';
+import { WorkflowUtils } from '../utils/workflow.utils';
 
 @Injectable()
-export class EmbedService {
+export class EmbedService extends BaseService implements IEmbedService {
+	
+	constructor() {
+		super(EmbedService.name);
+	}
 	createLoadingEmbed(message: string): EmbedBuilder {
 		return new EmbedBuilder()
 			.setTitle('🤖 Claude Code Bot')
@@ -151,7 +159,7 @@ export class EmbedService {
 				},
 				{
 					name: '🔄 Status',
-					value: this.getWorkflowStatusText(workflowRun.status, workflowRun.conclusion),
+					value: WorkflowUtils.getWorkflowStatusText(workflowRun.status, workflowRun.conclusion),
 					inline: true
 				},
 				{
@@ -172,8 +180,8 @@ export class EmbedService {
 	}
 
 	createWorkflowStatusEmbed(workflowRun: WorkflowRun, repository: string): EmbedBuilder {
-		const statusEmoji = this.getWorkflowStatusEmoji(workflowRun.status, workflowRun.conclusion);
-		const statusText = this.getWorkflowStatusText(workflowRun.status, workflowRun.conclusion);
+		const statusEmoji = WorkflowUtils.getWorkflowStatusEmoji(workflowRun.status, workflowRun.conclusion);
+		const statusText = WorkflowUtils.getWorkflowStatusText(workflowRun.status, workflowRun.conclusion);
 
 		let color = DISCORD_COLORS.INFO;
 		if (workflowRun.status === 'completed') {
@@ -215,65 +223,10 @@ export class EmbedService {
 		return embed;
 	}
 
-	private getWorkflowStatusEmoji(status: string, conclusion: string | null): string {
-		if (status === 'completed') {
-			switch (conclusion) {
-				case 'success':
-					return '✅';
-				case 'failure':
-					return '❌';
-				case 'cancelled':
-					return '🚫';
-				case 'skipped':
-					return '⏭️';
-				default:
-					return '❓';
-			}
-		}
-
-		switch (status) {
-			case 'queued':
-				return '⏳';
-			case 'in_progress':
-				return '🔄';
-			case 'waiting':
-				return '⏸️';
-			default:
-				return '❓';
-		}
-	}
-
-	private getWorkflowStatusText(status: string, conclusion: string | null): string {
-		if (status === 'completed') {
-			switch (conclusion) {
-				case 'success':
-					return 'Completed Successfully';
-				case 'failure':
-					return 'Failed';
-				case 'cancelled':
-					return 'Cancelled';
-				case 'skipped':
-					return 'Skipped';
-				default:
-					return 'Completed';
-			}
-		}
-
-		switch (status) {
-			case 'queued':
-				return 'Queued';
-			case 'in_progress':
-				return 'Running';
-			case 'waiting':
-				return 'Waiting';
-			default:
-				return 'Unknown';
-		}
-	}
 
 	createWorkflowCompletedEmbed(repository: string, workflowRun: WorkflowRun, startTime: Date): EmbedBuilder {
-		const statusEmoji = this.getWorkflowStatusEmoji(workflowRun.status, workflowRun.conclusion);
-		const statusText = this.getWorkflowStatusText(workflowRun.status, workflowRun.conclusion);
+		const statusEmoji = WorkflowUtils.getWorkflowStatusEmoji(workflowRun.status, workflowRun.conclusion);
+		const statusText = WorkflowUtils.getWorkflowStatusText(workflowRun.status, workflowRun.conclusion);
 
 		let color = DISCORD_COLORS.SUCCESS;
 		if (workflowRun.conclusion !== 'success') {

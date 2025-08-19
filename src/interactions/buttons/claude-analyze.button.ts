@@ -1,18 +1,20 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Context, Button, ButtonContext } from 'necord';
 import { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, MessageFlags } from 'discord.js';
+import { BaseService } from '../../services/base/base.service';
 import { SessionService } from '../../services/session.service';
 import { EmbedService } from '../../services/embed.service';
-import { CUSTOM_IDS, MESSAGES } from '../../utils/constants';
+import { CUSTOM_IDS } from '../../utils/discord.constants';
+import { MESSAGES } from '../../utils/messages.constants';
 
 @Injectable()
-export class ClaudeAnalyzeButtonHandler {
-	private readonly logger = new Logger(ClaudeAnalyzeButtonHandler.name);
-
+export class ClaudeAnalyzeButtonHandler extends BaseService {
 	constructor(
 		private readonly sessionService: SessionService,
 		private readonly embedService: EmbedService
-	) {}
+	) {
+		super(ClaudeAnalyzeButtonHandler.name);
+	}
 
 	@Button(CUSTOM_IDS.CLAUDE_ANALYZE)
 	public async onClaudeAnalyze(@Context() [interaction]: ButtonContext) {

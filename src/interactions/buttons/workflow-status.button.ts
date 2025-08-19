@@ -1,21 +1,23 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Context, Button, ButtonContext } from 'necord';
 import { ActionRowBuilder, ButtonBuilder, MessageFlags } from 'discord.js';
+import { BaseService } from '../../services/base/base.service';
 import { SessionService } from '../../services/session.service';
 import { WorkflowService } from '../../services/workflow.service';
 import { EmbedService } from '../../services/embed.service';
-import { CUSTOM_IDS, MESSAGES } from '../../utils/constants';
+import { CUSTOM_IDS } from '../../utils/discord.constants';
+import { MESSAGES } from '../../utils/messages.constants';
 import { DiscordUtils } from '../../utils/discord.utils';
 
 @Injectable()
-export class WorkflowStatusButtonHandler {
-	private readonly logger = new Logger(WorkflowStatusButtonHandler.name);
-
+export class WorkflowStatusButtonHandler extends BaseService {
 	constructor(
 		private readonly sessionService: SessionService,
 		private readonly workflowService: WorkflowService,
 		private readonly embedService: EmbedService
-	) {}
+	) {
+		super(WorkflowStatusButtonHandler.name);
+	}
 
 	@Button(CUSTOM_IDS.WORKFLOW_STATUS)
 	public async onWorkflowStatus(@Context() [interaction]: ButtonContext) {

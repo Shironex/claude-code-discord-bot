@@ -1,35 +1,16 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Octokit } from '@octokit/rest';
-
-export interface Repository {
-	id: number;
-	name: string;
-	fullName: string;
-	description: string | null;
-	language: string | null;
-	stargazersCount: number;
-	forksCount: number;
-	updatedAt: string;
-	private: boolean;
-	htmlUrl: string;
-}
-
-export interface PaginatedRepositories {
-	repositories: Repository[];
-	totalCount: number;
-	hasNextPage: boolean;
-	hasPreviousPage: boolean;
-	currentPage: number;
-	totalPages: number;
-}
+import { BaseService } from './base/base.service';
+import { IGitHubService } from '../interfaces/services/github.interface';
+import { Repository, PaginatedRepositories } from '../interfaces/models/repository.interface';
 
 @Injectable()
-export class GitHubService {
-	private readonly logger = new Logger(GitHubService.name);
+export class GitHubService extends BaseService implements IGitHubService {
 	private octokit: Octokit | null = null;
 
 	constructor(private configService: ConfigService) {
+		super(GitHubService.name);
 		const token = this.configService.get<string>('GITHUB_TOKEN');
 
 		if (token) {
@@ -229,39 +210,6 @@ export class GitHubService {
 		}
 	}
 
-	formatRepositoryForDiscord(repo: Repository): string {
-		const stars = repo.stargazersCount > 0 ? `⭐ ${repo.stargazersCount}` : '';
-		const language = repo.language ? repo.language : 'Unknown';
-		const updatedAt = new Date(repo.updatedAt).toLocaleDateString();
-		const privacy = repo.private ? '🔒' : '🔓';
-
-		return `${privacy} ${stars} | ${language} | Updated: ${updatedAt}`;
-	}
-
-	getLanguageEmoji(language: string | null): string {
-		const emojiMap: Record<string, string> = {
-			JavaScript: '🟨',
-			TypeScript: '🟦',
-			Python: '🟩',
-			Java: '🟧',
-			'C++': '🟪',
-			'C#': '🟣',
-			Go: '🟢',
-			Rust: '🟤',
-			Ruby: '🟥',
-			PHP: '🟨',
-			Swift: '🟠',
-			Kotlin: '🟣',
-			Dart: '🟦',
-			Shell: '⚫',
-			HTML: '🟧',
-			CSS: '🟦',
-			Vue: '🟢',
-			React: '🟦'
-		};
-
-		return emojiMap[language || ''] || '📁';
-	}
 
 	isConfigured(): boolean {
 		return this.octokit !== null;

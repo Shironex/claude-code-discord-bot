@@ -1,12 +1,17 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { UserSession, SessionManager } from '../interfaces/session.interface';
-import { Repository, PaginatedRepositories } from './github.service';
-import { UserWorkflowRun } from '../interfaces/workflow.interface';
+import { Injectable } from '@nestjs/common';
+import { BaseService } from './base/base.service';
+import { ISessionService } from '../interfaces/services/session.interface';
+import { UserSession } from '../interfaces/models/session.interface';
+import { Repository, PaginatedRepositories } from '../interfaces/models/repository.interface';
+import { UserWorkflowRun } from '../interfaces/models/workflow.interface';
 
 @Injectable()
-export class SessionService implements SessionManager {
-	private readonly logger = new Logger(SessionService.name);
+export class SessionService extends BaseService implements ISessionService {
 	private readonly sessions = new Map<string, UserSession>();
+
+	constructor() {
+		super(SessionService.name);
+	}
 
 	createSession(userId: string): void {
 		const session: UserSession = {
