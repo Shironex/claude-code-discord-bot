@@ -38,7 +38,7 @@ export class ClaudeRepoSearchModalHandler extends BaseService {
 
 		try {
 			const searchTerm = interaction.fields.getTextInputValue(CUSTOM_IDS.CLAUDE_REPO_SEARCH_INPUT);
-			
+
 			this.logger.log(`Repository search: "${searchTerm}" by user: ${interaction.user.tag} (${userId})`);
 
 			let repositories: Repository[] = [];
@@ -86,7 +86,7 @@ export class ClaudeRepoSearchModalHandler extends BaseService {
 				try {
 					const [owner, repoName] = repo.fullName.split('/');
 					const hasWorkflow = await this.workflowService.checkWorkflowExists(owner, repoName, 'claude.yml');
-					
+
 					if (hasWorkflow) {
 						repositoriesWithWorkflow.push(repo);
 					} else {
@@ -115,25 +115,22 @@ export class ClaudeRepoSearchModalHandler extends BaseService {
 			if (repositoriesWithWorkflow.length === 0) {
 				// No repositories with Claude workflow found
 				let description = `No repositories found matching "${searchTerm}" with Claude Code workflow configured.`;
-				
+
 				if (repositoriesWithoutWorkflow.length > 0) {
 					description += `\n\n**Found repositories without Claude Code:**\n`;
 					description += repositoriesWithoutWorkflow
 						.slice(0, 5)
 						.map(repo => `• ${repo.fullName}`)
 						.join('\n');
-						
+
 					if (repositoriesWithoutWorkflow.length > 5) {
 						description += `\n• ... and ${repositoriesWithoutWorkflow.length - 5} more`;
 					}
-					
+
 					description += `\n\nTo use Claude Code with these repositories, add a \`.github/workflows/claude.yml\` file.`;
 				}
 
-				const embed = this.embedService.createWarningEmbed(
-					'No Claude Code Repositories Found',
-					description
-				);
+				const embed = this.embedService.createWarningEmbed('No Claude Code Repositories Found', description);
 				return interaction.editReply({ embeds: [embed] });
 			}
 
@@ -168,7 +165,6 @@ export class ClaudeRepoSearchModalHandler extends BaseService {
 			});
 
 			this.logger.log(`Repository selection presented: ${repositoriesWithWorkflow.length} valid repositories`);
-
 		} catch (error) {
 			this.logger.error(`Claude repository search modal error: ${error.message}`, error);
 			const embed = this.embedService.createErrorEmbed(

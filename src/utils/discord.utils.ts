@@ -21,7 +21,6 @@ export class DiscordUtils {
 		return selectMenu;
 	}
 
-
 	static createSelectMenuRow(repositories: Repository[]): ActionRowBuilder<StringSelectMenuBuilder> {
 		return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
 			this.createRepositorySelectMenu(repositories)
@@ -60,7 +59,6 @@ export class DiscordUtils {
 			}
 		];
 	}
-
 
 	static createWorkflowStatusButton(): ButtonBuilder {
 		return new ButtonBuilder()

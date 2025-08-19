@@ -1,8 +1,4 @@
-import { 
-	WorkflowDispatchRequest, 
-	WorkflowRun, 
-	WorkflowFile 
-} from '../models/workflow.interface';
+import { WorkflowDispatchRequest, WorkflowRun, WorkflowFile } from '../models/workflow.interface';
 
 export interface IWorkflowService {
 	checkWorkflowExists(owner: string, repo: string, workflowFile?: string): Promise<boolean>;

@@ -210,7 +210,6 @@ export class GitHubService extends BaseService implements IGitHubService {
 		}
 	}
 
-
 	isConfigured(): boolean {
 		return this.octokit !== null;
 	}

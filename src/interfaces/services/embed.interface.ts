@@ -13,13 +13,21 @@ export interface IEmbedService {
 	createNoSearchResultsEmbed(query: string): EmbedBuilder;
 	createRepositorySelectionEmbed(paginatedRepos: PaginatedRepositories, searchQuery: string | null): EmbedBuilder;
 	createRepositorySelectedEmbed(repository: Repository, hasClaudeWorkflow?: boolean): EmbedBuilder;
-	createRepositorySelectionMessage(paginatedRepos: PaginatedRepositories, searchQuery: string | null): MessageComponents;
+	createRepositorySelectionMessage(
+		paginatedRepos: PaginatedRepositories,
+		searchQuery: string | null
+	): MessageComponents;
 	createSearchLoadingEmbed(query: string): EmbedBuilder;
 	createSearchErrorEmbed(query: string): EmbedBuilder;
 	createPaginationErrorEmbed(): EmbedBuilder;
 	createSessionExpiredEmbed(): EmbedBuilder;
 	createWorkflowNotFoundEmbed(owner: string, repo: string): EmbedBuilder;
-	createWorkflowDispatchedEmbed(repository: string, branch: string, prompt: string, workflowRun: WorkflowRun): EmbedBuilder;
+	createWorkflowDispatchedEmbed(
+		repository: string,
+		branch: string,
+		prompt: string,
+		workflowRun: WorkflowRun
+	): EmbedBuilder;
 	createWorkflowStatusEmbed(workflowRun: WorkflowRun, repository: string): EmbedBuilder;
 	createWorkflowCompletedEmbed(repository: string, workflowRun: WorkflowRun, startTime: Date): EmbedBuilder;
 }

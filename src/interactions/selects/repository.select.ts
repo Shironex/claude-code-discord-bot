@@ -9,9 +9,7 @@ import { MESSAGES } from '../../utils/messages.constants';
 
 @Injectable()
 export class RepositorySelectHandler extends BaseService {
-	constructor(
-		private readonly sessionService: SessionService
-	) {
+	constructor(private readonly sessionService: SessionService) {
 		super(RepositorySelectHandler.name);
 	}
 

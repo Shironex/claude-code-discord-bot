@@ -12,7 +12,6 @@ import { WorkflowUtils } from '../utils/workflow.utils';
 
 @Injectable()
 export class EmbedService extends BaseService implements IEmbedService {
-	
 	constructor() {
 		super(EmbedService.name);
 	}
@@ -210,7 +209,6 @@ export class EmbedService extends BaseService implements IEmbedService {
 
 		return embed;
 	}
-
 
 	createWorkflowCompletedEmbed(repository: string, workflowRun: WorkflowRun, startTime: Date): EmbedBuilder {
 		const statusEmoji = WorkflowUtils.getWorkflowStatusEmoji(workflowRun.status, workflowRun.conclusion);
