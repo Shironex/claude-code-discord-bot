@@ -32,6 +32,13 @@ RUN if ! command -v gh &> /dev/null; then \
     rm -rf /var/lib/apt/lists/*; \
     fi
 
+# Create and set permissions for GitHub Actions working directories
+RUN mkdir -p /home/runner/_work && \
+    mkdir -p /home/runner/_work/_tool && \
+    mkdir -p /home/runner/_work/_temp && \
+    chown -R runner:runner /home/runner/_work && \
+    chmod -R 755 /home/runner/_work
+
 # Switch back to runner user
 USER runner
 
