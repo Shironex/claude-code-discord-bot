@@ -37,13 +37,16 @@ mkdir -p "$RUNNER_WORK_DIR"
 cleanup() {
     echo "🧹 Cleaning up runner registration..."
     if [ -f ".runner" ]; then
-        ./config.sh remove --unattended --token "$GITHUB_TOKEN"
+        echo "🔧 Fixing .runner file permissions..."
+        sudo chown runner:runner .runner 2>/dev/null || true
+        chmod 644 .runner 2>/dev/null || true
+        ./config.sh remove --unattended --token "$GITHUB_TOKEN" 2>/dev/null || echo "⚠️  Runner removal failed"
     fi
     echo "✅ Cleanup completed"
 }
 
-# Set trap for cleanup on script exit
-trap cleanup EXIT
+# Set trap for cleanup on script exit - only on specific signals, not EXIT
+trap cleanup SIGTERM SIGINT
 
 # Get registration token
 echo "🔑 Getting registration token..."
@@ -137,6 +140,17 @@ fi
 
 echo "✅ Runner configured successfully"
 
+# Fix permissions on runner files
+echo "🔧 Setting correct permissions on runner files..."
+if [ -f ".runner" ]; then
+    sudo chown runner:runner .runner || echo "⚠️  Could not change .runner ownership"
+    chmod 644 .runner || echo "⚠️  Could not change .runner permissions"
+fi
+if [ -f ".credentials" ]; then
+    sudo chown runner:runner .credentials || echo "⚠️  Could not change .credentials ownership"
+    chmod 600 .credentials || echo "⚠️  Could not change .credentials permissions"
+fi
+
 # Function to handle signals gracefully
 handle_signal() {
     echo "🛑 Received shutdown signal, stopping runner gracefully..."
@@ -144,6 +158,7 @@ handle_signal() {
         pkill -f "Runner.Listener"
         wait
     fi
+    cleanup
     exit 0
 }
 
