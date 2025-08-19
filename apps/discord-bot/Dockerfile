@@ -17,11 +17,12 @@ WORKDIR /app
 COPY package.json ./
 
 # Install all dependencies (including dev dependencies for build)
-RUN pnpm install --frozen-lockfile
+# Note: Using --no-frozen-lockfile as this is a standalone build without pnpm-lock.yaml
+RUN pnpm install --no-frozen-lockfile
 
-# Copy source code
+# Copy source code and TypeScript configuration
 COPY src ./src
-COPY tsconfig*.json ./
+COPY tsconfig.json tsconfig.build.json ./
 
 # Build the Discord bot application
 RUN pnpm build
@@ -43,7 +44,7 @@ WORKDIR /app
 
 # Copy package.json and install only production dependencies
 COPY package.json ./
-RUN pnpm install --frozen-lockfile --prod
+RUN pnpm install --no-frozen-lockfile --prod
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist

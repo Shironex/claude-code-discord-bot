@@ -52,8 +52,10 @@ docs
 # Development tools
 .eslintrc*
 .prettierrc*
-tsconfig*.json
 nest-cli.json
+
+# TypeScript configs needed for build - do not ignore
+# tsconfig*.json
 
 # GitHub
 .github
