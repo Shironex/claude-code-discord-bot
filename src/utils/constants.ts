@@ -9,24 +9,24 @@ export const DISCORD_COLORS: EmbedColors = {
 };
 
 export const LANGUAGE_EMOJIS: Record<string, string> = {
-	'JavaScript': '🟨',
-	'TypeScript': '🟦',
-	'Python': '🟩',
-	'Java': '🟧',
+	JavaScript: '🟨',
+	TypeScript: '🟦',
+	Python: '🟩',
+	Java: '🟧',
 	'C++': '🟪',
 	'C#': '🟣',
-	'Go': '🟢',
-	'Rust': '🟤',
-	'Ruby': '🟥',
-	'PHP': '🟨',
-	'Swift': '🟠',
-	'Kotlin': '🟣',
-	'Dart': '🟦',
-	'Shell': '⚫',
-	'HTML': '🟧',
-	'CSS': '🟦',
-	'Vue': '🟢',
-	'React': '🟦',
+	Go: '🟢',
+	Rust: '🟤',
+	Ruby: '🟥',
+	PHP: '🟨',
+	Swift: '🟠',
+	Kotlin: '🟣',
+	Dart: '🟦',
+	Shell: '⚫',
+	HTML: '🟧',
+	CSS: '🟦',
+	Vue: '🟢',
+	React: '🟦'
 };
 
 export const PAGINATION_LIMITS = {
@@ -43,7 +43,8 @@ export const CUSTOM_IDS = {
 } as const;
 
 export const MESSAGES = {
-	GITHUB_NOT_CONFIGURED: 'GitHub token is not configured. Please add your GitHub personal access token to the environment variables.',
+	GITHUB_NOT_CONFIGURED:
+		'GitHub token is not configured. Please add your GitHub personal access token to the environment variables.',
 	SESSION_EXPIRED: 'Session expired. Please run /run or /search again.',
 	REPOSITORY_NOT_FOUND: 'Repository not found. Please try again.',
 	PAGINATION_ERROR: 'Failed to load repositories. Please try again.',

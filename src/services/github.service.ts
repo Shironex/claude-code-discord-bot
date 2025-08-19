@@ -31,10 +31,10 @@ export class GitHubService {
 
 	constructor(private configService: ConfigService) {
 		const token = this.configService.get<string>('GITHUB_TOKEN');
-		
+
 		if (token) {
 			this.octokit = new Octokit({
-				auth: token,
+				auth: token
 			});
 			this.logger.log('GitHub service initialized with token');
 		} else {
@@ -49,7 +49,7 @@ export class GitHubService {
 
 		try {
 			this.logger.log(`Fetching user repositories (limit: ${limit})`);
-			
+
 			const { data } = await this.octokit.rest.repos.listForAuthenticatedUser({
 				sort: 'updated',
 				direction: 'desc',
@@ -72,7 +72,6 @@ export class GitHubService {
 
 			this.logger.log(`Successfully fetched ${repositories.length} repositories`);
 			return repositories;
-
 		} catch (error) {
 			this.logger.error('Failed to fetch repositories', error);
 			throw new Error('Failed to fetch GitHub repositories');
@@ -86,7 +85,7 @@ export class GitHubService {
 
 		try {
 			this.logger.log(`Fetching user repositories (page: ${page}, per_page: ${perPage})`);
-			
+
 			const { data, headers } = await this.octokit.rest.repos.listForAuthenticatedUser({
 				sort: 'updated',
 				direction: 'desc',
@@ -112,13 +111,14 @@ export class GitHubService {
 			const linkHeader = headers.link;
 			const hasNextPage = linkHeader ? linkHeader.includes('rel="next"') : false;
 			const hasPreviousPage = page > 1;
-			
+
 			// Estimate total count (GitHub doesn't provide exact count for user repos)
-			const totalCount = data.length < perPage ? (page - 1) * perPage + data.length : page * perPage + (hasNextPage ? 1 : 0);
+			const totalCount =
+				data.length < perPage ? (page - 1) * perPage + data.length : page * perPage + (hasNextPage ? 1 : 0);
 			const totalPages = Math.ceil(totalCount / perPage);
 
 			this.logger.log(`Successfully fetched ${repositories.length} repositories (page ${page})`);
-			
+
 			return {
 				repositories,
 				totalCount,
@@ -127,7 +127,6 @@ export class GitHubService {
 				currentPage: page,
 				totalPages
 			};
-
 		} catch (error) {
 			this.logger.error('Failed to fetch repositories', error);
 			throw new Error('Failed to fetch GitHub repositories');
@@ -141,7 +140,7 @@ export class GitHubService {
 
 		try {
 			this.logger.log(`Searching repositories: "${query}" (page: ${page}, per_page: ${perPage})`);
-			
+
 			// Search in user's repositories
 			const { data } = await this.octokit.rest.search.repos({
 				q: `user:${await this.getAuthenticatedUsername()} ${query}`,
@@ -170,7 +169,7 @@ export class GitHubService {
 			const hasPreviousPage = page > 1;
 
 			this.logger.log(`Successfully found ${repositories.length} repositories for query "${query}"`);
-			
+
 			return {
 				repositories,
 				totalCount,
@@ -179,7 +178,6 @@ export class GitHubService {
 				currentPage: page,
 				totalPages
 			};
-
 		} catch (error) {
 			this.logger.error(`Failed to search repositories for query "${query}"`, error);
 			throw new Error('Failed to search GitHub repositories');
@@ -207,7 +205,7 @@ export class GitHubService {
 
 		try {
 			this.logger.log(`Fetching repository: ${owner}/${repo}`);
-			
+
 			const { data } = await this.octokit.rest.repos.get({
 				owner,
 				repo
@@ -225,7 +223,6 @@ export class GitHubService {
 				private: data.private,
 				htmlUrl: data.html_url
 			};
-
 		} catch (error) {
 			this.logger.error(`Failed to fetch repository ${owner}/${repo}`, error);
 			throw new Error(`Failed to fetch repository ${owner}/${repo}`);
@@ -237,30 +234,30 @@ export class GitHubService {
 		const language = repo.language ? repo.language : 'Unknown';
 		const updatedAt = new Date(repo.updatedAt).toLocaleDateString();
 		const privacy = repo.private ? '🔒' : '🔓';
-		
+
 		return `${privacy} ${stars} | ${language} | Updated: ${updatedAt}`;
 	}
 
 	getLanguageEmoji(language: string | null): string {
 		const emojiMap: Record<string, string> = {
-			'JavaScript': '🟨',
-			'TypeScript': '🟦',
-			'Python': '🟩',
-			'Java': '🟧',
+			JavaScript: '🟨',
+			TypeScript: '🟦',
+			Python: '🟩',
+			Java: '🟧',
 			'C++': '🟪',
 			'C#': '🟣',
-			'Go': '🟢',
-			'Rust': '🟤',
-			'Ruby': '🟥',
-			'PHP': '🟨',
-			'Swift': '🟠',
-			'Kotlin': '🟣',
-			'Dart': '🟦',
-			'Shell': '⚫',
-			'HTML': '🟧',
-			'CSS': '🟦',
-			'Vue': '🟢',
-			'React': '🟦',
+			Go: '🟢',
+			Rust: '🟤',
+			Ruby: '🟥',
+			PHP: '🟨',
+			Swift: '🟠',
+			Kotlin: '🟣',
+			Dart: '🟦',
+			Shell: '⚫',
+			HTML: '🟧',
+			CSS: '🟦',
+			Vue: '🟢',
+			React: '🟦'
 		};
 
 		return emojiMap[language || ''] || '📁';

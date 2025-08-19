@@ -6,16 +6,7 @@ import { SessionService } from '../../services/session.service';
 import { EmbedService } from '../../services/embed.service';
 
 @Module({
-	providers: [
-		RunCommand,
-		SearchCommand,
-		GitHubService,
-		SessionService,
-		EmbedService
-	],
-	exports: [
-		RunCommand,
-		SearchCommand
-	]
+	providers: [RunCommand, SearchCommand, GitHubService, SessionService, EmbedService],
+	exports: [RunCommand, SearchCommand]
 })
 export class RepositoryModule {}

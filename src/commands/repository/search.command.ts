@@ -15,10 +15,7 @@ export class SearchCommand {
 	) {}
 
 	@SlashCommand({ name: 'search', description: 'Search for repositories' })
-	public async onSearch(
-		@Context() [interaction]: SlashCommandContext, 
-		@Options() { query }: SearchDto
-	) {
+	public async onSearch(@Context() [interaction]: SlashCommandContext, @Options() { query }: SearchDto) {
 		const userId = interaction.user.id;
 
 		// Check if GitHub is configured
@@ -56,19 +53,15 @@ export class SearchCommand {
 			this.sessionService.setSearchQuery(userId, query);
 
 			// Create embed and components for search results
-			const { embed, components } = this.embedService.createRepositorySelectionMessage(
-				searchResults, 
-				query
-			);
+			const { embed, components } = this.embedService.createRepositorySelectionMessage(searchResults, query);
 
 			await interaction.editReply({
 				embeds: [embed],
 				components: components
 			});
-
 		} catch (error) {
 			console.error('Error searching repositories:', error);
-			
+
 			const errorEmbed = this.embedService.createSearchErrorEmbed(query);
 
 			await interaction.editReply({

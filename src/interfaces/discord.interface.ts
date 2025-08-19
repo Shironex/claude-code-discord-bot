@@ -1,9 +1,4 @@
-import { 
-	ActionRowBuilder, 
-	StringSelectMenuBuilder, 
-	ButtonBuilder, 
-	EmbedBuilder 
-} from 'discord.js';
+import { ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, EmbedBuilder } from 'discord.js';
 
 export interface RepositoryDisplayOptions {
 	showPagination?: boolean;

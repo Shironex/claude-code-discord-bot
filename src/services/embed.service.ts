@@ -15,56 +15,33 @@ export class EmbedService {
 	}
 
 	createErrorEmbed(title: string, description: string): EmbedBuilder {
-		return new EmbedBuilder()
-			.setTitle(`❌ ${title}`)
-			.setDescription(description)
-			.setColor(DISCORD_COLORS.ERROR);
+		return new EmbedBuilder().setTitle(`❌ ${title}`).setDescription(description).setColor(DISCORD_COLORS.ERROR);
 	}
 
 	createSuccessEmbed(title: string, description: string): EmbedBuilder {
-		return new EmbedBuilder()
-			.setTitle(`✅ ${title}`)
-			.setDescription(description)
-			.setColor(DISCORD_COLORS.SUCCESS);
+		return new EmbedBuilder().setTitle(`✅ ${title}`).setDescription(description).setColor(DISCORD_COLORS.SUCCESS);
 	}
 
 	createWarningEmbed(title: string, description: string): EmbedBuilder {
-		return new EmbedBuilder()
-			.setTitle(`⚠️ ${title}`)
-			.setDescription(description)
-			.setColor(DISCORD_COLORS.WARNING);
+		return new EmbedBuilder().setTitle(`⚠️ ${title}`).setDescription(description).setColor(DISCORD_COLORS.WARNING);
 	}
 
 	createGitHubNotConfiguredEmbed(): EmbedBuilder {
-		return this.createErrorEmbed(
-			'GitHub Not Configured',
-			MESSAGES.GITHUB_NOT_CONFIGURED
-		);
+		return this.createErrorEmbed('GitHub Not Configured', MESSAGES.GITHUB_NOT_CONFIGURED);
 	}
 
 	createNoRepositoriesEmbed(): EmbedBuilder {
-		return this.createWarningEmbed(
-			'No Repositories Found',
-			'No repositories found in your GitHub account.'
-		);
+		return this.createWarningEmbed('No Repositories Found', 'No repositories found in your GitHub account.');
 	}
 
 	createNoSearchResultsEmbed(query: string): EmbedBuilder {
-		return this.createWarningEmbed(
-			'No Results Found',
-			`No repositories found matching "${query}".`
-		);
+		return this.createWarningEmbed('No Results Found', `No repositories found matching "${query}".`);
 	}
 
-	createRepositorySelectionEmbed(
-		paginatedRepos: PaginatedRepositories, 
-		searchQuery: string | null
-	): EmbedBuilder {
-		const title = searchQuery 
-			? `🔍 Search Results for "${searchQuery}"` 
-			: '🤖 Claude Code Bot';
-		
-		const description = searchQuery 
+	createRepositorySelectionEmbed(paginatedRepos: PaginatedRepositories, searchQuery: string | null): EmbedBuilder {
+		const title = searchQuery ? `🔍 Search Results for "${searchQuery}"` : '🤖 Claude Code Bot';
+
+		const description = searchQuery
 			? `Found ${paginatedRepos.totalCount} repositories matching "${searchQuery}". Select one to analyze:`
 			: `Found ${paginatedRepos.totalCount} repositories. Select one to analyze:`;
 
@@ -72,8 +49,8 @@ export class EmbedService {
 			.setTitle(title)
 			.setDescription(description)
 			.setColor(DISCORD_COLORS.PRIMARY)
-			.setFooter({ 
-				text: `Page ${paginatedRepos.currentPage} of ${paginatedRepos.totalPages} • Step 1 of 2` 
+			.setFooter({
+				text: `Page ${paginatedRepos.currentPage} of ${paginatedRepos.totalPages} • Step 1 of 2`
 			});
 	}
 
@@ -86,21 +63,19 @@ export class EmbedService {
 			.setTimestamp();
 
 		if (repository.description) {
-			embed.setDescription(
-				`**${repository.name}**\n\`${repository.fullName}\`\n\n*${repository.description}*`
-			);
+			embed.setDescription(`**${repository.name}**\n\`${repository.fullName}\`\n\n*${repository.description}*`);
 		}
 
 		return embed;
 	}
 
 	createRepositorySelectionMessage(
-		paginatedRepos: PaginatedRepositories, 
+		paginatedRepos: PaginatedRepositories,
 		searchQuery: string | null
 	): MessageComponents {
 		const embed = this.createRepositorySelectionEmbed(paginatedRepos, searchQuery);
 		const selectRow = DiscordUtils.createSelectMenuRow(paginatedRepos.repositories);
-		
+
 		const components: (ActionRowBuilder<StringSelectMenuBuilder> | ActionRowBuilder<ButtonBuilder>)[] = [selectRow];
 
 		// Add pagination buttons if there are multiple pages
@@ -126,23 +101,14 @@ export class EmbedService {
 	}
 
 	createSearchErrorEmbed(query: string): EmbedBuilder {
-		return this.createErrorEmbed(
-			'Search Error',
-			`Failed to search repositories for "${query}". Please try again.`
-		);
+		return this.createErrorEmbed('Search Error', `Failed to search repositories for "${query}". Please try again.`);
 	}
 
 	createPaginationErrorEmbed(): EmbedBuilder {
-		return this.createErrorEmbed(
-			'Pagination Error',
-			MESSAGES.PAGINATION_ERROR
-		);
+		return this.createErrorEmbed('Pagination Error', MESSAGES.PAGINATION_ERROR);
 	}
 
 	createSessionExpiredEmbed(): EmbedBuilder {
-		return this.createErrorEmbed(
-			'Session Expired',
-			MESSAGES.SESSION_EXPIRED
-		);
+		return this.createErrorEmbed('Session Expired', MESSAGES.SESSION_EXPIRED);
 	}
 }

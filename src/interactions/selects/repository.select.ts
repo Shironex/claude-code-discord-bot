@@ -18,16 +18,16 @@ export class RepositorySelectHandler {
 		if (interaction.customId !== CUSTOM_IDS.REPO_SELECT) {
 			return;
 		}
-		
+
 		console.log('🎯 Repo select handler triggered:', interaction.customId);
-		
+
 		const userId = interaction.user.id;
 		const session = this.sessionService.getSession(userId);
 
 		if (!session || !session.paginatedData) {
-			return interaction.reply({ 
-				content: MESSAGES.SESSION_EXPIRED, 
-				ephemeral: true 
+			return interaction.reply({
+				content: MESSAGES.SESSION_EXPIRED,
+				ephemeral: true
 			});
 		}
 
@@ -37,9 +37,9 @@ export class RepositorySelectHandler {
 		);
 
 		if (!selectedRepo) {
-			return interaction.reply({ 
-				content: MESSAGES.REPOSITORY_NOT_FOUND, 
-				ephemeral: true 
+			return interaction.reply({
+				content: MESSAGES.REPOSITORY_NOT_FOUND,
+				ephemeral: true
 			});
 		}
 
