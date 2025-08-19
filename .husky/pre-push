@@ -1,0 +1,5 @@
+# Run build to ensure everything compiles
+pnpm build
+
+# Check changeset status for releases
+pnpm changeset status
