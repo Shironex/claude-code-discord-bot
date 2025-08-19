@@ -1,0 +1,85 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+
+env:
+  HUSKY: 0
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js and pnpm
+        uses: ./.github/actions/setup-node-pnpm
+
+      - name: Check for changesets
+        id: changesets
+        run: |
+          if pnpm changeset status --output=changeset-status.json 2>/dev/null; then
+            if [ -s changeset-status.json ]; then
+              echo "has_changesets=true" >> $GITHUB_OUTPUT
+              echo "📦 Changesets detected - proceeding with release"
+            else
+              echo "has_changesets=false" >> $GITHUB_OUTPUT
+              echo "🚫 No changesets detected - skipping release"
+            fi
+          else
+            echo "has_changesets=false" >> $GITHUB_OUTPUT
+            echo "🚫 No changesets detected - skipping release"
+          fi
+
+      - name: Create Release Pull Request or Publish
+        if: steps.changesets.outputs.has_changesets == 'true'
+        uses: changesets/action@v1
+        with:
+          # This expects you to have a script called release which does a build for your packages and calls changeset publish
+          publish: pnpm release
+          version: pnpm version
+          commit: "chore(release): version packages"
+          title: "chore(release): version packages"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Send Discord notification on release
+        if: steps.changesets.outputs.has_changesets == 'true'
+        uses: Ilshidur/action-discord@master
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        with:
+          args: |
+            🚀 **New Release Published!**
+            
+            **Repository:** ${{ github.repository }}
+            **Branch:** ${{ github.ref_name }}
+            **Commit:** ${{ github.sha }}
+            
+            [View Release](${{ github.server_url }}/${{ github.repository }}/releases/latest)
+
+      - name: Clean up
+        if: always()
+        run: |
+          rm -f changeset-status.json

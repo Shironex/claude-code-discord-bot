@@ -53,3 +53,9 @@ apps/**/.env.production
 .env.test
 .env.development
 .env.production
+
+# Changesets
+.changeset/pre.json
+
+# CI/CD temporary files
+changeset-status.json

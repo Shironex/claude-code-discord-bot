@@ -1,6 +1,6 @@
 {
 	"name": "claude-code-discord-bot",
-	"version": "1.0.0",
+	"version": "0.1.0",
 	"license": "MIT",
 	"private": true,
 	"engines": {
@@ -15,9 +15,21 @@
 		"format": "turbo run format",
 		"typecheck": "turbo run typecheck",
 		"start": "turbo run start",
-		"start:prod": "turbo run start:prod"
+		"start:prod": "turbo run start:prod",
+		"prepare": "husky",
+		"changeset": "changeset",
+		"changeset:add": "changeset add",
+		"changeset:status": "changeset status",
+		"version": "changeset version",
+		"release": "turbo run build && changeset publish",
+		"lint:commit": "commitlint --edit",
+		"ci:version-check": "changeset status --verbose"
 	},
 	"devDependencies": {
+		"@changesets/cli": "^2.29.6",
+		"@commitlint/cli": "^19.8.1",
+		"@commitlint/config-conventional": "^19.8.1",
+		"husky": "^9.1.7",
 		"turbo": "^2.5.6"
 	}
 }

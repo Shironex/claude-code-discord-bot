@@ -327,3 +327,189 @@ For repositories to support Claude Code analysis, they must contain:
 - **Faster Workflow**: Fewer steps from search to execution
 - **Error Prevention**: Only shows compatible repositories
 - **Cleaner Interface**: No pagination complexity or analyze buttons
+
+## Commit and Release Workflow (CRITICAL - READ FIRST)
+
+**ALWAYS follow these steps when making changes to this repository:**
+
+### 1. Before Making Changes
+- Check current branch: `git branch`  
+- Create feature branch if needed: `git checkout -b feat/your-feature-name`
+- Ensure dependencies are up to date: `pnpm install`
+
+### 2. Making Code Changes
+- Follow existing code patterns and architecture outlined above
+- Run quality checks as you develop: `pnpm lint`, `pnpm typecheck`
+- Test your changes: `pnpm build`
+
+### 3. Commit Message Requirements (ENFORCED BY HOOKS)
+**This project uses Conventional Commits with strict validation via Commitlint.**
+
+Format: `type(scope): description`
+
+**Required Types:**
+- `feat` - New feature
+- `fix` - Bug fix  
+- `docs` - Documentation changes
+- `style` - Code style changes (formatting, etc.)
+- `refactor` - Code refactoring
+- `perf` - Performance improvements
+- `test` - Test changes
+- `build` - Build system changes
+- `ci` - CI/CD changes
+- `chore` - Other changes
+- `revert` - Revert previous commit
+
+**Required Scopes:**
+- `discord-bot` - Discord bot application changes
+- `root` - Root workspace changes
+- `ci` - CI/CD changes
+- `docs` - Documentation
+- `deps` - Dependencies
+- `release` - Release-related
+- `config` - Configuration
+
+**Examples:**
+```bash
+git commit -m "feat(discord-bot): add repository search modal"
+git commit -m "fix(discord-bot): resolve session timeout issue"  
+git commit -m "docs(root): update contributing guidelines"
+git commit -m "ci(root): add release automation workflow"
+```
+
+### 4. Changeset Management (REQUIRED FOR RELEASES)
+**If your changes should trigger a release, ALWAYS create a changeset:**
+
+```bash
+# Create a changeset
+pnpm changeset
+
+# Follow the prompts:
+# 1. Select packages to bump (usually @claude-code/discord-bot)
+# 2. Choose bump type:
+#    - patch: Bug fixes, small improvements
+#    - minor: New features, backward compatible
+#    - major: Breaking changes
+# 3. Write a clear summary for the changelog
+```
+
+**Changeset Examples:**
+- Patch: "Fix session cleanup memory leak"
+- Minor: "Add support for repository file selection"
+- Major: "Redesign command interface (breaking changes)"
+
+**When NOT to create changeset:**
+- Documentation-only changes (`docs` scope)
+- Test changes that don't affect functionality
+- CI/CD changes (`ci` scope)
+- Development dependencies updates
+
+### 5. Pre-Commit Hooks (AUTOMATIC)
+Git hooks will AUTOMATICALLY run and may block commits if:
+- Commit message doesn't follow conventional format
+- Code doesn't pass linting (`pnpm lint`)
+- TypeScript compilation fails (`pnpm typecheck`)  
+- Code formatting is incorrect (`pnpm format`)
+
+**If blocked:** Fix issues and try committing again.
+
+### 6. Creating Pull Requests
+**When pushing a PR:**
+
+```bash
+# Push your branch
+git push origin feat/your-feature-name
+
+# Create PR through GitHub UI or CLI
+# The following will happen automatically:
+# - Commit message validation on all PR commits
+# - Changeset detection and preview
+# - Code quality checks (lint, type, build)
+# - Automated PR comments about changesets
+```
+
+**PR Requirements:**
+- All commits must follow conventional commit format
+- Include changeset if changes should trigger release
+- Pass all CI checks (enforced)
+- Provide clear PR description
+
+### 7. Available Scripts for Development
+```bash
+# Core development
+pnpm dev                     # Start Discord bot in watch mode
+pnpm build                   # Build all packages
+pnpm lint                    # Run linting (auto-fix)
+pnpm typecheck              # TypeScript validation
+pnpm format                 # Format code with Prettier
+
+# Release management
+pnpm changeset              # Create new changeset
+pnpm changeset:status       # Check changeset status  
+pnpm version               # Version packages (CI only)
+pnpm release               # Publish packages (CI only)
+
+# Validation helpers
+pnpm lint:commit           # Test commit message format
+pnpm ci:version-check      # Check version status
+```
+
+### 8. Release Process (AUTOMATED)
+**Releases happen automatically when PR with changesets is merged to master:**
+1. GitHub Actions detects changesets
+2. Versions are bumped automatically
+3. Changelogs are generated
+4. GitHub release is created
+5. Git tags are created
+
+**Manual release check:**
+```bash
+pnpm changeset:status  # See what will be released
+```
+
+### 9. Emergency Fixes
+For critical hotfixes to master:
+```bash
+git checkout master
+git pull origin master
+# Make minimal fix
+git commit -m "fix(discord-bot): critical security patch"
+# Create patch changeset
+pnpm changeset  # Select patch, describe fix
+git push origin master  # Triggers automated release
+```
+
+### 10. Common Issues & Solutions
+
+**Commit rejected by commitlint?**
+- Check message format: `type(scope): description`
+- Use valid type and scope from lists above
+- Use lowercase for description
+- Example: `feat(discord-bot): add new feature`
+
+**Pre-commit hooks failing?**
+```bash
+pnpm lint     # Fix linting issues
+pnpm format   # Fix formatting  
+pnpm build    # Ensure it builds cleanly
+```
+
+**Changeset confusion?**
+- If unsure about need for changeset, create one anyway - better safe than sorry
+- Use patch for most bug fixes and small improvements
+- Use minor for new features that don't break existing functionality
+- Use major only for breaking changes that require user action
+
+**Build or type errors?**
+```bash
+pnpm typecheck  # Check TypeScript errors
+pnpm lint       # Check and fix code style
+pnpm build      # Verify successful compilation
+```
+
+**IMPORTANT REMINDERS:**
+- All quality checks are enforced automatically via Git hooks and CI
+- Focus on writing good code and following commit format
+- The automated tools will guide you through the rest
+- When in doubt, create a changeset - releases can be managed later
+- Follow conventional commits exactly - the format is strictly enforced
