@@ -1,8 +1,21 @@
 import { NecordModule } from 'necord';
 import { Module } from '@nestjs/common';
-import { AppCommands } from './app.commands';
 import { IntentsBitField } from 'discord.js';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+
+// Services
+import { GitHubService } from './services/github.service';
+import { SessionService } from './services/session.service';
+import { EmbedService } from './services/embed.service';
+
+// Commands
+import { RunCommand } from './commands/repository/run.command';
+import { SearchCommand } from './commands/repository/search.command';
+
+// Interaction Handlers
+import { RepositorySelectHandler } from './interactions/selects/repository.select';
+import { PaginationButtonsHandler } from './interactions/buttons/pagination.buttons';
+import { CancelButtonHandler } from './interactions/buttons/cancel.button';
 
 @Module({
 	imports: [
@@ -19,8 +32,20 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 				]
 			}),
 			inject: [ConfigService],
-		  }),
+		}),
 	],
-	providers: [AppCommands]
+	providers: [
+		// Services
+		GitHubService,
+		SessionService,
+		EmbedService,
+		// Commands
+		RunCommand,
+		SearchCommand,
+		// Interaction Handlers
+		RepositorySelectHandler,
+		PaginationButtonsHandler,
+		CancelButtonHandler
+	]
 })
 export class AppModule {}
