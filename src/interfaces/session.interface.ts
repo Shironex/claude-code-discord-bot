@@ -1,4 +1,5 @@
 import { Repository, PaginatedRepositories } from '../services/github.service';
+import { UserWorkflowRun } from './workflow.interface';
 
 export interface UserSession {
 	userId: string;
@@ -6,6 +7,7 @@ export interface UserSession {
 	paginatedData: PaginatedRepositories | null;
 	searchQuery: string | null;
 	action: string | null;
+	workflowRuns?: UserWorkflowRun[];
 	createdAt: Date;
 }
 

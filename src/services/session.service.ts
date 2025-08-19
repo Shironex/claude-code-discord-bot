@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { UserSession, SessionManager } from '../interfaces/session.interface';
 import { Repository, PaginatedRepositories } from './github.service';
+import { UserWorkflowRun } from '../interfaces/workflow.interface';
 
 @Injectable()
 export class SessionService implements SessionManager {
@@ -14,6 +15,7 @@ export class SessionService implements SessionManager {
 			paginatedData: null,
 			searchQuery: null,
 			action: null,
+			workflowRuns: [],
 			createdAt: new Date()
 		};
 
@@ -63,6 +65,33 @@ export class SessionService implements SessionManager {
 
 	setAction(userId: string, action: string): void {
 		this.updateSession(userId, { action });
+	}
+
+	addWorkflowRun(userId: string, workflowRun: UserWorkflowRun): void {
+		const session = this.getSession(userId);
+		if (session) {
+			const workflowRuns = session.workflowRuns || [];
+			workflowRuns.push(workflowRun);
+			this.updateSession(userId, { workflowRuns });
+			this.logger.debug(`Added workflow run ${workflowRun.runId} for user ${userId}`);
+		}
+	}
+
+	updateWorkflowRun(userId: string, runId: number, updates: Partial<UserWorkflowRun>): void {
+		const session = this.getSession(userId);
+		if (session && session.workflowRuns) {
+			const workflowIndex = session.workflowRuns.findIndex(run => run.runId === runId);
+			if (workflowIndex !== -1) {
+				session.workflowRuns[workflowIndex] = { ...session.workflowRuns[workflowIndex], ...updates };
+				this.updateSession(userId, { workflowRuns: session.workflowRuns });
+				this.logger.debug(`Updated workflow run ${runId} for user ${userId}`);
+			}
+		}
+	}
+
+	getWorkflowRuns(userId: string): UserWorkflowRun[] {
+		const session = this.getSession(userId);
+		return session?.workflowRuns || [];
 	}
 
 	// Session cleanup methods
