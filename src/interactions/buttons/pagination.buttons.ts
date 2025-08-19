@@ -4,6 +4,7 @@ import { GitHubService, PaginatedRepositories } from '../../services/github.serv
 import { SessionService } from '../../services/session.service';
 import { EmbedService } from '../../services/embed.service';
 import { CUSTOM_IDS, MESSAGES } from '../../utils/constants';
+import { MessageFlags } from 'discord.js';
 
 @Injectable()
 export class PaginationButtonsHandler {
@@ -38,7 +39,7 @@ export class PaginationButtonsHandler {
 		if (!session || !session.paginatedData) {
 			return interaction[0].reply({
 				content: MESSAGES.SESSION_EXPIRED,
-				ephemeral: true
+				flags: [MessageFlags.Ephemeral]
 			});
 		}
 
