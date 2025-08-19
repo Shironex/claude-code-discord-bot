@@ -1,0 +1,74 @@
+# Docker Compose configuration for Coolify deployment
+# This file is optimized for Coolify.io platform deployment
+
+version: '3.8'
+
+services:
+  discord-bot:
+    build:
+      context: ./apps/discord-bot
+      dockerfile: Dockerfile
+    container_name: claude-discord-bot
+    restart: unless-stopped
+    
+    # Environment variables for Coolify
+    # These should be configured in Coolify's environment section
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      # Discord Configuration (set these in Coolify)
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - DEV_GUILD=${DEV_GUILD:-}
+      # GitHub Integration (set these in Coolify)
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      
+    # Health check for Coolify monitoring
+    healthcheck:
+      test: ["CMD", "node", "-e", "console.log('Health check passed')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # Resource limits (adjust based on your VPS capacity)
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    
+    # Logging configuration for Coolify
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # Expose port for Coolify (if health endpoint is added)
+    ports:
+      - "3000:3000"
+    
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+    
+    # Read-only root filesystem (uncomment if app doesn't write to filesystem)
+    # read_only: true
+    
+    # Temporary filesystems (if read-only is enabled)
+    # tmpfs:
+    #   - /tmp
+    #   - /app/logs
+
+# Optional: Add a database service if needed in the future
+# networks:
+#   default:
+#     driver: bridge
+
+# Optional: Add volumes for persistent data if needed
+# volumes:
+#   discord_bot_data:
+#     driver: local

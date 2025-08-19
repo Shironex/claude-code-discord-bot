@@ -278,6 +278,60 @@ When you add new applications or packages to the monorepo (docs, web UI, mobile 
 
 The release system is designed to scale automatically as you add more workspace packages.
 
+## Deployment
+
+### Production Deployment
+
+The Discord bot includes production-ready Docker configuration optimized for deployment platforms like Coolify:
+
+#### Docker Configuration
+- **Production Dockerfile**: Multi-stage build with optimized layers (`apps/discord-bot/Dockerfile`)
+- **Docker Compose**: Coolify-specific configuration (`docker-compose.coolify.yml`)
+- **Security**: Non-root user, health checks, and resource limits
+- **Optimization**: Minimal production image with only runtime dependencies
+
+#### Quick Deployment Commands
+```bash
+# Local Docker testing
+cd apps/discord-bot
+docker build -t claude-discord-bot .
+docker run -d -e DISCORD_TOKEN="token" -e GITHUB_TOKEN="token" claude-discord-bot
+
+# Coolify deployment - use docker-compose.coolify.yml
+```
+
+### GitHub Self-Hosted Runners
+
+For executing Claude workflows on your own infrastructure:
+
+#### Runner Configuration
+- **Runner Dockerfile**: Ubuntu-based with Node.js, pnpm, and GitHub CLI (`runners/github-actions/Dockerfile`)
+- **Auto-Registration**: Automatic runner registration with GitHub (`runners/github-actions/entrypoint.sh`)
+- **Docker Compose**: Complete runner setup (`runners/github-actions/docker-compose.yml`)
+- **Template Support**: Compatible with Claude workflow templates in `apps/discord-bot/templates/`
+
+#### Quick Runner Setup
+```bash
+# Configure environment
+cd runners/github-actions
+cp .env.example .env  # Edit with your tokens and repository
+
+# Deploy runner
+docker-compose up -d
+
+# Verify registration in GitHub repository settings
+```
+
+### Deployment Documentation
+
+Comprehensive deployment guide available at [`.github/docs/DEPLOYMENT.md`](./.github/docs/DEPLOYMENT.md) covering:
+- Coolify platform deployment
+- Environment variable configuration
+- GitHub self-hosted runner setup
+- Security considerations
+- Monitoring and troubleshooting
+- Performance optimization
+
 ## Current Features
 
 This Discord bot provides streamlined GitHub integration with Claude Code workflow automation through a unified command interface:
