@@ -9,14 +9,18 @@ import { SessionService } from './services/session.service';
 import { EmbedService } from './services/embed.service';
 import { WorkflowService } from './services/workflow.service';
 import { WorkflowMonitorService } from './services/workflow-monitor.service';
+import { FileExplorerService } from './services/file-explorer.service';
 
 // Commands
 import { ClaudeCommand } from './commands/repository/claude.command';
 
 // Interaction Handlers
 import { RepositorySelectHandler } from './interactions/selects/repository.select';
+import { FilePathSelectHandler } from './interactions/selects/file-path.select';
 import { CancelButtonHandler } from './interactions/buttons/cancel.button';
 import { WorkflowStatusButtonHandler } from './interactions/buttons/workflow-status.button';
+import { SkipFileSelectionButtonHandler } from './interactions/buttons/skip-file-selection.button';
+import { ClaudePromptTriggerButtonHandler } from './interactions/buttons/claude-prompt-trigger.button';
 import { ClaudePromptModalHandler } from './interactions/modals/claude-prompt.modal';
 import { ClaudeRepoSearchModalHandler } from './interactions/modals/claude-repo-search.modal';
 
@@ -44,12 +48,16 @@ import { ClaudeRepoSearchModalHandler } from './interactions/modals/claude-repo-
 		EmbedService,
 		WorkflowService,
 		WorkflowMonitorService,
+		FileExplorerService,
 		// Commands
 		ClaudeCommand,
 		// Interaction Handlers
 		RepositorySelectHandler,
+		FilePathSelectHandler,
 		CancelButtonHandler,
 		WorkflowStatusButtonHandler,
+		SkipFileSelectionButtonHandler,
+		ClaudePromptTriggerButtonHandler,
 		ClaudePromptModalHandler,
 		ClaudeRepoSearchModalHandler
 	]
