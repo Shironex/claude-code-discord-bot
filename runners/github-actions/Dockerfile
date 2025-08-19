@@ -5,7 +5,6 @@ FROM ubuntu:22.04
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
-ENV RUNNER_ALLOW_RUNASROOT=1
 ENV GITHUB_ACTIONS_RUNNER_VERSION=2.321.0
 
 # Install system dependencies
@@ -89,9 +88,6 @@ ENV GITHUB_REPOSITORY=""
 ENV RUNNER_NAME=""
 ENV RUNNER_LABELS="self-hosted,claude-workflows"
 ENV RUNNER_GROUP="default"
-
-# Expose any ports if needed (optional)
-# EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
