@@ -47,18 +47,72 @@ trap cleanup EXIT
 
 # Get registration token
 echo "🔑 Getting registration token..."
-REGISTRATION_TOKEN=$(curl -s -X POST \
+echo "🔍 Debug: Making API call to GitHub..."
+echo "🔍 Debug: Repository: $GITHUB_REPOSITORY"
+echo "🔍 Debug: Token starts with: ${GITHUB_TOKEN:0:4}..."
+
+# Make API call and capture full response
+API_RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST \
     -H "Authorization: token $GITHUB_TOKEN" \
     -H "Accept: application/vnd.github.v3+json" \
-    "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runners/registration-token" \
-    | jq -r .token)
+    "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runners/registration-token")
+
+# Extract HTTP status and response body
+HTTP_STATUS=$(echo "$API_RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
+RESPONSE_BODY=$(echo "$API_RESPONSE" | sed '/HTTP_STATUS:/d')
+
+echo "🔍 Debug: HTTP Status: $HTTP_STATUS"
+echo "🔍 Debug: Response Body: $RESPONSE_BODY"
+
+# Extract token from response
+REGISTRATION_TOKEN=$(echo "$RESPONSE_BODY" | jq -r .token 2>/dev/null)
+
+if [ "$HTTP_STATUS" != "201" ]; then
+    echo "❌ Error: GitHub API returned HTTP $HTTP_STATUS"
+    echo "📋 Full API Response: $RESPONSE_BODY"
+    
+    # Parse common error messages
+    ERROR_MESSAGE=$(echo "$RESPONSE_BODY" | jq -r .message 2>/dev/null)
+    if [ "$ERROR_MESSAGE" != "null" ] && [ -n "$ERROR_MESSAGE" ]; then
+        echo "💬 GitHub Error Message: $ERROR_MESSAGE"
+    fi
+    
+    # Provide specific troubleshooting based on status code
+    case $HTTP_STATUS in
+        401)
+            echo "🔑 HTTP 401: Authentication failed"
+            echo "   - Check if GITHUB_TOKEN is valid and not expired"
+            echo "   - Verify token format (should start with 'ghp_' or 'github_pat_')"
+            ;;
+        403)
+            echo "🚫 HTTP 403: Forbidden - Permission denied"
+            echo "   - Check if token has 'repo' and 'workflow' scopes"
+            echo "   - Verify token has admin access to repository"
+            echo "   - Check if GitHub Actions are enabled in repository settings"
+            ;;
+        404)
+            echo "📂 HTTP 404: Repository not found"
+            echo "   - Verify GITHUB_REPOSITORY format: owner/repo"
+            echo "   - Check if repository exists and is accessible"
+            echo "   - Verify token has access to this repository"
+            ;;
+        422)
+            echo "📝 HTTP 422: Validation failed"
+            echo "   - Repository might not have Actions enabled"
+            echo "   - Check repository settings under Actions → General"
+            ;;
+        *)
+            echo "❓ HTTP $HTTP_STATUS: Unexpected error"
+            echo "   - Check GitHub API status: https://www.githubstatus.com/"
+            ;;
+    esac
+    
+    exit 1
+fi
 
 if [ "$REGISTRATION_TOKEN" == "null" ] || [ -z "$REGISTRATION_TOKEN" ]; then
-    echo "❌ Error: Failed to get registration token"
-    echo "Please check:"
-    echo "   - GITHUB_TOKEN has 'repo' and 'admin:repo_hook' permissions"
-    echo "   - GITHUB_REPOSITORY format is correct (owner/repo)"
-    echo "   - Repository exists and token has access"
+    echo "❌ Error: Failed to extract registration token from response"
+    echo "📋 Response was: $RESPONSE_BODY"
     exit 1
 fi
 
