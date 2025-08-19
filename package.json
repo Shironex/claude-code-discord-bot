@@ -21,7 +21,7 @@
 		"changeset:add": "changeset add",
 		"changeset:status": "changeset status",
 		"version": "changeset version",
-		"release": "turbo run build && changeset publish",
+		"release": "turbo run build",
 		"lint:commit": "commitlint --edit",
 		"ci:version-check": "changeset status --verbose"
 	},
