@@ -39,7 +39,10 @@ export const CUSTOM_IDS = {
 	REPO_PREV: 'repo-prev',
 	REPO_NEXT: 'repo-next',
 	REPO_PAGE_INFO: 'repo-page-info',
-	CANCEL: 'cancel'
+	CANCEL: 'cancel',
+	CLAUDE_ANALYZE: 'claude-analyze',
+	WORKFLOW_STATUS: 'workflow-status',
+	VIEW_WORKFLOW: 'view-workflow'
 } as const;
 
 export const MESSAGES = {

@@ -83,4 +83,36 @@ export class DiscordUtils {
 			}
 		];
 	}
+
+	static createClaudeAnalyzeButton(): ButtonBuilder {
+		return new ButtonBuilder()
+			.setCustomId(CUSTOM_IDS.CLAUDE_ANALYZE)
+			.setLabel('Analyze with Claude')
+			.setStyle(ButtonStyle.Primary)
+			.setEmoji('🤖');
+	}
+
+	static createWorkflowStatusButton(): ButtonBuilder {
+		return new ButtonBuilder()
+			.setCustomId(CUSTOM_IDS.WORKFLOW_STATUS)
+			.setLabel('Check Status')
+			.setStyle(ButtonStyle.Secondary)
+			.setEmoji('🔄');
+	}
+
+	static createViewWorkflowButton(workflowUrl: string): ButtonBuilder {
+		return new ButtonBuilder()
+			.setURL(workflowUrl)
+			.setLabel('View on GitHub')
+			.setStyle(ButtonStyle.Link)
+			.setEmoji('🔗');
+	}
+
+	static createCancelButton(): ButtonBuilder {
+		return new ButtonBuilder()
+			.setCustomId(CUSTOM_IDS.CANCEL)
+			.setLabel('Cancel')
+			.setStyle(ButtonStyle.Danger)
+			.setEmoji('❌');
+	}
 }
