@@ -1,6 +1,8 @@
 # compiled output
 /dist
+**/dist
 /node_modules
+**/node_modules
 yarn.lock
 yarn-error.log
 
@@ -35,6 +37,17 @@ lerna-debug.log*
 !.vscode/launch.json
 !.vscode/extensions.json
 
+# Turborepo
+.turbo
+
+# Environment files in apps
+apps/**/.env
+apps/**/.env.local
+apps/**/.env.test
+apps/**/.env.development
+apps/**/.env.production
+
+# Root level env (if any)
 .env
 .env.local
 .env.test
