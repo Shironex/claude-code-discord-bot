@@ -54,4 +54,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD pgrep -f "Runner.Listener" > /dev/null || exit 1
 
 # Use entrypoint script
-ENTRYPOINT ["/home/runner/entrypoint.sh"]
+ENTRYPOINT ["bash", "/home/runner/entrypoint.sh"]

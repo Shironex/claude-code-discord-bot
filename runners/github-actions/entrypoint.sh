@@ -46,17 +46,20 @@ fi
 echo "✅ Registration token obtained"
 
 # Configure the runner using the official image's configuration script
-echo "⚙️  Configuring GitHub Actions Runner..."
-./config.sh \
-    --url "https://github.com/$GITHUB_REPOSITORY" \
-    --token "$REGISTRATION_TOKEN" \
-    --name "$RUNNER_NAME" \
-    --labels "$RUNNER_LABELS" \
-    --runnergroup "$RUNNER_GROUP" \
-    --unattended \
-    --replace
-
-echo "✅ Runner configured successfully"
+if [ ! -f ".runner" ]; then
+    echo "⚙️  Configuring GitHub Actions Runner..."
+    ./config.sh \
+        --url "https://github.com/$GITHUB_REPOSITORY" \
+        --token "$REGISTRATION_TOKEN" \
+        --name "$RUNNER_NAME" \
+        --labels "$RUNNER_LABELS" \
+        --runnergroup "$RUNNER_GROUP" \
+        --unattended \
+        --replace
+    echo "✅ Runner configured successfully"
+else
+    echo "✅ Runner already configured, starting directly..."
+fi
 
 # Cleanup function
 cleanup() {
