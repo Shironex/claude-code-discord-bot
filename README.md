@@ -1,13 +1,15 @@
 # Claude Code Discord Bot
 
-A Discord bot that integrates with GitHub to browse and search repositories. Built with NestJS, Necord, and TypeScript.
+A streamlined Discord bot that integrates with GitHub to trigger Claude Code analysis workflows. Built with NestJS, Necord, and TypeScript.
 
 ## ✨ Features
 
-- **🔍 Repository Browser**: Browse your GitHub repositories with pagination
-- **🔎 Repository Search**: Search repositories by name or content
-- **📊 Repository Info**: View repository stats (stars, language, last update)
-- **🎮 Interactive UI**: Use Discord buttons and select menus for navigation
+- **🤖 Claude Code Integration**: Unified `/claude` command for complete workflow automation
+- **🔍 Smart Repository Search**: Text-based search with intelligent matching
+- **✅ Workflow Validation**: Only shows repositories with Claude Code support
+- **⚡ Streamlined UX**: One command replaces complex navigation
+- **📊 Real-time Monitoring**: Live workflow status updates and notifications
+- **🎮 Modal-Based UI**: Clean, focused input through Discord modals
 
 ## 🛠️ Setup
 
@@ -44,19 +46,35 @@ GITHUB_TOKEN="your_github_personal_access_token"
 pnpm start:dev
 ```
 
-## 🎮 Commands
+## 🎮 Usage
 
-### `/run`
-Browse your GitHub repositories with pagination
-- Shows 25 repositories per page
-- Use Previous/Next buttons to navigate
-- Select a repository to view details
+### `/claude` - Complete Claude Code Workflow
 
-### `/search query:keyword`
-Search your repositories
-- Search by repository name or description
-- Results are paginated
-- Example: `/search query:discord bot`
+**One command to rule them all!** The `/claude` command provides a streamlined, modal-based workflow:
+
+1. **🔍 Repository Search**: Type `/claude` to open a search modal
+   - Enter repository name or search term
+   - Supports exact matches (`owner/repo`) and fuzzy search
+   - Example: `"discord-bot"` or `"microsoft/vscode"`
+
+2. **✅ Repository Selection**: Choose from validated repositories
+   - Only shows repositories with Claude Code workflow (`claude.yml`)
+   - Clear indication of which repositories are compatible
+   - No wasted time on unsupported repositories
+
+3. **📝 Analysis Prompt**: Specify what you want Claude to do
+   - Custom analysis prompt (required)
+   - Optional branch specification (defaults to `main`)
+   - Examples: "Review for security issues", "Optimize performance"
+
+4. **🚀 Workflow Execution**: Automatic execution with real-time updates
+   - Live status updates in Discord
+   - Workflow progress tracking
+   - Completion notifications with results
+
+### Requirements
+
+Your repositories need a `.github/workflows/claude.yml` file configured for Claude Code analysis.
 
 ## 🔧 Getting Tokens
 
@@ -69,7 +87,7 @@ Search your repositories
 ### GitHub Token
 1. Go to [GitHub Settings > Tokens](https://github.com/settings/tokens)
 2. Generate a new token (classic)
-3. Select scopes: `repo` and/or `public_repo`
+3. Select scopes: `repo`, `public_repo`, and `actions:write` (required for workflow dispatch)
 4. Copy the token
 
 ### Guild ID
@@ -81,28 +99,37 @@ Search your repositories
 ```
 src/
 ├── commands/              # Discord slash commands
-│   └── repository/        # Repository-related commands
-├── interactions/          # Button and select handlers
-│   ├── buttons/          # Navigation buttons
+│   └── repository/
+│       └── claude.command.ts       # Unified /claude command
+├── interactions/          # Modal and interaction handlers
+│   ├── buttons/          # Status and workflow buttons
+│   ├── modals/           # Repository search and prompt modals
 │   └── selects/          # Repository selection
-├── services/             # Business logic
+├── services/             # Business logic with service interfaces
+│   ├── base/             # Base service with common patterns
 │   ├── github.service.ts # GitHub API integration
 │   ├── session.service.ts # User session management
-│   └── embed.service.ts  # Discord UI creation
-├── utils/                # Utilities and constants
-├── interfaces/           # TypeScript types
-└── dtos/                # Input validation
+│   ├── embed.service.ts  # Discord UI creation
+│   ├── workflow.service.ts # GitHub Actions workflow management
+│   └── workflow-monitor.service.ts # Real-time monitoring
+├── utils/                # Domain-specific utilities and constants
+├── interfaces/           # Organized TypeScript types (services, models, discord)
+└── app.module.ts         # Clean dependency injection
 ```
 
 ## 📋 Available Scripts
 
 ```bash
 # Development
-pnpm start:dev    # Start with hot reload
-pnpm start:debug  # Start with debugging
-pnpm build        # Build for production
-pnpm lint         # Fix code issues
-pnpm format       # Format code
+pnpm start:dev     # Start with hot reload
+pnpm start:debug   # Start with debugging
+pnpm start:prod    # Start production build
+pnpm build         # Build for production
+
+# Quality Assurance
+pnpm lint          # Check and fix linting issues
+pnpm format        # Format code with Prettier
+pnpm typecheck     # Run TypeScript type checking
 ```
 
 ## 🔒 Security
