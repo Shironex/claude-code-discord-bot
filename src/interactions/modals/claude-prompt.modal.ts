@@ -9,6 +9,7 @@ import { WorkflowMonitorService } from '../../services/workflow-monitor.service'
 import { CUSTOM_IDS } from '../../utils/discord.constants';
 import { MESSAGES } from '../../utils/messages.constants';
 import { DiscordUtils } from '../../utils/discord.utils';
+import { FileTreeUtils } from '../../utils/file-tree.utils';
 
 @Injectable()
 export class ClaudePromptModalHandler extends BaseService {
@@ -39,6 +40,19 @@ export class ClaudePromptModalHandler extends BaseService {
 			const prompt = interaction.fields.getTextInputValue(CUSTOM_IDS.CLAUDE_PROMPT_INPUT);
 			const branch = interaction.fields.getTextInputValue(CUSTOM_IDS.CLAUDE_BRANCH_INPUT) || 'main';
 
+			// Get file context input (optional)
+			let fileContextInput = '';
+			try {
+				fileContextInput = interaction.fields.getTextInputValue(CUSTOM_IDS.CLAUDE_FILE_CONTEXT_INPUT) || '';
+			} catch {
+				// Field might not exist in older modal instances
+			}
+
+			// Parse and combine file paths from session and modal input
+			const sessionPaths = session.selectedFilePaths || [];
+			const modalPaths = FileTreeUtils.parseFilePathsString(fileContextInput);
+			const allFilePaths = [...new Set([...sessionPaths, ...modalPaths])]; // Remove duplicates
+
 			const [owner, repo] = session.repository.fullName.split('/');
 
 			this.logger.log(`Claude prompt modal submission:`);
@@ -46,6 +60,14 @@ export class ClaudePromptModalHandler extends BaseService {
 			this.logger.log(`Branch: ${branch}`);
 			this.logger.log(`User: ${interaction.user.tag} (${userId})`);
 			this.logger.log(`Prompt: ${prompt.substring(0, 100)}...`);
+			this.logger.log(`File context paths: ${allFilePaths.join(', ')}`);
+
+			// Create enhanced prompt with file context
+			let enhancedPrompt = prompt;
+			if (allFilePaths.length > 0) {
+				const contextSection = FileTreeUtils.generateContextPrompt(allFilePaths);
+				enhancedPrompt = contextSection + prompt;
+			}
 
 			// Dispatch the workflow
 			await this.workflowService.dispatchWorkflow({
@@ -54,7 +76,7 @@ export class ClaudePromptModalHandler extends BaseService {
 				workflowId: 'claude.yml',
 				ref: branch,
 				inputs: {
-					prompt
+					prompt: enhancedPrompt
 				}
 			});
 
@@ -76,7 +98,8 @@ export class ClaudePromptModalHandler extends BaseService {
 					session.repository.fullName,
 					branch,
 					prompt,
-					latestRun
+					latestRun,
+					allFilePaths
 				);
 
 				// Create action buttons
@@ -103,10 +126,15 @@ export class ClaudePromptModalHandler extends BaseService {
 
 				this.logger.log(`Successfully dispatched Claude workflow: Run ${latestRun.id} (monitoring enabled)`);
 			} else {
-				const embed = this.embedService.createSuccessEmbed(
-					'Workflow Dispatched',
-					`Claude Code workflow has been triggered for \`${session.repository.fullName}\` on branch \`${branch}\`.\n\n**Prompt:** ${prompt}\n\nCheck the [Actions tab](https://github.com/${owner}/${repo}/actions) to monitor progress.`
-				);
+				let description = `Claude Code workflow has been triggered for \`${session.repository.fullName}\` on branch \`${branch}\`.\n\n**Prompt:** ${prompt}`;
+
+				if (allFilePaths.length > 0) {
+					description += `\n\n**File Context:** ${allFilePaths.slice(0, 5).join(', ')}${allFilePaths.length > 5 ? ` (and ${allFilePaths.length - 5} more)` : ''}`;
+				}
+
+				description += `\n\nCheck the [Actions tab](https://github.com/${owner}/${repo}/actions) to monitor progress.`;
+
+				const embed = this.embedService.createSuccessEmbed('Workflow Dispatched', description);
 
 				await interaction.editReply({ embeds: [embed] });
 			}
