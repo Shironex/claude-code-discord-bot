@@ -1,0 +1,47 @@
+name: Claude Code (Single-Step)
+
+on:
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: 'Prompt for Claude'
+        required: true
+        type: string
+
+jobs:
+  claude:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Claude Code with PR Creation
+        id: claude
+        uses: anthropics/claude-code-action@beta
+        with:
+          mode: agent
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          direct_prompt: |
+            ${{ github.event.inputs.prompt }}
+            
+            IMPORTANT: After completing the task, you MUST create a pull request:
+            1. Create a new branch with a descriptive name
+            2. Commit your changes with a clear message
+            3. Push the branch to remote
+            4. Create a pull request with proper title and description
+            
+            Do not finish without creating the PR.
+          allowed_tools: "Bash,Write,Read,Edit,MultiEdit,Glob,Grep"
+          custom_instructions: |
+            You are running in automation mode triggered by Discord.
+            Always complete tasks by creating a pull request.
+            Use professional commit messages and PR descriptions.
+            Include test instructions in PR description when applicable.
