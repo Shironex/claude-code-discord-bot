@@ -1,5 +1,5 @@
 # Docker Compose for GitHub Actions Self-Hosted Runner
-# Supports Claude Code workflows from templates
+# Optimized for Coolify.io deployment with official GitHub runner image
 
 version: '3.8'
 
@@ -11,40 +11,24 @@ services:
     container_name: claude-github-runner
     restart: unless-stopped
     
-    # Environment variables (set these in your .env file or environment)
+    # Environment variables for Coolify
+    # Set these in Coolify's environment section
     environment:
-      # Required: GitHub Personal Access Token with repo and admin:repo_hook permissions
+      # Required: GitHub configuration
       - GITHUB_TOKEN=${GITHUB_TOKEN}
-      
-      # Required: GitHub repository in format owner/repo
       - GITHUB_REPOSITORY=${GITHUB_REPOSITORY}
       
-      # Optional: Custom runner name (defaults to claude-runner-<hostname>)
-      - RUNNER_NAME=${RUNNER_NAME:-}
-      
-      # Optional: Runner labels (comma-separated)
-      - RUNNER_LABELS=${RUNNER_LABELS:-self-hosted,claude-workflows,docker}
-      
-      # Optional: Runner group
+      # Optional: Runner configuration
+      - RUNNER_NAME=${RUNNER_NAME:-claude-runner}
+      - RUNNER_LABELS=${RUNNER_LABELS:-self-hosted,claude-workflows}
       - RUNNER_GROUP=${RUNNER_GROUP:-default}
-      
-      # Optional: Working directory for runner
-      - RUNNER_WORK_DIR=${RUNNER_WORK_DIR:-/home/runner/_work}
     
-    # Volume mounts
+    # Volume mounts (simplified for official image)
     volumes:
-      # Mount Docker socket if you need Docker-in-Docker support
-      # WARNING: This gives the container access to the Docker daemon
-      # Only uncomment if you trust the workflows being executed
-      # - /var/run/docker.sock:/var/run/docker.sock
-      
-      # Persistent work directory (optional)
+      # Persistent work directory
       - runner_work:/home/runner/_work
-      
-      # Persistent runner configuration (optional)
-      - runner_config:/home/runner/.runner
     
-    # Resource limits (adjust based on your requirements)
+    # Resource limits (adjust based on your VPS capacity)
     deploy:
       resources:
         limits:
@@ -66,25 +50,14 @@ services:
     logging:
       driver: json-file
       options:
-        max-size: "50m"
+        max-size: "10m"
         max-file: "3"
     
     # Security options
     security_opt:
       - no-new-privileges:true
-    
-    # Network configuration
-    networks:
-      - runner_network
 
 # Volumes for persistent data
 volumes:
   runner_work:
     driver: local
-  runner_config:
-    driver: local
-
-# Networks
-networks:
-  runner_network:
-    driver: bridge
