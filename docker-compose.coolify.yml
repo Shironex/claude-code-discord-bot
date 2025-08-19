@@ -22,13 +22,8 @@ services:
       # GitHub Integration (set these in Coolify)
       - GITHUB_TOKEN=${GITHUB_TOKEN}
       
-    # Health check for Coolify monitoring
-    healthcheck:
-      test: ["CMD", "node", "-e", "console.log('Health check passed')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+    # Health check removed - Discord bot doesn't need HTTP endpoints
+    # Coolify can monitor via container status and logs
     
     # Resource limits (adjust based on your VPS capacity)
     deploy:
@@ -46,10 +41,6 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-    
-    # Expose port for Coolify (if health endpoint is added)
-    ports:
-      - "3000:3000"
     
     # Security options
     security_opt:
