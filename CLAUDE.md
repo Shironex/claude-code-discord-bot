@@ -14,13 +14,34 @@ This is a Discord bot built with NestJS and Necord that integrates with GitHub t
 - **GitHub Integration**: Octokit REST API client
 - **Package Manager**: pnpm
 - **Build System**: NestJS CLI with TypeScript compilation
+- **Monorepo**: Turborepo for build orchestration
 
-### Modular Architecture
-
-The codebase follows a clean, modular architecture with separation of concerns:
+### Monorepo Structure
 
 ```
-src/
+claude-code-discord-bot/
+├── apps/
+│   └── discord-bot/            # Discord bot application
+│       ├── src/                # Application source code
+│       ├── .env                # Bot environment variables
+│       ├── .env.example        # Environment template
+│       ├── package.json        # Bot dependencies
+│       └── dist/               # Build output
+├── packages/                   # Shared packages (future)
+├── .github/                    # GitHub Actions workflows
+├── .claude/                    # Claude Code configuration
+├── turbo.json                  # Turborepo configuration
+├── package.json                # Root workspace configuration
+├── pnpm-workspace.yaml         # PNPM workspace settings
+└── CLAUDE.md                   # This file
+```
+
+### Discord Bot Architecture
+
+The Discord bot follows a clean, modular architecture with separation of concerns:
+
+```
+apps/discord-bot/src/
 ├── services/              # Business logic and external integrations
 │   ├── base/
 │   │   └── base.service.ts         # Base service with common logging
@@ -65,7 +86,7 @@ src/
 
 ### Key Services
 
-#### GitHubService (`src/services/github.service.ts`)
+#### GitHubService (`apps/discord-bot/src/services/github.service.ts`)
 - **Purpose**: GitHub API integration with repository management
 - **Features**: 
   - Repository search across user's repositories
@@ -77,7 +98,7 @@ src/
   - `getRepository()` - Get single repository details and validation
   - `getUserRepositories()` - Fetch user's repositories
 
-#### SessionService (`src/services/session.service.ts`)
+#### SessionService (`apps/discord-bot/src/services/session.service.ts`)
 - **Purpose**: Manage user sessions across Discord interactions
 - **Features**:
   - Session creation and lifecycle management
@@ -87,7 +108,7 @@ src/
   - `createSession()`, `getSession()`, `updateSession()`
   - `cleanupExpiredSessions()` - Automatic cleanup
 
-#### EmbedService (`src/services/embed.service.ts`)
+#### EmbedService (`apps/discord-bot/src/services/embed.service.ts`)
 - **Purpose**: Centralized Discord embed creation
 - **Features**:
   - Consistent styling and branding
@@ -100,7 +121,7 @@ src/
   - `createWorkflowDispatchedEmbed()` - Workflow launch confirmation
   - `createWorkflowNotFoundEmbed()` - Missing workflow templates
 
-#### WorkflowService (`src/services/workflow.service.ts`)
+#### WorkflowService (`apps/discord-bot/src/services/workflow.service.ts`)
 - **Purpose**: GitHub Actions workflow management and execution
 - **Features**:
   - Workflow file existence validation
@@ -112,7 +133,7 @@ src/
   - `dispatchWorkflow()` - Trigger workflow with prompt inputs
   - `getWorkflowRuns()`, `getLatestWorkflowRun()` - Status tracking
 
-#### WorkflowMonitorService (`src/services/workflow-monitor.service.ts`)
+#### WorkflowMonitorService (`apps/discord-bot/src/services/workflow-monitor.service.ts`)
 - **Purpose**: Real-time monitoring of workflow execution status
 - **Features**:
   - Automatic status updates for running workflows
@@ -122,6 +143,9 @@ src/
 ## Environment Setup
 
 ### Required Environment Variables
+
+Environment variables are stored in `apps/discord-bot/.env`:
+
 ```bash
 # Discord Configuration
 DISCORD_TOKEN="your_discord_bot_token"
@@ -131,6 +155,8 @@ DEV_GUILD="your_development_guild_id"
 GITHUB_TOKEN="your_github_personal_access_token"
 ```
 
+Copy `apps/discord-bot/.env.example` to `apps/discord-bot/.env` and fill in your values.
+
 ### GitHub Token Permissions
 The GitHub token requires these scopes:
 - `repo` - Full repository access (for private repos)
@@ -139,33 +165,38 @@ The GitHub token requires these scopes:
 
 ## Common Commands
 
-### Development
+### Development (from root directory)
 ```bash
-pnpm install         # Install dependencies
-pnpm start:dev       # Start in watch mode with hot reload
-pnpm start:debug     # Start with debugging enabled
-pnpm start:prod      # Start production build
-pnpm build           # Build the project for production
-pnpm lint            # Run ESLint with auto-fix
+pnpm install         # Install all workspace dependencies
+pnpm dev             # Start Discord bot in watch mode
+pnpm build           # Build all packages
+pnpm lint            # Run ESLint on all packages
 pnpm format          # Format code with Prettier
 pnpm typecheck       # Run TypeScript type checking
 ```
 
+### Development (Discord bot specific)
+```bash
+pnpm dev --filter=@claude-code/discord-bot      # Start only Discord bot
+pnpm build --filter=@claude-code/discord-bot    # Build only Discord bot
+pnpm lint --filter=@claude-code/discord-bot     # Lint only Discord bot
+```
+
 ### Quality Assurance
 ```bash
-pnpm lint            # Check and fix linting issues
-pnpm typecheck       # Verify TypeScript types
+pnpm lint            # Check and fix linting issues for all packages
+pnpm typecheck       # Verify TypeScript types for all packages
 pnpm format          # Format all TypeScript files with Prettier
 ```
 
 ## Development Patterns
 
 ### Adding New Commands
-1. Create command file in `src/commands/[category]/` directory
+1. Create command file in `apps/discord-bot/src/commands/[category]/` directory
 2. Implement command class with `@Injectable()` decorator
 3. Use `@SlashCommand()` decorator with name and description
 4. Inject required services via constructor
-5. Add to `app.module.ts` providers array
+5. Add to `apps/discord-bot/src/app.module.ts` providers array
 
 Example:
 ```typescript
@@ -185,7 +216,7 @@ export class NewCommand {
 ```
 
 ### Adding Interaction Handlers
-1. Create handler file in `src/interactions/[type]/` directory
+1. Create handler file in `apps/discord-bot/src/interactions/[type]/` directory
 2. Use appropriate decorator (`@Button()`, `@StringSelect()`, `@Modal()`, etc.)
 3. Handle interaction validation and error cases
 4. Update session state through SessionService

@@ -1,164 +1,130 @@
 # Claude Code Discord Bot
 
-A streamlined Discord bot that integrates with GitHub to trigger Claude Code analysis workflows. Built with NestJS, Necord, and TypeScript.
+A Discord bot that integrates with GitHub to browse repositories and trigger Claude Code analysis workflows. Built with NestJS, Necord, and organized as a Turborepo monorepo.
 
-## ✨ Features
+## Architecture
 
-- **🤖 Claude Code Integration**: Unified `/claude` command for complete workflow automation
-- **🔍 Smart Repository Search**: Text-based search with intelligent matching
-- **✅ Workflow Validation**: Only shows repositories with Claude Code support
-- **⚡ Streamlined UX**: One command replaces complex navigation
-- **📊 Real-time Monitoring**: Live workflow status updates and notifications
-- **🎮 Modal-Based UI**: Clean, focused input through Discord modals
+### Monorepo Structure
 
-## 🛠️ Setup
+```
+claude-code-discord-bot/
+├── apps/
+│   └── discord-bot/            # Discord bot application
+│       ├── src/                # Application source code
+│       ├── .env                # Bot environment variables
+│       ├── .env.example        # Environment template
+│       ├── package.json        # Bot dependencies
+│       └── dist/               # Build output
+├── packages/                   # Shared packages (future)
+├── .github/                    # GitHub Actions workflows
+├── .claude/                    # Claude Code configuration
+├── turbo.json                  # Turborepo configuration
+├── package.json                # Root workspace configuration
+├── pnpm-workspace.yaml         # PNPM workspace settings
+└── CLAUDE.md                   # Development guide
+```
+
+### Discord Bot Structure
+
+```
+apps/discord-bot/src/
+├── services/              # Business logic and integrations
+├── commands/              # Discord slash commands
+├── interactions/          # Discord interaction handlers
+│   ├── buttons/           # Button interactions
+│   ├── modals/            # Modal interactions
+│   └── selects/           # Select menu interactions
+├── utils/                 # Shared utilities
+├── interfaces/            # TypeScript type definitions
+├── app.module.ts          # NestJS root module
+└── main.ts               # Application entry point
+```
+
+## Installation & Development
 
 ### Prerequisites
 
-- Node.js 22.12.0 or newer
-- pnpm package manager
+- Node.js >= 22.11.0
+- pnpm >= 10.9.0
 - Discord Bot Token
 - GitHub Personal Access Token
 
-### Installation
+### Setup
 
-1. **Clone and install**:
-```bash
-git clone <repository-url>
-cd claude-code-discord-bot
-pnpm install
-```
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd claude-code-discord-bot
+   ```
 
-2. **Configure environment**:
-```bash
-cp .env.example .env
-```
+2. **Install dependencies**
+   ```bash
+   pnpm install
+   ```
 
-Edit `.env` with your tokens:
-```env
-DISCORD_TOKEN="your_discord_bot_token"
-DEV_GUILD="your_development_guild_id"
-GITHUB_TOKEN="your_github_personal_access_token"
-```
+3. **Configure environment**
+   ```bash
+   # Copy environment template
+   cp apps/discord-bot/.env.example apps/discord-bot/.env
+   
+   # Edit apps/discord-bot/.env with your tokens:
+   # DISCORD_TOKEN=your_discord_bot_token
+   # DEV_GUILD=your_development_guild_id
+   # GITHUB_TOKEN=your_github_personal_access_token
+   ```
 
-3. **Start the bot**:
-```bash
-pnpm start:dev
-```
+4. **Start development server**
+   ```bash
+   # Start Discord bot in watch mode
+   pnpm dev
+   
+   # Or start specific app
+   pnpm dev --filter=@claude-code/discord-bot
+   ```
 
-## 🎮 Usage
-
-### `/claude` - Complete Claude Code Workflow
-
-**One command to rule them all!** The `/claude` command provides a streamlined, modal-based workflow:
-
-1. **🔍 Repository Search**: Type `/claude` to open a search modal
-   - Enter repository name or search term
-   - Supports exact matches (`owner/repo`) and fuzzy search
-   - Example: `"discord-bot"` or `"microsoft/vscode"`
-
-2. **✅ Repository Selection**: Choose from validated repositories
-   - Only shows repositories with Claude Code workflow (`claude.yml`)
-   - Clear indication of which repositories are compatible
-   - No wasted time on unsupported repositories
-
-3. **📝 Analysis Prompt**: Specify what you want Claude to do
-   - Custom analysis prompt (required)
-   - Optional branch specification (defaults to `main`)
-   - Examples: "Review for security issues", "Optimize performance"
-
-4. **🚀 Workflow Execution**: Automatic execution with real-time updates
-   - Live status updates in Discord
-   - Workflow progress tracking
-   - Completion notifications with results
-
-### Requirements
-
-Your repositories need a `.github/workflows/claude.yml` file configured for Claude Code analysis.
-
-## 🔧 Getting Tokens
-
-### Discord Bot Token
-1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
-2. Create a new application
-3. Go to Bot section and create a bot
-4. Copy the token
-
-### GitHub Token
-1. Go to [GitHub Settings > Tokens](https://github.com/settings/tokens)
-2. Generate a new token (classic)
-3. Select scopes: `repo`, `public_repo`, and `actions:write` (required for workflow dispatch)
-4. Copy the token
-
-### Guild ID
-1. Enable Developer Mode in Discord
-2. Right-click your server → Copy Server ID
-
-## 🏗️ Project Structure
-
-```
-src/
-├── commands/              # Discord slash commands
-│   └── repository/
-│       └── claude.command.ts       # Unified /claude command
-├── interactions/          # Modal and interaction handlers
-│   ├── buttons/          # Status and workflow buttons
-│   ├── modals/           # Repository search and prompt modals
-│   └── selects/          # Repository selection
-├── services/             # Business logic with service interfaces
-│   ├── base/             # Base service with common patterns
-│   ├── github.service.ts # GitHub API integration
-│   ├── session.service.ts # User session management
-│   ├── embed.service.ts  # Discord UI creation
-│   ├── workflow.service.ts # GitHub Actions workflow management
-│   └── workflow-monitor.service.ts # Real-time monitoring
-├── utils/                # Domain-specific utilities and constants
-├── interfaces/           # Organized TypeScript types (services, models, discord)
-└── app.module.ts         # Clean dependency injection
-```
-
-## 📋 Available Scripts
+### Development Commands
 
 ```bash
 # Development
-pnpm start:dev     # Start with hot reload
-pnpm start:debug   # Start with debugging
-pnpm start:prod    # Start production build
-pnpm build         # Build for production
+pnpm dev                    # Start Discord bot in watch mode
+pnpm build                  # Build all packages
+pnpm start                  # Start production build
 
-# Quality Assurance
-pnpm lint          # Check and fix linting issues
-pnpm format        # Format code with Prettier
-pnpm typecheck     # Run TypeScript type checking
+# Code Quality
+pnpm lint                   # Run ESLint on all packages
+pnpm typecheck              # Run TypeScript type checking
+pnpm format                 # Format code with Prettier
+
+# Package-specific commands
+pnpm dev --filter=@claude-code/discord-bot      # Start only Discord bot
+pnpm build --filter=@claude-code/discord-bot    # Build only Discord bot
+pnpm lint --filter=@claude-code/discord-bot     # Lint only Discord bot
 ```
 
-## 🔒 Security
+### GitHub Token Permissions
 
-- GitHub tokens require minimal permissions (`repo` or `public_repo`)
-- Discord tokens are bot-specific
-- User sessions expire automatically after 30 minutes
-- No sensitive data is logged
+Your GitHub token needs these scopes:
+- `repo` - Full repository access (for private repos)  
+- `public_repo` - Public repository access
+- `actions:write` - Required for dispatching workflows
 
-## 🐛 Troubleshooting
+## Features
 
-**Bot not responding?**
-- Check your Discord token in `.env`
-- Verify the bot has "Send Messages" and "Use Slash Commands" permissions
-- Make sure `DEV_GUILD` matches your server ID
+- **Repository Search**: Search and browse GitHub repositories
+- **Claude Code Integration**: Trigger automated code analysis workflows
+- **Interactive Discord UI**: Modal-based forms and button interactions
+- **Real-time Updates**: Live workflow status monitoring
+- **Session Management**: Persistent user sessions across interactions ( to be tested )
 
-**No repositories showing?**
-- Check your GitHub token has correct permissions
-- Verify the token in `.env` is valid
-- Check if you have any repositories in your GitHub account
+## Technology Stack
 
-## 🤝 Contributing
+- **Framework**: NestJS with Necord for Discord integration
+- **Discord**: Discord.js v14 with full TypeScript support
+- **GitHub**: Octokit REST API client
+- **Build System**: Turborepo for monorepo management
+- **Package Manager**: pnpm with workspaces
+- **Language**: TypeScript with strict type checking
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Create a pull request
+## Contributing
 
-## 📝 License
-
-MIT License - see [LICENSE](LICENSE) for details.
+See [CLAUDE.md](./CLAUDE.md) for detailed development patterns, architecture documentation, and contribution guidelines.
