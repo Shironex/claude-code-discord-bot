@@ -96,18 +96,6 @@ export class EmbedService extends BaseService implements IEmbedService {
 
 		const components: (ActionRowBuilder<StringSelectMenuBuilder> | ActionRowBuilder<ButtonBuilder>)[] = [selectRow];
 
-		// Add pagination buttons if there are multiple pages
-		if (paginatedRepos.totalPages > 1) {
-			const paginationRow = DiscordUtils.createPaginationButtons({
-				currentPage: paginatedRepos.currentPage,
-				totalPages: paginatedRepos.totalPages,
-				hasNextPage: paginatedRepos.hasNextPage,
-				hasPreviousPage: paginatedRepos.hasPreviousPage,
-				totalCount: paginatedRepos.totalCount
-			});
-			components.push(paginationRow);
-		}
-
 		return { embed, components };
 	}
 

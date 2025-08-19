@@ -1,21 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { Context, StringSelect, StringSelectContext } from 'necord';
-import { ActionRowBuilder, ButtonBuilder, MessageFlags } from 'discord.js';
+import { MessageFlags, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } from 'discord.js';
+import { BaseService } from '../../services/base/base.service';
 import { Repository } from '../../interfaces/models/repository.interface';
 import { SessionService } from '../../services/session.service';
-import { EmbedService } from '../../services/embed.service';
-import { WorkflowService } from '../../services/workflow.service';
 import { CUSTOM_IDS } from '../../utils/discord.constants';
 import { MESSAGES } from '../../utils/messages.constants';
-import { DiscordUtils } from '../../utils/discord.utils';
 
 @Injectable()
-export class RepositorySelectHandler {
+export class RepositorySelectHandler extends BaseService {
 	constructor(
-		private readonly sessionService: SessionService,
-		private readonly embedService: EmbedService,
-		private readonly workflowService: WorkflowService
-	) {}
+		private readonly sessionService: SessionService
+	) {
+		super(RepositorySelectHandler.name);
+	}
 
 	@StringSelect(CUSTOM_IDS.REPO_SELECT)
 	public async onRepoSelect(@Context() [interaction]: StringSelectContext) {
@@ -23,8 +21,6 @@ export class RepositorySelectHandler {
 		if (interaction.customId !== CUSTOM_IDS.REPO_SELECT) {
 			return;
 		}
-
-		console.log('🎯 Repo select handler triggered:', interaction.customId);
 
 		const userId = interaction.user.id;
 		const session = this.sessionService.getSession(userId);
@@ -49,43 +45,39 @@ export class RepositorySelectHandler {
 		}
 
 		// Update session with selected repository
-		this.sessionService.setRepository(userId, selectedRepo);
-
-		// Log selection
-		console.log('\n' + '='.repeat(50));
-		console.log('🎯 REPOSITORY SELECTED');
-		console.log('='.repeat(50));
-		console.log('Repository:', selectedRepo.fullName);
-		console.log('Language:', selectedRepo.language);
-		console.log('Stars:', selectedRepo.stargazersCount);
-		console.log('User:', interaction.user.tag);
-		console.log('Session ID:', userId);
-		console.log('='.repeat(50) + '\n');
-
-		// Check if repository has Claude Code workflow
-		let hasClaudeWorkflow = false;
-		try {
-			const [owner, repo] = selectedRepo.fullName.split('/');
-			hasClaudeWorkflow = await this.workflowService.checkWorkflowExists(owner, repo, 'claude.yml');
-		} catch (error) {
-			console.warn(`Failed to check Claude workflow for ${selectedRepo.fullName}:`, error.message);
-		}
-
-		// Create success embed with repository details
-		const embed = this.embedService.createRepositorySelectedEmbed(selectedRepo, hasClaudeWorkflow);
-
-		// Create action buttons
-		const components: ActionRowBuilder<ButtonBuilder>[] = [];
-
-		if (hasClaudeWorkflow) {
-			const analyzeButton = DiscordUtils.createClaudeAnalyzeButton();
-			const actionRow = new ActionRowBuilder<ButtonBuilder>().addComponents(analyzeButton);
-			components.push(actionRow);
-		}
-
-		await interaction.update({
-			embeds: [embed],
-			components
+		this.sessionService.updateSession(userId, {
+			repository: selectedRepo,
+			action: 'claude_prompt_input'
 		});
+
+		this.logger.log(`Repository selected: ${selectedRepo.fullName} by user: ${interaction.user.tag} (${userId})`);
+
+		// Show prompt modal directly
+		const modal = new ModalBuilder()
+			.setCustomId(CUSTOM_IDS.CLAUDE_PROMPT_MODAL)
+			.setTitle(`🤖 Analyze ${selectedRepo.name}`);
+
+		const promptInput = new TextInputBuilder()
+			.setCustomId(CUSTOM_IDS.CLAUDE_PROMPT_INPUT)
+			.setLabel('What would you like Claude to do?')
+			.setStyle(TextInputStyle.Paragraph)
+			.setPlaceholder('Example: Review the code for security vulnerabilities and suggest improvements')
+			.setRequired(true)
+			.setMaxLength(2000);
+
+		const branchInput = new TextInputBuilder()
+			.setCustomId(CUSTOM_IDS.CLAUDE_BRANCH_INPUT)
+			.setLabel('Branch (optional)')
+			.setStyle(TextInputStyle.Short)
+			.setPlaceholder('main')
+			.setRequired(false)
+			.setMaxLength(100);
+
+		const promptRow = new ActionRowBuilder<TextInputBuilder>().addComponents(promptInput);
+		const branchRow = new ActionRowBuilder<TextInputBuilder>().addComponents(branchInput);
+
+		modal.addComponents(promptRow, branchRow);
+
+		await interaction.showModal(modal);
 	}
 }

@@ -11,17 +11,14 @@ import { WorkflowService } from './services/workflow.service';
 import { WorkflowMonitorService } from './services/workflow-monitor.service';
 
 // Commands
-import { RunCommand } from './commands/repository/run.command';
-import { SearchCommand } from './commands/repository/search.command';
 import { ClaudeCommand } from './commands/repository/claude.command';
 
 // Interaction Handlers
 import { RepositorySelectHandler } from './interactions/selects/repository.select';
-import { PaginationButtonsHandler } from './interactions/buttons/pagination.buttons';
 import { CancelButtonHandler } from './interactions/buttons/cancel.button';
-import { ClaudeAnalyzeButtonHandler } from './interactions/buttons/claude-analyze.button';
 import { WorkflowStatusButtonHandler } from './interactions/buttons/workflow-status.button';
 import { ClaudePromptModalHandler } from './interactions/modals/claude-prompt.modal';
+import { ClaudeRepoSearchModalHandler } from './interactions/modals/claude-repo-search.modal';
 
 @Module({
 	imports: [
@@ -48,16 +45,13 @@ import { ClaudePromptModalHandler } from './interactions/modals/claude-prompt.mo
 		WorkflowService,
 		WorkflowMonitorService,
 		// Commands
-		RunCommand,
-		SearchCommand,
 		ClaudeCommand,
 		// Interaction Handlers
 		RepositorySelectHandler,
-		PaginationButtonsHandler,
 		CancelButtonHandler,
-		ClaudeAnalyzeButtonHandler,
 		WorkflowStatusButtonHandler,
-		ClaudePromptModalHandler
+		ClaudePromptModalHandler,
+		ClaudeRepoSearchModalHandler
 	]
 })
 export class AppModule {}

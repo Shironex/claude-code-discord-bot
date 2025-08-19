@@ -6,6 +6,7 @@ import { SessionService } from '../../services/session.service';
 import { WorkflowService } from '../../services/workflow.service';
 import { EmbedService } from '../../services/embed.service';
 import { WorkflowMonitorService } from '../../services/workflow-monitor.service';
+import { CUSTOM_IDS } from '../../utils/discord.constants';
 import { MESSAGES } from '../../utils/messages.constants';
 import { DiscordUtils } from '../../utils/discord.utils';
 
@@ -20,7 +21,7 @@ export class ClaudePromptModalHandler extends BaseService {
 		super(ClaudePromptModalHandler.name);
 	}
 
-	@Modal('claude-prompt-modal')
+	@Modal(CUSTOM_IDS.CLAUDE_PROMPT_MODAL)
 	public async onClaudePromptModal(@Context() [interaction]: ModalContext) {
 		const userId = interaction.user.id;
 		const session = this.sessionService.getSession(userId);
@@ -35,8 +36,8 @@ export class ClaudePromptModalHandler extends BaseService {
 		await interaction.deferReply();
 
 		try {
-			const prompt = interaction.fields.getTextInputValue('claude-prompt-input');
-			const branch = interaction.fields.getTextInputValue('claude-branch-input') || 'main';
+			const prompt = interaction.fields.getTextInputValue(CUSTOM_IDS.CLAUDE_PROMPT_INPUT);
+			const branch = interaction.fields.getTextInputValue(CUSTOM_IDS.CLAUDE_BRANCH_INPUT) || 'main';
 
 			const [owner, repo] = session.repository.fullName.split('/');
 

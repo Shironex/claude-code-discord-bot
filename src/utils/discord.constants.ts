@@ -10,11 +10,13 @@ export const DISCORD_COLORS: EmbedColors = {
 
 export const CUSTOM_IDS = {
 	REPO_SELECT: 'repo-select',
-	REPO_PREV: 'repo-prev',
-	REPO_NEXT: 'repo-next',
-	REPO_PAGE_INFO: 'repo-page-info',
 	CANCEL: 'cancel',
-	CLAUDE_ANALYZE: 'claude-analyze',
 	WORKFLOW_STATUS: 'workflow-status',
-	VIEW_WORKFLOW: 'view-workflow'
+	VIEW_WORKFLOW: 'view-workflow',
+	// Modal IDs
+	CLAUDE_REPO_SEARCH_MODAL: 'claude-repo-search-modal',
+	CLAUDE_PROMPT_MODAL: 'claude-prompt-modal',
+	CLAUDE_REPO_SEARCH_INPUT: 'claude-repo-search-input',
+	CLAUDE_PROMPT_INPUT: 'claude-prompt-input',
+	CLAUDE_BRANCH_INPUT: 'claude-branch-input'
 } as const;

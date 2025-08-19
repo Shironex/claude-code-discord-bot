@@ -1,6 +1,5 @@
 import { ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { Repository } from '../interfaces/models/repository.interface';
-import { PaginationInfo } from '../interfaces/discord/discord.interface';
 import { CUSTOM_IDS } from './discord.constants';
 import { LANGUAGE_EMOJIS } from './github.constants';
 
@@ -22,29 +21,6 @@ export class DiscordUtils {
 		return selectMenu;
 	}
 
-	static createPaginationButtons(pagination: PaginationInfo): ActionRowBuilder<ButtonBuilder> {
-		const prevButton = new ButtonBuilder()
-			.setCustomId(CUSTOM_IDS.REPO_PREV)
-			.setLabel('Previous')
-			.setStyle(ButtonStyle.Secondary)
-			.setEmoji('⬅️')
-			.setDisabled(!pagination.hasPreviousPage);
-
-		const nextButton = new ButtonBuilder()
-			.setCustomId(CUSTOM_IDS.REPO_NEXT)
-			.setLabel('Next')
-			.setStyle(ButtonStyle.Secondary)
-			.setEmoji('➡️')
-			.setDisabled(!pagination.hasNextPage);
-
-		const pageButton = new ButtonBuilder()
-			.setCustomId(CUSTOM_IDS.REPO_PAGE_INFO)
-			.setLabel(`${pagination.currentPage}/${pagination.totalPages}`)
-			.setStyle(ButtonStyle.Primary)
-			.setDisabled(true);
-
-		return new ActionRowBuilder<ButtonBuilder>().addComponents(prevButton, pageButton, nextButton);
-	}
 
 	static createSelectMenuRow(repositories: Repository[]): ActionRowBuilder<StringSelectMenuBuilder> {
 		return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
@@ -85,13 +61,6 @@ export class DiscordUtils {
 		];
 	}
 
-	static createClaudeAnalyzeButton(): ButtonBuilder {
-		return new ButtonBuilder()
-			.setCustomId(CUSTOM_IDS.CLAUDE_ANALYZE)
-			.setLabel('Analyze with Claude')
-			.setStyle(ButtonStyle.Primary)
-			.setEmoji('🤖');
-	}
 
 	static createWorkflowStatusButton(): ButtonBuilder {
 		return new ButtonBuilder()
