@@ -7,15 +7,21 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { GitHubService } from './services/github.service';
 import { SessionService } from './services/session.service';
 import { EmbedService } from './services/embed.service';
+import { WorkflowService } from './services/workflow.service';
+import { WorkflowMonitorService } from './services/workflow-monitor.service';
 
 // Commands
 import { RunCommand } from './commands/repository/run.command';
 import { SearchCommand } from './commands/repository/search.command';
+import { ClaudeCommand } from './commands/repository/claude.command';
 
 // Interaction Handlers
 import { RepositorySelectHandler } from './interactions/selects/repository.select';
 import { PaginationButtonsHandler } from './interactions/buttons/pagination.buttons';
 import { CancelButtonHandler } from './interactions/buttons/cancel.button';
+import { ClaudeAnalyzeButtonHandler } from './interactions/buttons/claude-analyze.button';
+import { WorkflowStatusButtonHandler } from './interactions/buttons/workflow-status.button';
+import { ClaudePromptModalHandler } from './interactions/modals/claude-prompt.modal';
 
 @Module({
 	imports: [
@@ -39,13 +45,19 @@ import { CancelButtonHandler } from './interactions/buttons/cancel.button';
 		GitHubService,
 		SessionService,
 		EmbedService,
+		WorkflowService,
+		WorkflowMonitorService,
 		// Commands
 		RunCommand,
 		SearchCommand,
+		ClaudeCommand,
 		// Interaction Handlers
 		RepositorySelectHandler,
 		PaginationButtonsHandler,
-		CancelButtonHandler
+		CancelButtonHandler,
+		ClaudeAnalyzeButtonHandler,
+		WorkflowStatusButtonHandler,
+		ClaudePromptModalHandler
 	]
 })
 export class AppModule {}
