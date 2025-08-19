@@ -1,10 +1,17 @@
 #!/bin/bash
-set -e
 
 # GitHub Actions Self-Hosted Runner Entrypoint Script
 # Handles runner registration, execution, and cleanup
 
 echo "🚀 Starting GitHub Actions Self-Hosted Runner"
+
+# Ensure we're running as the correct user
+if [ "$(id -u)" = "0" ]; then
+   echo "🔄 Running as root, switching to runner user..."
+   exec su - runner -c "$0 $@"
+fi
+
+echo "✅ Running as user: $(whoami) (UID: $(id -u))"
 
 # Check required environment variables
 if [ -z "$GITHUB_TOKEN" ]; then
@@ -35,14 +42,16 @@ mkdir -p "$RUNNER_WORK_DIR"
 
 # Function to cleanup on exit
 cleanup() {
-    echo "🧹 Cleaning up runner registration..."
-    if [ -f ".runner" ]; then
-        ./config.sh remove --unattended --token "$GITHUB_TOKEN" 2>/dev/null || echo "⚠️  Runner removal failed"
+    echo "🧹 Shutting down runner gracefully..."
+    if pgrep -f "Runner.Listener" > /dev/null; then
+        echo "🛑 Stopping runner process..."
+        pkill -f "Runner.Listener"
+        sleep 2
     fi
     echo "✅ Cleanup completed"
 }
 
-# Set trap for cleanup on script exit - only on specific signals, not EXIT
+# Set trap for cleanup on script exit
 trap cleanup SIGTERM SIGINT
 
 # Get registration token
@@ -137,13 +146,25 @@ fi
 
 echo "✅ Runner configured successfully"
 
-# Function to handle signals gracefully
+# Fix permissions on runner files if they exist
+echo "🔧 Ensuring proper file permissions..."
+if [ -f ".runner" ]; then
+    echo "📁 Setting permissions on .runner file..."
+    chmod 600 .runner 2>/dev/null || echo "⚠️  Could not change .runner permissions"
+    ls -la .runner 2>/dev/null || echo "⚠️  Could not list .runner file"
+fi
+if [ -f ".credentials" ]; then
+    echo "📁 Setting permissions on .credentials file..."
+    chmod 600 .credentials 2>/dev/null || echo "⚠️  Could not change .credentials permissions"
+fi
+if [ -f ".credentials_rsaparams" ]; then
+    echo "📁 Setting permissions on .credentials_rsaparams file..."
+    chmod 600 .credentials_rsaparams 2>/dev/null || echo "⚠️  Could not change .credentials_rsaparams permissions"
+fi
+
+# Function to handle signals gracefully  
 handle_signal() {
     echo "🛑 Received shutdown signal, stopping runner gracefully..."
-    if pgrep -f "Runner.Listener" > /dev/null; then
-        pkill -f "Runner.Listener"
-        wait
-    fi
     cleanup
     exit 0
 }
@@ -155,15 +176,18 @@ trap handle_signal SIGTERM SIGINT SIGHUP
 echo "🏃 Starting GitHub Actions Runner..."
 echo "Runner is ready to execute Claude workflows!"
 
-# Run the listener with error handling
-while true; do
-    ./run.sh || {
-        echo "⚠️  Runner exited with error code $?"
-        echo "🔄 Attempting to restart in 10 seconds..."
-        sleep 10
-        continue
-    }
-    break
-done
+# Run the listener with better error handling
+echo "🏃‍♂️ Starting runner listener..."
+./run.sh
+RUNNER_EXIT_CODE=$?
 
-echo "🏁 Runner stopped"
+echo "🏁 Runner stopped with exit code: $RUNNER_EXIT_CODE"
+
+# Don't restart automatically - let Coolify handle container restarts
+if [ $RUNNER_EXIT_CODE -ne 0 ]; then
+    echo "⚠️  Runner exited with error code $RUNNER_EXIT_CODE"
+else
+    echo "✅ Runner exited cleanly"
+fi
+
+exit $RUNNER_EXIT_CODE
