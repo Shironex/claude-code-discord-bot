@@ -1,0 +1,64 @@
+name: Claude Code (Two-Step)
+
+on:
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: 'Prompt for Claude'
+        required: true
+        type: string
+
+jobs:
+  claude:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for better branch operations
+
+      - name: Step 1 - Execute Task
+        id: execute_task
+        uses: anthropics/claude-code-action@beta
+        with:
+          mode: agent
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          direct_prompt: ${{ github.event.inputs.prompt }}
+          allowed_tools: "Bash,Write,Read,Edit,MultiEdit,Glob,Grep"
+          custom_instructions: |
+            You are running in automation mode triggered by Discord.
+            Focus on completing the requested task thoroughly.
+            Do NOT create branches, commits, or pull requests in this step.
+            Just implement the requested changes.
+
+      - name: Step 2 - Create Pull Request
+        id: create_pr
+        uses: anthropics/claude-code-action@beta
+        with:
+          mode: agent
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          direct_prompt: |
+            Review the changes that were made in the previous step and create a pull request:
+            
+            1. Check what files were modified using git status
+            2. Create a new branch with a descriptive name based on the changes
+            3. Stage and commit the changes with a clear, descriptive commit message
+            4. Push the branch to remote origin
+            5. Create a pull request with:
+               - Clear title summarizing the changes
+               - Detailed description of what was implemented
+               - Test plan or verification steps
+            
+            Original task: ${{ github.event.inputs.prompt }}
+          allowed_tools: "Bash,Read,Grep"
+          custom_instructions: |
+            You are in PR creation mode.
+            Your only job is to package the changes into a proper pull request.
+            Use git commands to create branch, commit, push, and create PR.
+            Write clear, professional commit messages and PR descriptions.

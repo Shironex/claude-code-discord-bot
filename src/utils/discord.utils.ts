@@ -1,7 +1,7 @@
 import { ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
-import { Repository } from '../services/github.service';
-import { PaginationInfo } from '../interfaces/discord.interface';
-import { CUSTOM_IDS, LANGUAGE_EMOJIS } from './constants';
+import { Repository } from '../interfaces/models/repository.interface';
+import { CUSTOM_IDS } from './discord.constants';
+import { LANGUAGE_EMOJIS } from './github.constants';
 
 export class DiscordUtils {
 	static createRepositorySelectMenu(repositories: Repository[]): StringSelectMenuBuilder {
@@ -19,30 +19,6 @@ export class DiscordUtils {
 		});
 
 		return selectMenu;
-	}
-
-	static createPaginationButtons(pagination: PaginationInfo): ActionRowBuilder<ButtonBuilder> {
-		const prevButton = new ButtonBuilder()
-			.setCustomId(CUSTOM_IDS.REPO_PREV)
-			.setLabel('Previous')
-			.setStyle(ButtonStyle.Secondary)
-			.setEmoji('⬅️')
-			.setDisabled(!pagination.hasPreviousPage);
-
-		const nextButton = new ButtonBuilder()
-			.setCustomId(CUSTOM_IDS.REPO_NEXT)
-			.setLabel('Next')
-			.setStyle(ButtonStyle.Secondary)
-			.setEmoji('➡️')
-			.setDisabled(!pagination.hasNextPage);
-
-		const pageButton = new ButtonBuilder()
-			.setCustomId(CUSTOM_IDS.REPO_PAGE_INFO)
-			.setLabel(`${pagination.currentPage}/${pagination.totalPages}`)
-			.setStyle(ButtonStyle.Primary)
-			.setDisabled(true);
-
-		return new ActionRowBuilder<ButtonBuilder>().addComponents(prevButton, pageButton, nextButton);
 	}
 
 	static createSelectMenuRow(repositories: Repository[]): ActionRowBuilder<StringSelectMenuBuilder> {
@@ -82,5 +58,29 @@ export class DiscordUtils {
 				inline: true
 			}
 		];
+	}
+
+	static createWorkflowStatusButton(): ButtonBuilder {
+		return new ButtonBuilder()
+			.setCustomId(CUSTOM_IDS.WORKFLOW_STATUS)
+			.setLabel('Check Status')
+			.setStyle(ButtonStyle.Secondary)
+			.setEmoji('🔄');
+	}
+
+	static createViewWorkflowButton(workflowUrl: string): ButtonBuilder {
+		return new ButtonBuilder()
+			.setURL(workflowUrl)
+			.setLabel('View on GitHub')
+			.setStyle(ButtonStyle.Link)
+			.setEmoji('🔗');
+	}
+
+	static createCancelButton(): ButtonBuilder {
+		return new ButtonBuilder()
+			.setCustomId(CUSTOM_IDS.CANCEL)
+			.setLabel('Cancel')
+			.setStyle(ButtonStyle.Danger)
+			.setEmoji('❌');
 	}
 }

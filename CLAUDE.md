@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Discord bot built with NestJS and Necord that integrates with GitHub to browse and search repositories. It's designed as a prototype to eventually integrate with Claude Code for repository analysis.
+This is a Discord bot built with NestJS and Necord that integrates with GitHub to browse repositories and trigger Claude Code analysis workflows. The bot provides an interactive Discord interface for repository management and automated code analysis through GitHub Actions workflows.
 
 ## Architecture
 
@@ -22,26 +22,43 @@ The codebase follows a clean, modular architecture with separation of concerns:
 ```
 src/
 ├── services/              # Business logic and external integrations
-│   ├── github.service.ts  # GitHub API client with pagination support
-│   ├── session.service.ts # User session management with cleanup
-│   └── embed.service.ts   # Discord embed creation utilities
+│   ├── base/
+│   │   └── base.service.ts         # Base service with common logging
+│   ├── github.service.ts           # GitHub API client with search support
+│   ├── session.service.ts          # User session management with cleanup
+│   ├── embed.service.ts            # Discord embed creation utilities
+│   ├── workflow.service.ts         # GitHub Actions workflow management
+│   └── workflow-monitor.service.ts # Real-time workflow status monitoring
 ├── commands/              # Discord slash command handlers
 │   └── repository/
-│       ├── run.command.ts    # /run command for browsing repositories
-│       └── search.command.ts # /search command for repository search
+│       └── claude.command.ts       # /claude command - unified workflow entry
 ├── interactions/          # Discord interaction handlers
 │   ├── buttons/
-│   │   ├── pagination.buttons.ts # Previous/Next navigation
-│   │   └── cancel.button.ts      # Cancel operation button
+│   │   ├── cancel.button.ts               # Cancel operation button
+│   │   └── workflow-status.button.ts      # Check workflow status
+│   ├── modals/
+│   │   ├── claude-prompt.modal.ts         # Final prompt input modal
+│   │   └── claude-repo-search.modal.ts    # Repository search modal
 │   └── selects/
-│       └── repository.select.ts  # Repository selection handler
+│       └── repository.select.ts           # Repository selection handler
 ├── utils/                 # Shared utilities and helpers
-│   ├── constants.ts       # Application constants and configuration
-│   └── discord.utils.ts   # Discord UI component builders
-├── interfaces/            # TypeScript type definitions
-│   ├── session.interface.ts  # Session management types
-│   └── discord.interface.ts  # Discord component types
-├── dtos/                  # Data transfer objects for validation
+│   ├── discord.constants.ts    # Discord-specific constants
+│   ├── github.constants.ts     # GitHub-specific constants
+│   ├── messages.constants.ts   # User-facing messages
+│   ├── workflow.utils.ts       # Workflow status utilities
+│   └── discord.utils.ts        # Discord UI component builders
+├── interfaces/            # TypeScript type definitions (organized by domain)
+│   ├── services/          # Service interfaces
+│   │   ├── github.interface.ts     # GitHub service contract
+│   │   ├── workflow.interface.ts   # Workflow service contract
+│   │   ├── embed.interface.ts      # Embed service contract
+│   │   └── session.interface.ts    # Session service contract
+│   ├── models/            # Data models
+│   │   ├── repository.interface.ts # Repository data types
+│   │   ├── session.interface.ts    # Session data types
+│   │   └── workflow.interface.ts   # Workflow data types
+│   └── discord/           # Discord-specific types
+│       └── discord.interface.ts    # Discord component types
 ├── app.module.ts          # Root module with dependency injection
 └── main.ts               # Application entry point
 ```
@@ -49,16 +66,16 @@ src/
 ### Key Services
 
 #### GitHubService (`src/services/github.service.ts`)
-- **Purpose**: GitHub API integration with full repository management
+- **Purpose**: GitHub API integration with repository management
 - **Features**: 
-  - Paginated repository listing with metadata
   - Repository search across user's repositories
   - Repository details fetching with stats
+  - Direct repository access validation
   - Error handling and rate limiting
 - **Methods**:
-  - `getUserRepositoriesPaginated()` - Fetch repos with pagination
-  - `searchRepositories()` - Search user's repositories
-  - `getRepository()` - Get single repository details
+  - `searchRepositories()` - Search user's repositories with text matching
+  - `getRepository()` - Get single repository details and validation
+  - `getUserRepositories()` - Fetch user's repositories
 
 #### SessionService (`src/services/session.service.ts`)
 - **Purpose**: Manage user sessions across Discord interactions
@@ -76,9 +93,31 @@ src/
   - Consistent styling and branding
   - Error, success, and loading state embeds
   - Repository information display
+  - Workflow status and dispatch embeds
 - **Methods**:
   - `createRepositorySelectionMessage()` - Main selection interface
   - `createErrorEmbed()`, `createSuccessEmbed()` - Status messages
+  - `createWorkflowDispatchedEmbed()` - Workflow launch confirmation
+  - `createWorkflowNotFoundEmbed()` - Missing workflow templates
+
+#### WorkflowService (`src/services/workflow.service.ts`)
+- **Purpose**: GitHub Actions workflow management and execution
+- **Features**:
+  - Workflow file existence validation
+  - Workflow dispatch with custom inputs
+  - Workflow run status monitoring
+  - Real-time status updates
+- **Methods**:
+  - `checkWorkflowExists()` - Verify claude.yml workflow exists
+  - `dispatchWorkflow()` - Trigger workflow with prompt inputs
+  - `getWorkflowRuns()`, `getLatestWorkflowRun()` - Status tracking
+
+#### WorkflowMonitorService (`src/services/workflow-monitor.service.ts`)
+- **Purpose**: Real-time monitoring of workflow execution status
+- **Features**:
+  - Automatic status updates for running workflows
+  - Discord message updates with progress
+  - Background polling and notification system
 
 ## Environment Setup
 
@@ -96,6 +135,7 @@ GITHUB_TOKEN="your_github_personal_access_token"
 The GitHub token requires these scopes:
 - `repo` - Full repository access (for private repos)
 - `public_repo` - Public repository access
+- `actions:write` - Required for dispatching workflows
 
 ## Common Commands
 
@@ -104,9 +144,18 @@ The GitHub token requires these scopes:
 pnpm install         # Install dependencies
 pnpm start:dev       # Start in watch mode with hot reload
 pnpm start:debug     # Start with debugging enabled
+pnpm start:prod      # Start production build
 pnpm build           # Build the project for production
 pnpm lint            # Run ESLint with auto-fix
 pnpm format          # Format code with Prettier
+pnpm typecheck       # Run TypeScript type checking
+```
+
+### Quality Assurance
+```bash
+pnpm lint            # Check and fix linting issues
+pnpm typecheck       # Verify TypeScript types
+pnpm format          # Format all TypeScript files with Prettier
 ```
 
 ## Development Patterns
@@ -137,10 +186,23 @@ export class NewCommand {
 
 ### Adding Interaction Handlers
 1. Create handler file in `src/interactions/[type]/` directory
-2. Use appropriate decorator (`@Button()`, `@StringSelect()`, etc.)
+2. Use appropriate decorator (`@Button()`, `@StringSelect()`, `@Modal()`, etc.)
 3. Handle interaction validation and error cases
 4. Update session state through SessionService
 5. Add to module providers
+
+Example Button Handler:
+```typescript
+@Injectable()
+export class CustomButtonHandler {
+  constructor(private readonly sessionService: SessionService) {}
+
+  @Button('custom_button_id')
+  public async onCustomButton(@Context() [interaction]: ButtonContext) {
+    // Handle button interaction
+  }
+}
+```
 
 ### Working with Sessions
 - All user state is managed through SessionService
@@ -176,12 +238,61 @@ export class NewCommand {
 
 ## Current Features
 
-This is a **prototype** focused on GitHub repository browsing and Discord integration. The current functionality includes:
+This Discord bot provides streamlined GitHub integration with Claude Code workflow automation through a unified command interface:
 
-- Repository listing with pagination
-- Repository search functionality
-- Interactive Discord UI with buttons and select menus
-- Session management for user interactions
-- Clean, modular architecture for future expansion
+### Streamlined Workflow
+- **Single Command**: `/claude` handles the entire workflow
+- **Modal-Based UX**: Interactive text input for repository search and prompts  
+- **Smart Validation**: Only shows repositories with `claude.yml` workflow
+- **Direct Integration**: Repository selection immediately leads to prompt input
+- **Real-time Monitoring**: Automatic status updates and workflow tracking
 
-Future plans include integrating with Claude Code for automated repository analysis and improvements.
+### Core Repository Management
+- Repository search through text input modal
+- Intelligent repository matching (exact names and fuzzy search)
+- Repository validation with Claude Code workflow detection
+- Session management for multi-step user interactions
+
+### Claude Code Integration
+- Unified workflow triggering via single `/claude` command
+- Real-time workflow status monitoring with Discord message updates
+- Custom prompt input through dedicated modal interface
+- Automatic workflow file detection and validation (`claude.yml`)
+- Background monitoring with status updates and completion notifications
+
+### Discord Command
+
+#### `/claude`
+**Complete Claude Code workflow in one command**
+1. **Repository Search**: Opens modal to search your repositories
+   - Text input for repository name or search term
+   - Supports exact matches (`owner/repo`) and fuzzy search
+   - Example searches: `"discord-bot"`, `"microsoft/vscode"`
+
+2. **Repository Selection**: Shows validated repositories with Claude Code support
+   - Only displays repositories containing `claude.yml` workflow
+   - Clear indication of repositories without Claude Code setup
+   - Direct selection leads to prompt input
+
+3. **Prompt Input**: Modal for analysis details
+   - Custom analysis prompt (required)
+   - Optional branch specification (defaults to 'main')
+   - Example prompts: "Review code for security vulnerabilities", "Optimize performance"
+
+4. **Workflow Execution**: Automatic dispatch and monitoring
+   - Real-time status updates in Discord
+   - Workflow progress tracking with status buttons
+   - Completion notifications with results
+
+### Workflow Requirements
+For repositories to support Claude Code analysis, they must contain:
+- `.github/workflows/claude.yml` - GitHub Actions workflow file
+- Proper workflow inputs configuration for prompt handling
+- Repository access permissions for the bot's GitHub token
+
+### Benefits of New Design
+- **Simplified UX**: One command instead of three (`/run`, `/search`, `/claude`)
+- **Better Validation**: Pre-validates Claude Code support before prompting
+- **Faster Workflow**: Fewer steps from search to execution
+- **Error Prevention**: Only shows compatible repositories
+- **Cleaner Interface**: No pagination complexity or analyze buttons
