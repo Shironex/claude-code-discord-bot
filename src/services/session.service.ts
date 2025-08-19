@@ -73,7 +73,8 @@ export class SessionService implements SessionManager {
 		return Date.now() - session.createdAt.getTime();
 	}
 
-	cleanupExpiredSessions(maxAgeMs: number = 30 * 60 * 1000): number { // Default: 30 minutes
+	cleanupExpiredSessions(maxAgeMs: number = 30 * 60 * 1000): number {
+		// Default: 30 minutes
 		let cleanedCount = 0;
 		const now = Date.now();
 

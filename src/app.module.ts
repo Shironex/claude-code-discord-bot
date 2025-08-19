@@ -31,8 +31,8 @@ import { CancelButtonHandler } from './interactions/buttons/cancel.button';
 					IntentsBitField.Flags.DirectMessages
 				]
 			}),
-			inject: [ConfigService],
-		}),
+			inject: [ConfigService]
+		})
 	],
 	providers: [
 		// Services

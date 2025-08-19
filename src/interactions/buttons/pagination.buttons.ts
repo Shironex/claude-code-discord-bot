@@ -36,9 +36,9 @@ export class PaginationButtonsHandler {
 		const session = this.sessionService.getSession(userId);
 
 		if (!session || !session.paginatedData) {
-			return interaction[0].reply({ 
-				content: MESSAGES.SESSION_EXPIRED, 
-				ephemeral: true 
+			return interaction[0].reply({
+				content: MESSAGES.SESSION_EXPIRED,
+				ephemeral: true
 			});
 		}
 
@@ -53,17 +53,10 @@ export class PaginationButtonsHandler {
 
 			if (session.searchQuery) {
 				// Handle search pagination
-				newPaginatedData = await this.githubService.searchRepositories(
-					session.searchQuery, 
-					newPage, 
-					25
-				);
+				newPaginatedData = await this.githubService.searchRepositories(session.searchQuery, newPage, 25);
 			} else {
 				// Handle regular pagination
-				newPaginatedData = await this.githubService.getUserRepositoriesPaginated(
-					newPage, 
-					25
-				);
+				newPaginatedData = await this.githubService.getUserRepositoriesPaginated(newPage, 25);
 			}
 
 			// Update session
@@ -71,7 +64,7 @@ export class PaginationButtonsHandler {
 
 			// Create updated message
 			const { embed, components } = this.embedService.createRepositorySelectionMessage(
-				newPaginatedData, 
+				newPaginatedData,
 				session.searchQuery
 			);
 
@@ -79,10 +72,9 @@ export class PaginationButtonsHandler {
 				embeds: [embed],
 				components: components
 			});
-
 		} catch (error) {
 			console.error('Error during pagination:', error);
-			
+
 			const errorEmbed = this.embedService.createPaginationErrorEmbed();
 
 			await interaction[0].editReply({

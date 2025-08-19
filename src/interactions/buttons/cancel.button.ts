@@ -13,9 +13,9 @@ export class CancelButtonHandler {
 		if (!interaction.customId.startsWith(CUSTOM_IDS.CANCEL)) {
 			return;
 		}
-		
+
 		console.log('❌ Cancel button handler triggered:', interaction.customId);
-		
+
 		const userId = interaction.user.id;
 		this.sessionService.deleteSession(userId);
 

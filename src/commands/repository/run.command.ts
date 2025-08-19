@@ -27,9 +27,7 @@ export class RunCommand {
 		}
 
 		// Show loading state
-		const loadingEmbed = this.embedService.createLoadingEmbed(
-			'Fetching your repositories from GitHub...'
-		);
+		const loadingEmbed = this.embedService.createLoadingEmbed('Fetching your repositories from GitHub...');
 
 		await interaction.reply({
 			embeds: [loadingEmbed],
@@ -53,19 +51,15 @@ export class RunCommand {
 			this.sessionService.setPaginatedData(userId, paginatedRepos);
 
 			// Create embed and components for repository selection
-			const { embed, components } = this.embedService.createRepositorySelectionMessage(
-				paginatedRepos, 
-				null
-			);
+			const { embed, components } = this.embedService.createRepositorySelectionMessage(paginatedRepos, null);
 
 			await interaction.editReply({
 				embeds: [embed],
 				components: components
 			});
-
 		} catch (error) {
 			console.error('Error fetching repositories:', error);
-			
+
 			const errorEmbed = this.embedService.createErrorEmbed(
 				'Error Fetching Repositories',
 				'Failed to fetch repositories from GitHub. Please check your token and try again.'
