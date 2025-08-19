@@ -30,21 +30,30 @@ jobs:
       - name: Check for changesets
         id: changeset-check
         run: |
-          # Check if this PR has any changesets
-          if pnpm changeset status --since=origin/${{ github.event.pull_request.base.ref }} --output=changeset-status.json 2>/dev/null; then
-            if [ -s changeset-status.json ] && [ "$(cat changeset-status.json | jq '.releases | length')" -gt 0 ]; then
-              echo "has_changesets=true" >> $GITHUB_OUTPUT
-              echo "✅ Changesets detected for this PR"
-              echo "changeset_summary<<EOF" >> $GITHUB_OUTPUT
-              echo "$(pnpm changeset status --since=origin/${{ github.event.pull_request.base.ref }} --verbose)" >> $GITHUB_OUTPUT
-              echo "EOF" >> $GITHUB_OUTPUT
+          # Add robust error handling for git operations
+          if git fetch origin ${{ github.event.pull_request.base.ref }} 2>/dev/null; then
+            echo "✅ Successfully fetched base branch"
+            
+            # Check if this PR has any changesets
+            if pnpm changeset status --since=origin/${{ github.event.pull_request.base.ref }} --output=changeset-status.json 2>/dev/null; then
+              if [ -s changeset-status.json ] && [ "$(cat changeset-status.json | jq '.releases | length')" -gt 0 ]; then
+                echo "has_changesets=true" >> $GITHUB_OUTPUT
+                echo "✅ Changesets detected for this PR"
+                echo "changeset_summary<<EOF" >> $GITHUB_OUTPUT
+                echo "$(pnpm changeset status --since=origin/${{ github.event.pull_request.base.ref }} --verbose)" >> $GITHUB_OUTPUT
+                echo "EOF" >> $GITHUB_OUTPUT
+              else
+                echo "has_changesets=false" >> $GITHUB_OUTPUT
+                echo "⚠️ No changesets detected for this PR"
+              fi
             else
               echo "has_changesets=false" >> $GITHUB_OUTPUT
-              echo "⚠️ No changesets detected for this PR"
+              echo "⚠️ No changesets detected for this PR (changeset status failed)"
             fi
           else
+            echo "⚠️ Unable to fetch base branch for changeset comparison"
             echo "has_changesets=false" >> $GITHUB_OUTPUT
-            echo "⚠️ No changesets detected for this PR"
+            echo "changeset_summary=Unable to determine changeset status due to git fetch failure" >> $GITHUB_OUTPUT
           fi
 
       - name: Changeset Preview
