@@ -22,7 +22,8 @@
       "dependsOn": ["^typecheck"]
     },
     "format": {
-      "dependsOn": ["^format"]
+      "dependsOn": ["^format"],
+      "outputs": []
     }
   }
 }

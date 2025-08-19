@@ -45,7 +45,7 @@ jobs:
         uses: ./.github/actions/setup-node-pnpm
 
       - name: Check code formatting
-        run: pnpm prettier --check "src/**/*.ts"
+        run: pnpm --filter=@claude-code/discord-bot prettier --check "src/**/*.ts"
 
   dependency-audit:
     name: Security Audit
