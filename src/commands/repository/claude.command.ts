@@ -25,10 +25,7 @@ export class ClaudeCommand {
 		name: 'claude',
 		description: 'Analyze a GitHub repository with Claude Code'
 	})
-	public async onClaudeCommand(
-		@Context() [interaction]: SlashCommandContext,
-		@Options() options: ClaudeDto
-	) {
+	public async onClaudeCommand(@Context() [interaction]: SlashCommandContext, @Options() options: ClaudeDto) {
 		const userId = interaction.user.id;
 
 		// Validate GitHub service
@@ -135,13 +132,13 @@ export class ClaudeCommand {
 					const components: ActionRowBuilder<ButtonBuilder>[] = [];
 					const statusButton = DiscordUtils.createWorkflowStatusButton();
 					const viewButton = DiscordUtils.createViewWorkflowButton(latestRun.html_url);
-					
+
 					const actionRow = new ActionRowBuilder<ButtonBuilder>().addComponents(statusButton, viewButton);
 					components.push(actionRow);
 
-					const reply = await interaction.editReply({ 
+					const reply = await interaction.editReply({
 						embeds: [embed],
-						components 
+						components
 					});
 
 					// Add workflow to monitor for automatic updates
@@ -173,7 +170,10 @@ export class ClaudeCommand {
 			}
 		} catch (error) {
 			this.logger.error(`Claude command error: ${error.message}`, error);
-			const embed = this.embedService.createErrorEmbed('Command Error', 'An unexpected error occurred. Please try again.');
+			const embed = this.embedService.createErrorEmbed(
+				'Command Error',
+				'An unexpected error occurred. Please try again.'
+			);
 			return interaction.editReply({ embeds: [embed] });
 		}
 	}

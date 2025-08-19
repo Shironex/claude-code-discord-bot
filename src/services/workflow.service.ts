@@ -1,7 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Octokit } from '@octokit/rest';
-import { WorkflowDispatchRequest, WorkflowRun, WorkflowRunsResponse, WorkflowFile } from '../interfaces/workflow.interface';
+import {
+	WorkflowDispatchRequest,
+	WorkflowRun,
+	WorkflowRunsResponse,
+	WorkflowFile
+} from '../interfaces/workflow.interface';
 
 @Injectable()
 export class WorkflowService {

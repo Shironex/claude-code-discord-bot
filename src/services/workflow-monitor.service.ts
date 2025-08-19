@@ -84,7 +84,7 @@ export class WorkflowMonitorService implements OnModuleInit, OnModuleDestroy {
 
 	private async checkAllWorkflows(): Promise<void> {
 		const workflowsToCheck = Array.from(this.monitoredWorkflows.values());
-		
+
 		if (workflowsToCheck.length === 0) {
 			return;
 		}
@@ -105,10 +105,10 @@ export class WorkflowMonitorService implements OnModuleInit, OnModuleDestroy {
 
 	private async checkWorkflowStatus(workflow: MonitoredWorkflow): Promise<void> {
 		const [owner, repo] = workflow.repository.split('/');
-		
+
 		try {
 			const workflowRun = await this.workflowService.getWorkflowRunStatus(owner, repo, workflow.runId);
-			
+
 			// Update last checked time
 			workflow.lastChecked = new Date();
 
@@ -137,15 +137,19 @@ export class WorkflowMonitorService implements OnModuleInit, OnModuleDestroy {
 		await this.updateDiscordMessage(workflow, workflowRun, true);
 	}
 
-	private async updateDiscordMessage(workflow: MonitoredWorkflow, workflowRun: any, isCompleted: boolean): Promise<void> {
+	private async updateDiscordMessage(
+		workflow: MonitoredWorkflow,
+		workflowRun: any,
+		isCompleted: boolean
+	): Promise<void> {
 		try {
-			const channel = await this.client.channels.fetch(workflow.channelId) as TextChannel;
+			const channel = (await this.client.channels.fetch(workflow.channelId)) as TextChannel;
 			if (!channel) {
 				this.logger.warn(`Channel ${workflow.channelId} not found`);
 				return;
 			}
 
-			const message = await channel.messages.fetch(workflow.messageId) as Message;
+			const message = (await channel.messages.fetch(workflow.messageId)) as Message;
 			if (!message) {
 				this.logger.warn(`Message ${workflow.messageId} not found`);
 				return;
@@ -166,7 +170,7 @@ export class WorkflowMonitorService implements OnModuleInit, OnModuleDestroy {
 			// Create action buttons
 			const components: ActionRowBuilder<ButtonBuilder>[] = [];
 			const viewButton = DiscordUtils.createViewWorkflowButton(workflowRun.html_url);
-			
+
 			if (isCompleted && workflowRun.conclusion === 'success') {
 				// Try to get PR URL if workflow created one
 				const prButton = await this.tryGetPRButton(workflow.repository, workflowRun);
@@ -197,7 +201,7 @@ export class WorkflowMonitorService implements OnModuleInit, OnModuleDestroy {
 	private async tryGetPRButton(repository: string, workflowRun: any): Promise<ButtonBuilder | null> {
 		try {
 			const [owner, repo] = repository.split('/');
-			
+
 			// Try to find recent PRs that might be from this workflow
 			// This is a best-effort attempt since we don't have direct PR link from workflow
 			const octokit = (this.workflowService as any).octokit;
@@ -243,7 +247,9 @@ export class WorkflowMonitorService implements OnModuleInit, OnModuleDestroy {
 			const age = now.getTime() - workflow.startTime.getTime();
 			if (age > this.MAX_MONITOR_TIME) {
 				workflowsToRemove.push(key);
-				this.logger.log(`Removing old workflow ${workflow.runId} from monitoring (age: ${Math.round(age / 60000)} minutes)`);
+				this.logger.log(
+					`Removing old workflow ${workflow.runId} from monitoring (age: ${Math.round(age / 60000)} minutes)`
+				);
 			}
 		}
 

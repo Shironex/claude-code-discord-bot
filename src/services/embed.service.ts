@@ -126,15 +126,20 @@ export class EmbedService {
 		return this.createWarningEmbed(
 			'Claude Code Not Configured',
 			`Repository \`${owner}/${repo}\` does not have Claude Code workflow configured.\n\n` +
-			'To enable Claude Code analysis:\n' +
-			'1. Add the Claude Code workflow file to `.github/workflows/claude.yml`\n' +
-			'2. Configure your `CLAUDE_CODE_OAUTH_TOKEN` secret\n' +
-			'3. Push the changes to your repository\n\n' +
-			'[Learn more about Claude Code setup](https://docs.anthropic.com/en/docs/claude/github-actions)'
+				'To enable Claude Code analysis:\n' +
+				'1. Add the Claude Code workflow file to `.github/workflows/claude.yml`\n' +
+				'2. Configure your `CLAUDE_CODE_OAUTH_TOKEN` secret\n' +
+				'3. Push the changes to your repository\n\n' +
+				'[Learn more about Claude Code setup](https://docs.anthropic.com/en/docs/claude/github-actions)'
 		);
 	}
 
-	createWorkflowDispatchedEmbed(repository: string, branch: string, prompt: string, workflowRun: WorkflowRun): EmbedBuilder {
+	createWorkflowDispatchedEmbed(
+		repository: string,
+		branch: string,
+		prompt: string,
+		workflowRun: WorkflowRun
+	): EmbedBuilder {
 		const embed = new EmbedBuilder()
 			.setTitle('🚀 Claude Code Workflow Started')
 			.setDescription(`Claude is analyzing \`${repository}\` on branch \`${branch}\``)
@@ -169,7 +174,7 @@ export class EmbedService {
 	createWorkflowStatusEmbed(workflowRun: WorkflowRun, repository: string): EmbedBuilder {
 		const statusEmoji = this.getWorkflowStatusEmoji(workflowRun.status, workflowRun.conclusion);
 		const statusText = this.getWorkflowStatusText(workflowRun.status, workflowRun.conclusion);
-		
+
 		let color = DISCORD_COLORS.INFO;
 		if (workflowRun.status === 'completed') {
 			color = workflowRun.conclusion === 'success' ? DISCORD_COLORS.SUCCESS : DISCORD_COLORS.ERROR;
@@ -269,13 +274,13 @@ export class EmbedService {
 	createWorkflowCompletedEmbed(repository: string, workflowRun: WorkflowRun, startTime: Date): EmbedBuilder {
 		const statusEmoji = this.getWorkflowStatusEmoji(workflowRun.status, workflowRun.conclusion);
 		const statusText = this.getWorkflowStatusText(workflowRun.status, workflowRun.conclusion);
-		
+
 		let color = DISCORD_COLORS.SUCCESS;
 		if (workflowRun.conclusion !== 'success') {
 			color = workflowRun.conclusion === 'failure' ? DISCORD_COLORS.ERROR : DISCORD_COLORS.WARNING;
 		}
 
-		const duration = workflowRun.updated_at 
+		const duration = workflowRun.updated_at
 			? Math.round((new Date(workflowRun.updated_at).getTime() - startTime.getTime()) / 1000)
 			: null;
 

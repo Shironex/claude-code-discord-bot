@@ -75,7 +75,7 @@ export class RepositorySelectHandler {
 
 		// Create action buttons
 		const components: ActionRowBuilder<ButtonBuilder>[] = [];
-		
+
 		if (hasClaudeWorkflow) {
 			const analyzeButton = DiscordUtils.createClaudeAnalyzeButton();
 			const actionRow = new ActionRowBuilder<ButtonBuilder>().addComponents(analyzeButton);
