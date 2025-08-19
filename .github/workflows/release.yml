@@ -16,6 +16,9 @@ permissions:
   issues: write
   id-token: write
 
+env:
+  HUSKY: 0
+
 jobs:
   release:
     name: Release
