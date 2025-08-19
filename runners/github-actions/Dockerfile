@@ -51,24 +51,26 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | d
     && apt-get install -y gh \
     && rm -rf /var/lib/apt/lists/*
 
+# Create runner user first
+RUN useradd -m -d /home/runner -s /bin/bash runner \
+    && usermod -aG sudo runner \
+    && echo "runner ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
 # Create runner directory
 WORKDIR /home/runner
 
-# Download and install GitHub Actions Runner
+# Download and install GitHub Actions Runner as runner user
+USER runner
 RUN curl -o actions-runner-linux-x64-${GITHUB_ACTIONS_RUNNER_VERSION}.tar.gz \
     -L https://github.com/actions/runner/releases/download/v${GITHUB_ACTIONS_RUNNER_VERSION}/actions-runner-linux-x64-${GITHUB_ACTIONS_RUNNER_VERSION}.tar.gz \
     && tar xzf actions-runner-linux-x64-${GITHUB_ACTIONS_RUNNER_VERSION}.tar.gz \
     && rm actions-runner-linux-x64-${GITHUB_ACTIONS_RUNNER_VERSION}.tar.gz
 
-# Install runner dependencies
-RUN ./bin/installdependencies.sh
+# Install runner dependencies (needs sudo)
+USER root
+RUN cd /home/runner && ./bin/installdependencies.sh
 
-# Create runner user
-RUN useradd -m -d /home/runner -s /bin/bash runner \
-    && usermod -aG sudo runner \
-    && echo "runner ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-
-# Change ownership of runner directory
+# Ensure correct ownership
 RUN chown -R runner:runner /home/runner
 
 # Switch to runner user
