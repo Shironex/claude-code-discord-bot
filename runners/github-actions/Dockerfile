@@ -22,6 +22,10 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
 # Install pnpm globally
 RUN npm install -g pnpm@latest
 
+# Install Bun
+RUN curl -fsSL https://bun.sh/install | bash \
+    && mv /root/.bun/bin/bun /usr/local/bin/
+
 # Install GitHub CLI (if not already present)
 RUN if ! command -v gh &> /dev/null; then \
     curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg && \
