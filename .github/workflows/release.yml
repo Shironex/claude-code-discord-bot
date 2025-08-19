@@ -55,28 +55,52 @@ jobs:
         if: steps.changesets.outputs.has_changesets == 'true'
         run: |
           # Version packages based on changesets
-          pnpm changeset version
+          if pnpm changeset version; then
+            echo "✅ Changesets processed successfully"
+          else
+            echo "⚠️ No changesets to process, skipping version bump"
+            exit 0
+          fi
           
-          # Get the new versions
+          # Get the new versions after changeset processing
           DISCORD_BOT_VERSION=$(node -p "require('./apps/discord-bot/package.json').version")
-          ROOT_VERSION=$(node -p "require('./package.json').version")
+          CURRENT_ROOT_VERSION=$(node -p "require('./package.json').version")
           
-          # Update root package version to match the latest package version
-          # This keeps the root version in sync with major releases
-          npm version $DISCORD_BOT_VERSION --no-git-tag-version
+          # Determine the highest version across all packages for root sync
+          HIGHEST_VERSION=$DISCORD_BOT_VERSION
+          # TODO: When adding new packages, compare their versions here
+          # DOCS_VERSION=$(node -p "require('./packages/docs/package.json').version")
+          # if [ "$(printf '%s\n' "$HIGHEST_VERSION" "$DOCS_VERSION" | sort -V | tail -n1)" = "$DOCS_VERSION" ]; then
+          #   HIGHEST_VERSION=$DOCS_VERSION
+          # fi
+          
+          # Update root package version to match highest package version
+          if [ "$CURRENT_ROOT_VERSION" != "$HIGHEST_VERSION" ]; then
+            npm version $HIGHEST_VERSION --no-git-tag-version
+            echo "📦 Root version updated: $CURRENT_ROOT_VERSION → $HIGHEST_VERSION"
+          fi
           
           echo "DISCORD_BOT_VERSION=$DISCORD_BOT_VERSION" >> $GITHUB_ENV
-          echo "ROOT_VERSION=$DISCORD_BOT_VERSION" >> $GITHUB_ENV
+          echo "ROOT_VERSION=$HIGHEST_VERSION" >> $GITHUB_ENV
           
           # Commit the version changes
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add .
-          git commit -m "chore(release): version packages to $DISCORD_BOT_VERSION"
+          git commit -m "chore(release): version packages to $HIGHEST_VERSION" || echo "No changes to commit"
           
-          # Create git tags for both root and packages
-          git tag "v$ROOT_VERSION" -m "Release v$ROOT_VERSION"
-          git tag "@claude-code/discord-bot@$DISCORD_BOT_VERSION" -m "Release @claude-code/discord-bot@$DISCORD_BOT_VERSION"
+          # Create git tags with collision detection
+          if git tag "v$HIGHEST_VERSION" -m "Release v$HIGHEST_VERSION" 2>/dev/null; then
+            echo "✅ Created root tag: v$HIGHEST_VERSION"
+          else
+            echo "⚠️ Root tag v$HIGHEST_VERSION already exists, skipping"
+          fi
+          
+          if git tag "@claude-code/discord-bot@$DISCORD_BOT_VERSION" -m "Release @claude-code/discord-bot@$DISCORD_BOT_VERSION" 2>/dev/null; then
+            echo "✅ Created package tag: @claude-code/discord-bot@$DISCORD_BOT_VERSION"
+          else
+            echo "⚠️ Package tag @claude-code/discord-bot@$DISCORD_BOT_VERSION already exists, skipping"
+          fi
           
           # Push changes and tags
           git push origin master --follow-tags

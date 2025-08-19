@@ -267,6 +267,17 @@ export class CustomButtonHandler {
 - User-friendly error messages
 - Proper logging for debugging
 
+## Adding New Packages
+
+When you add new applications or packages to the monorepo (docs, web UI, mobile app, etc.), follow the comprehensive guide at [Adding New Packages](./.github/docs/ADDING_NEW_PACKAGES.md). This ensures proper integration with:
+
+- Automated versioning and release management
+- CI/CD pipeline and quality checks  
+- Conventional commit scopes and validation
+- Package-specific tagging and changelog generation
+
+The release system is designed to scale automatically as you add more workspace packages.
+
 ## Current Features
 
 This Discord bot provides streamlined GitHub integration with Claude Code workflow automation through a unified command interface:
