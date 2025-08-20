@@ -13,13 +13,14 @@ export interface CustomLoggerOptions extends LoggerOptions {
 
 export const createLoggerConfig = (options: CustomLoggerOptions = {}): LoggerOptions => {
 	const configService = options.configService;
-	
+
 	const {
 		serviceName = 'Application',
-		enableFileLogging = (configService?.get<string>('ENABLE_FILE_LOGS') || process.env.ENABLE_FILE_LOGS) !== 'false',
-		logLevel = configService?.get<string>('LOG_LEVEL') || 
-				   process.env.LOG_LEVEL || 
-				   (process.env.NODE_ENV === 'production' ? 'info' : 'debug')
+		enableFileLogging = (configService?.get<string>('ENABLE_FILE_LOGS') || process.env.ENABLE_FILE_LOGS) !==
+			'false',
+		logLevel = configService?.get<string>('LOG_LEVEL') ||
+			process.env.LOG_LEVEL ||
+			(process.env.NODE_ENV === 'production' ? 'info' : 'debug')
 	} = options;
 
 	// Only the main Application logger should handle global exceptions

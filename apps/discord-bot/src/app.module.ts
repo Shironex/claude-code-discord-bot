@@ -29,7 +29,9 @@ import { ClaudeRepoSearchModalHandler } from './interactions/modals/claude-repo-
 
 @Module({
 	imports: [
-		ConfigModule.forRoot(), // Load .env file
+		ConfigModule.forRoot({
+			isGlobal: true
+		}), // Load .env file
 		LoggerModule, // Global logger configuration
 		NecordModule.forRootAsync({
 			imports: [ConfigModule],

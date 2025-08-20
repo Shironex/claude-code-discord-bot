@@ -24,7 +24,11 @@ export class LoggerService implements NestLoggerService {
 			this.configService = configService;
 
 			// Create base logger configuration with ConfigService
-			const config = createLoggerConfig({ ...options, serviceName: this.serviceName, configService: this.configService });
+			const config = createLoggerConfig({
+				...options,
+				serviceName: this.serviceName,
+				configService: this.configService
+			});
 			this.logger = winston.createLogger(config);
 
 			// Add service-specific file transport if file logging is enabled
@@ -345,31 +349,25 @@ export class LoggerService implements NestLoggerService {
 	private setupMemoryMonitoring(): void {
 		// Get configurable thresholds using ConfigService or fallback to environment variables
 		const warningThreshold = parseInt(
-			this.configService?.get<string>('MEMORY_WARNING_THRESHOLD') || 
-			process.env.MEMORY_WARNING_THRESHOLD || 
-			'90', 
+			this.configService?.get<string>('MEMORY_WARNING_THRESHOLD') || process.env.MEMORY_WARNING_THRESHOLD || '90',
 			10
 		);
 		const debugThreshold = parseInt(
-			this.configService?.get<string>('MEMORY_DEBUG_THRESHOLD') || 
-			process.env.MEMORY_DEBUG_THRESHOLD || 
-			'75', 
+			this.configService?.get<string>('MEMORY_DEBUG_THRESHOLD') || process.env.MEMORY_DEBUG_THRESHOLD || '75',
 			10
 		);
 		const checkInterval = parseInt(
-			this.configService?.get<string>('MEMORY_CHECK_INTERVAL') || 
-			process.env.MEMORY_CHECK_INTERVAL || 
-			'30000', 
+			this.configService?.get<string>('MEMORY_CHECK_INTERVAL') || process.env.MEMORY_CHECK_INTERVAL || '30000',
 			10
 		);
 
 		// Validate thresholds
-		const finalWarningThreshold = isNaN(warningThreshold) || warningThreshold < 0 || warningThreshold > 100 
-			? 90 : warningThreshold;
-		const finalDebugThreshold = isNaN(debugThreshold) || debugThreshold < 0 || debugThreshold > 100 
-			? 75 : debugThreshold;
-		const finalCheckInterval = isNaN(checkInterval) || checkInterval < 5000 || checkInterval > 300000 
-			? 30000 : checkInterval; // Min 5s, Max 5min
+		const finalWarningThreshold =
+			isNaN(warningThreshold) || warningThreshold < 0 || warningThreshold > 100 ? 90 : warningThreshold;
+		const finalDebugThreshold =
+			isNaN(debugThreshold) || debugThreshold < 0 || debugThreshold > 100 ? 75 : debugThreshold;
+		const finalCheckInterval =
+			isNaN(checkInterval) || checkInterval < 5000 || checkInterval > 300000 ? 30000 : checkInterval; // Min 5s, Max 5min
 
 		this.debug(
 			`Memory monitoring initialized - Warning: ${finalWarningThreshold}%, Debug: ${finalDebugThreshold}%, Interval: ${finalCheckInterval}ms`,
