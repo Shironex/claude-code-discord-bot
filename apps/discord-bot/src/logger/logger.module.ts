@@ -1,6 +1,7 @@
-import { Module, Global, Provider } from '@nestjs/common';
+import { Module, Global, Provider, Inject } from '@nestjs/common';
 import { WinstonModule } from 'nest-winston';
 import { LoggerService } from './logger.service';
+import { LoggerFactory } from './logger.factory';
 import { createLoggerConfig } from './logger.config';
 
 /**
@@ -31,12 +32,13 @@ export const createLoggerProvider = (context: string): Provider => ({
 		)
 	],
 	providers: [
+		LoggerFactory,
 		{
 			provide: CUSTOM_LOGGER,
 			useFactory: () => new LoggerService('Application')
 		}
 	],
-	exports: [CUSTOM_LOGGER, WinstonModule]
+	exports: [CUSTOM_LOGGER, LoggerFactory, WinstonModule]
 })
 export class LoggerModule {
 	/**
@@ -53,16 +55,17 @@ export class LoggerModule {
 
 /**
  * Decorator to inject a logger service for a specific context
+ * Properly integrates with NestJS dependency injection system
  */
 export const InjectLogger = (context: string = 'Application') => {
 	const token = context === 'Application' ? CUSTOM_LOGGER : `${CUSTOM_LOGGER}_${context}`;
-	return function (target: any, key: string | symbol | undefined, index?: number) {
-		// This is a parameter decorator for dependency injection
-		if (typeof index === 'number') {
-			// Store metadata for NestJS dependency injection
-			const existingTokens = Reflect.getMetadata('custom:logger_tokens', target) || [];
-			existingTokens[index] = token;
-			Reflect.defineMetadata('custom:logger_tokens', existingTokens, target);
-		}
-	};
+	return Inject(token);
 };
+
+/**
+ * Factory to create a logger service provider for a specific context
+ */
+export const createLoggerServiceProvider = (context: string): Provider => ({
+	provide: `${CUSTOM_LOGGER}_${context}`,
+	useFactory: () => new LoggerService(context),
+});

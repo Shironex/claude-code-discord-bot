@@ -3,14 +3,14 @@ import { fileFormatter } from '../formatters/file.formatter';
 import * as path from 'path';
 
 export const combinedFileTransport = () => {
-	const logDir = path.resolve(process.cwd(), 'logs');
+	const logDir = path.resolve(process.cwd(), process.env.LOG_DIR || 'logs');
 
 	return new DailyRotateFile({
 		filename: path.join(logDir, 'combined-%DATE%.log'),
 		datePattern: 'YYYY-MM-DD',
 		format: fileFormatter,
 		maxSize: '20m',
-		maxFiles: '14d',
+		maxFiles: process.env.LOG_MAX_FILES || '14d',
 		zippedArchive: true,
 		createSymlink: true,
 		symlinkName: 'combined.log',

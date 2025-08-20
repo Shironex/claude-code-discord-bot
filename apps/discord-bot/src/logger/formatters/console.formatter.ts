@@ -1,5 +1,6 @@
 import { format, Logform } from 'winston';
 import chalk from 'chalk';
+import { filterSensitiveData } from '../../utils/security.utils';
 
 const { combine, timestamp, printf, errors } = format;
 
@@ -40,9 +41,10 @@ export const consoleFormatter = (serviceName: string): Logform.Format => {
 				messageText += `\n${chalk.red(stack)}`;
 			}
 
-			// Add metadata if present
+			// Add metadata if present - filter sensitive data first
 			if (Object.keys(meta).length > 0) {
-				const metaText = JSON.stringify(meta, null, 2);
+				const filteredMeta = filterSensitiveData(meta);
+				const metaText = JSON.stringify(filteredMeta, null, 2);
 				messageText += chalk.gray(`\nMetadata: ${metaText}`);
 			}
 

@@ -22,30 +22,40 @@ async function bootstrap() {
 	// Handle graceful shutdown
 	process.on('SIGINT', async () => {
 		appLogger.info('Received SIGINT, shutting down gracefully...');
-		appLogger.flush();
-		await app.close();
-		process.exit(0);
+		try {
+			await appLogger.flush();
+			await app.close();
+			process.exit(0);
+		} catch (error) {
+			console.error('Error during graceful shutdown:', error);
+			process.exit(1);
+		}
 	});
 
 	process.on('SIGTERM', async () => {
 		appLogger.info('Received SIGTERM, shutting down gracefully...');
-		appLogger.flush();
-		await app.close();
-		process.exit(0);
+		try {
+			await appLogger.flush();
+			await app.close();
+			process.exit(0);
+		} catch (error) {
+			console.error('Error during graceful shutdown:', error);
+			process.exit(1);
+		}
 	});
 
 	// Handle uncaught exceptions
 	process.on('uncaughtException', error => {
 		appLogger.error('Uncaught Exception:', error.stack, 'Application');
-		appLogger.flush();
-		process.exit(1);
+		appLogger.safeFlush(); // Use safe flush to prevent hanging
+		setTimeout(() => process.exit(1), 1000); // Give flush time to complete
 	});
 
 	// Handle unhandled promise rejections
 	process.on('unhandledRejection', (reason, promise) => {
 		appLogger.error('Unhandled Rejection at:', promise.toString(), 'Application', { reason });
-		appLogger.flush();
-		process.exit(1);
+		appLogger.safeFlush(); // Use safe flush to prevent hanging
+		setTimeout(() => process.exit(1), 1000); // Give flush time to complete
 	});
 
 	appLogger.info('Discord bot application started successfully');

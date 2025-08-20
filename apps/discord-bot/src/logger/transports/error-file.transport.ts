@@ -3,7 +3,7 @@ import { fileFormatter } from '../formatters/file.formatter';
 import * as path from 'path';
 
 export const errorFileTransport = (handleGlobalExceptions: boolean = false) => {
-	const logDir = path.resolve(process.cwd(), 'logs');
+	const logDir = path.resolve(process.cwd(), process.env.LOG_DIR || 'logs');
 
 	return new DailyRotateFile({
 		filename: path.join(logDir, 'error-%DATE%.log'),
@@ -11,7 +11,7 @@ export const errorFileTransport = (handleGlobalExceptions: boolean = false) => {
 		level: 'error',
 		format: fileFormatter,
 		maxSize: '20m',
-		maxFiles: '14d',
+		maxFiles: process.env.LOG_MAX_FILES || '14d',
 		handleExceptions: handleGlobalExceptions,
 		handleRejections: handleGlobalExceptions,
 		zippedArchive: true,
