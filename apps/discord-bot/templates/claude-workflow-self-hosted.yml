@@ -7,6 +7,10 @@ on:
         description: 'Prompt for Claude'
         required: true
         type: string
+      tracking_id:
+        description: 'Unique tracking ID for this workflow run'
+        required: false
+        type: string
 
 jobs:
   claude:
@@ -32,7 +36,8 @@ jobs:
           direct_prompt: ${{ github.event.inputs.prompt }}
           allowed_tools: "Bash,Write,Read,Edit,MultiEdit,Glob,Grep"
           custom_instructions: |
-            You are running in automation mode triggered by Discord on a self-hosted runner.
+            You are running in automation mode triggered by Discord.
+            Workflow Tracking ID: ${{ github.event.inputs.tracking_id }}
             Focus on completing the requested task thoroughly.
             Do NOT create branches, commits, or pull requests in this step.
             Just implement the requested changes.
@@ -58,7 +63,8 @@ jobs:
             Original task: ${{ github.event.inputs.prompt }}
           allowed_tools: "Bash,Read,Grep"
           custom_instructions: |
-            You are in PR creation mode on a self-hosted runner.
+            You are in PR creation mode.
+            Workflow Tracking ID: ${{ github.event.inputs.tracking_id }}
             Your only job is to package the changes into a proper pull request.
             Use git commands to create branch, commit, push, and create PR.
             Write clear, professional commit messages and PR descriptions.
