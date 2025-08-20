@@ -42,7 +42,7 @@ export class SessionService extends BaseService implements ISessionService {
 
 		Object.assign(session, updates);
 		this.sessions.set(userId, session);
-		this.logger.debug(`Updated session for user ${userId}`, updates);
+		this.logger.debug(`Updated session for user ${userId}`, 'updateSession', updates);
 	}
 
 	deleteSession(userId: string): void {
