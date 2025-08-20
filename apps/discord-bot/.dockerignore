@@ -10,6 +10,7 @@ dist
 
 # Environment files
 .env
+.env.example
 .env.local
 .env.development
 .env.test
@@ -62,3 +63,9 @@ nest-cli.json
 
 # Husky
 .husky
+
+# Github workflow templates
+templates
+
+# Turbo cache
+.turbo

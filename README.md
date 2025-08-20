@@ -144,24 +144,36 @@ MEMORY_WARNING_THRESHOLD="90"       # Memory usage warning at 90%
 
 To use the bot, your repositories need a Claude Code workflow file:
 
-1. **Choose a Workflow Template**
-   - `apps/discord-bot/templates/claude-workflow-single-step.yml` - Simple one-step analysis
-   - `apps/discord-bot/templates/claude-workflow-two-step.yml` - Two-step analysis with review
-   - `apps/discord-bot/templates/claude-workflow-self-hosted.yml` - For self-hosted runners
+1. **Copy the Recommended Template**
+   
+   Copy the contents of `apps/discord-bot/templates/claude-workflow-two-step.yml` from this repository to your target repository as `.github/workflows/claude.yml`.
 
-2. **Copy to Your Repository**
+   **Why the two-step workflow?** This template is mainly tested with self-hosted runners and provides better reliability. Other templates are more experimental.
+
+2. **Add to Your Repository**
    ```bash
    # In any repository you want to analyze:
    mkdir -p .github/workflows
    
-   # Copy the template (example using single-step):
-   cp /path/to/claude-code-discord-bot/apps/discord-bot/templates/claude-workflow-single-step.yml .github/workflows/claude.yml
+   # Copy the two-step template content to claude.yml
+   # (Copy the file content manually or download it)
    
    # Commit the workflow
    git add .github/workflows/claude.yml
    git commit -m "feat: add Claude Code workflow"
    git push
    ```
+
+3. **Customize the Workflow (Optional)**
+   
+   You can modify the `custom_instructions` field in the workflow file to better match your specific needs and development flow.
+
+4. **Advanced Customization**
+   
+   For more detailed Claude Code action modifications, visit the official documentation:
+   https://github.com/anthropics/claude-code-action/tree/main/docs
+   
+   Note: Both `custom_instructions` and workflow templates will be configurable through a UI/web interface in future releases.
 
 ### Step 6: Start the Bot
 
