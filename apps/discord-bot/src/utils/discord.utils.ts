@@ -87,16 +87,19 @@ export class DiscordUtils {
 	}
 
 	static createFileSelectMenu(fileItems: ReadonlyArray<FileTreeItem>): StringSelectMenuBuilder {
+		// Sort items for better display
+		const sortedItems = FileTreeUtils.sortItemsForDisplay(fileItems);
+
+		// Limit to 25 items due to Discord's select menu constraint
+		const limitedItems = sortedItems.slice(0, 25);
+
 		const selectMenu = new StringSelectMenuBuilder()
 			.setCustomId(CUSTOM_IDS.FILE_PATH_SELECT)
 			.setPlaceholder('📁 Choose files/folders for context...')
 			.setMinValues(0)
-			.setMaxValues(Math.min(fileItems.length, 25)); // Discord limit
+			.setMaxValues(limitedItems.length); // Use limited items length
 
-		// Sort items for better display
-		const sortedItems = FileTreeUtils.sortItemsForDisplay(fileItems);
-
-		sortedItems.forEach(item => {
+		limitedItems.forEach(item => {
 			const emoji = FileTreeUtils.getFileEmoji(item);
 			const description = FileTreeUtils.createItemDescription(item);
 
