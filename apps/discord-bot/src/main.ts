@@ -29,7 +29,12 @@ async function bootstrap() {
 			await app.close();
 			process.exit(0);
 		} catch (error) {
-			console.error('Error during graceful shutdown:', error);
+			try {
+				appLogger.error('Error during graceful shutdown (SIGINT):', error);
+			} catch {
+				// Fallback to console if logger fails
+				console.error('Error during graceful shutdown (SIGINT):', error);
+			}
 			process.exit(1);
 		}
 	});
@@ -41,7 +46,12 @@ async function bootstrap() {
 			await app.close();
 			process.exit(0);
 		} catch (error) {
-			console.error('Error during graceful shutdown:', error);
+			try {
+				appLogger.error('Error during graceful shutdown (SIGTERM):', error);
+			} catch {
+				// Fallback to console if logger fails
+				console.error('Error during graceful shutdown (SIGTERM):', error);
+			}
 			process.exit(1);
 		}
 	});

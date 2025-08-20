@@ -37,7 +37,7 @@ export class LoggerService implements NestLoggerService {
 					this.serviceFileTransport = createServiceFileTransport(this.serviceName);
 					this.logger.add(this.serviceFileTransport);
 				} catch (error) {
-					// Log the error but don't fail completely - fallback to console/combined logging
+					// Fallback to console when service file transport fails - logger not fully initialized yet
 					console.warn(`Failed to create service file transport for "${this.serviceName}": ${error.message}`);
 				}
 			}
@@ -52,7 +52,7 @@ export class LoggerService implements NestLoggerService {
 					verbose: 'magenta'
 				});
 			} catch (error) {
-				// Colors are not critical, continue without them
+				// Fallback to console - colors are not critical, continue without them
 				console.warn('Failed to set Winston colors:', error.message);
 			}
 
@@ -61,7 +61,7 @@ export class LoggerService implements NestLoggerService {
 				this.setupMemoryMonitoring();
 			}
 		} catch (error) {
-			// If logger creation fails completely, create a minimal fallback
+			// Fallback to console when logger creation fails completely - create minimal fallback
 			console.error(`Failed to create logger for service "${serviceName}":`, error);
 			this.serviceName = serviceName || 'Unknown';
 

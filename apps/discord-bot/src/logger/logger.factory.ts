@@ -49,6 +49,7 @@ export class LoggerFactory {
 	async flushAll(): Promise<void> {
 		const flushPromises = this.getAllLoggers().map(logger =>
 			logger.flush().catch(error => {
+				// Fallback to console when individual logger flush fails
 				console.error(`Failed to flush logger:`, error);
 			})
 		);
