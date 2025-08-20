@@ -9,7 +9,7 @@ on:
         type: string
       tracking_id:
         description: 'Unique tracking ID for this workflow run'
-        required: false
+        required: true
         type: string
 
 jobs:

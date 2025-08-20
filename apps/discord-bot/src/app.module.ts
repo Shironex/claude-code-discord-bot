@@ -3,6 +3,9 @@ import { Module } from '@nestjs/common';
 import { IntentsBitField } from 'discord.js';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
+// Logger
+import { LoggerModule } from './logger/logger.module';
+
 // Services
 import { GitHubService } from './services/github.service';
 import { SessionService } from './services/session.service';
@@ -26,7 +29,10 @@ import { ClaudeRepoSearchModalHandler } from './interactions/modals/claude-repo-
 
 @Module({
 	imports: [
-		ConfigModule.forRoot(), // Load .env file
+		ConfigModule.forRoot({
+			isGlobal: true
+		}), // Load .env file
+		LoggerModule, // Global logger configuration
 		NecordModule.forRootAsync({
 			imports: [ConfigModule],
 			useFactory: (configService: ConfigService) => ({

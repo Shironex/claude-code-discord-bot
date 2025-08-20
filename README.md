@@ -45,47 +45,196 @@ apps/discord-bot/src/
 └── main.ts               # Application entry point
 ```
 
-## Installation & Development
+## Quick Start for Local Testing
+
+This guide helps you get the Discord bot running locally.
 
 ### Prerequisites
 
-- Node.js >= 22.11.0
-- pnpm >= 10.9.0
-- Discord Bot Token
-- GitHub Personal Access Token
+- **Node.js** >= 22.11.0 ([Download](https://nodejs.org/))
+- **pnpm** >= 10.9.0 (Install: `npm install -g pnpm`)
+- **Discord Bot** with required permissions
+- **GitHub Personal Access Token** with proper scopes
 
-### Setup
+### Step 1: Clone & Install
 
-1. **Clone the repository**
+```bash
+# Clone the repository
+git clone https://github.com/Shironex/claude-code-discord-bot.git
+cd claude-code-discord-bot
+
+# Install all dependencies
+pnpm install
+```
+
+### Step 2: Create Discord Bot
+
+1. **Go to Discord Developer Portal**
+   - Visit: https://discord.com/developers/applications
+   - Click "New Application" → Enter a name (e.g., "Claude Bot Test")
+
+2. **Create Bot**
+   - Go to "Bot" section → Click "Add Bot"
+   - **Copy the Bot Token** (you'll need this for `.env`)
+   - Enable these **Privileged Gateway Intents**:
+     - ✅ Message Content Intent
+     - ✅ Server Members Intent
+
+3. **Bot Permissions**
+   - Go to "OAuth2" → "URL Generator"
+   - **Scopes**: Select `bot` and `applications.commands`
+   - **Bot Permissions**: Select:
+     - ✅ Send Messages
+     - ✅ Use Slash Commands
+     - ✅ Embed Links
+     - ✅ Read Message History
+
+4. **Invite Bot to Your Server**
+   - Copy the generated URL and open it
+   - Select your test server and authorize
+
+5. **Get Guild ID**
+   - Enable Developer Mode: Discord Settings → Advanced → Developer Mode ✅
+   - Right-click your server → "Copy Server ID"
+
+### Step 3: Create GitHub Token
+
+1. **Go to GitHub Settings**
+   - Visit: https://github.com/settings/personal-access-tokens
+   - Click "Generate new token (personal)"
+
+2. **Configure Token**
+   - **Note**: "Claude Discord Bot Token"
+   - **Repository Permissions** (select these):
+     - ✅ **Actions** - Read and Write (required for dispatching workflows)
+     - ✅ **Commit statuses** - Read-only (for workflow status updates)
+     - ✅ **Contents** - Read-only (for reading repository files)
+     - ✅ **Metadata** - Read-only (for repository information)
+     - ✅ **Pull Requests** - Read-only (for PR-related workflows)
+
+3. **Copy Token** - Save it securely, you won't see it again!
+
+### Step 4: Configure Environment
+
+```bash
+# Copy the environment template
+cp apps/discord-bot/.env.example apps/discord-bot/.env
+
+# Edit the .env file with your values
+nano apps/discord-bot/.env  # or use any text editor
+```
+
+**Configure these values in `apps/discord-bot/.env`:**
+
+```bash
+# Discord Configuration
+DISCORD_TOKEN="your_bot_token_from_step_2"
+DEV_GUILD="your_server_id_from_step_2"
+
+# GitHub Integration  
+GITHUB_TOKEN="your_github_token_from_step_3"
+
+# Logging Configuration (optional - these are defaults)
+LOG_LEVEL="debug"                   # For testing, use "debug" for more logs
+ENABLE_FILE_LOGS="true"            # Creates log files in logs/ directory
+MEMORY_WARNING_THRESHOLD="90"       # Memory usage warning at 90%
+```
+
+### Step 5: Set Up Claude Code Workflow
+
+To use the bot, your repositories need a Claude Code workflow file:
+
+1. **Choose a Workflow Template**
+   - `apps/discord-bot/templates/claude-workflow-single-step.yml` - Simple one-step analysis
+   - `apps/discord-bot/templates/claude-workflow-two-step.yml` - Two-step analysis with review
+   - `apps/discord-bot/templates/claude-workflow-self-hosted.yml` - For self-hosted runners
+
+2. **Copy to Your Repository**
    ```bash
-   git clone <repository-url>
-   cd claude-code-discord-bot
-   ```
-
-2. **Install dependencies**
-   ```bash
-   pnpm install
-   ```
-
-3. **Configure environment**
-   ```bash
-   # Copy environment template
-   cp apps/discord-bot/.env.example apps/discord-bot/.env
+   # In any repository you want to analyze:
+   mkdir -p .github/workflows
    
-   # Edit apps/discord-bot/.env with your tokens:
-   # DISCORD_TOKEN=your_discord_bot_token
-   # DEV_GUILD=your_development_guild_id
-   # GITHUB_TOKEN=your_github_personal_access_token
+   # Copy the template (example using single-step):
+   cp /path/to/claude-code-discord-bot/apps/discord-bot/templates/claude-workflow-single-step.yml .github/workflows/claude.yml
+   
+   # Commit the workflow
+   git add .github/workflows/claude.yml
+   git commit -m "feat: add Claude Code workflow"
+   git push
    ```
 
-4. **Start development server**
-   ```bash
-   # Start Discord bot in watch mode
-   pnpm dev
-   
-   # Or start specific app
-   pnpm dev --filter=@claude-code/discord-bot
+### Step 6: Start the Bot
+
+```bash
+# Start the bot in development mode
+pnpm dev
+
+# You should see output like:
+# [INFO] Discord bot application starting...
+# [INFO] Bot logged in as: YourBotName#1234
+# [INFO] Discord bot application started successfully
+```
+
+### Step 7: Test the Bot
+
+1. **In Discord**, use the slash command:
    ```
+   /claude
+   ```
+
+2. **Search for Repository**
+   - Enter a repository name (e.g., "my-project")
+   - Select a repository from the dropdown
+
+3. **Enter Analysis Prompt**
+   - Type what you want Claude to analyze
+   - Example: "Review this code for security issues"
+
+4. **Monitor Progress**
+   - The bot will show workflow status updates
+   - Click "Check Status" to see progress
+   - Results will appear when complete
+
+### Troubleshooting
+
+**Bot not responding?**
+- Check bot permissions in Discord server
+- Verify `DISCORD_TOKEN` and `DEV_GUILD` in `.env`
+- Check console for error messages
+
+**"No repositories found"?**
+- Ensure `GITHUB_TOKEN` has `repo` scope
+- Add `claude.yml` workflow to your repositories
+- Check that repositories are accessible with your token
+
+**Workflow not starting?**
+- Verify `claude.yml` exists in `.github/workflows/`
+- Check GitHub token has `workflow` scope
+- Ensure repository has GitHub Actions enabled
+
+**Memory warnings?**
+- Normal for development - Node.js starts with small heap
+- Adjust `MEMORY_WARNING_THRESHOLD` if needed
+- Monitor with `MEMORY_DEBUG_THRESHOLD=50` for more details
+
+### File Structure After Setup
+
+```
+claude-code-discord-bot/
+├── apps/discord-bot/.env          # Your configuration
+├── logs/                          # Log files (auto-created)
+│   ├── error.log                  # Error logs only
+│   ├── combined.log               # All logs  
+│   └── services/                  # Service-specific logs
+├── node_modules/                  # Dependencies
+└── dist/                          # Built application
+```
+
+### Next Steps
+
+- **Production Deployment**: See [DEPLOYMENT.md](./.github/docs/DEPLOYMENT.md)
+- **Development Guide**: See [CLAUDE.md](./CLAUDE.md) for architecture details
+- **Contributing**: See [CONTRIBUTING.md](./CONTRIBUTING.md) for contribution guidelines
 
 ### Development Commands
 
