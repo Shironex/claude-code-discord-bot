@@ -62,12 +62,26 @@ apps/discord-bot/src/
 │   │   └── claude-repo-search.modal.ts    # Repository search modal
 │   └── selects/
 │       └── repository.select.ts           # Repository selection handler
+├── logger/                # Custom Winston-based logging system
+│   ├── formatters/        # Log formatting utilities
+│   │   ├── console.formatter.ts    # Colored console output formatter
+│   │   └── file.formatter.ts       # JSON file output formatter
+│   ├── transports/        # Winston transport configurations
+│   │   ├── console.transport.ts    # Console logging transport
+│   │   ├── error-file.transport.ts # Error-specific file logging
+│   │   ├── combined-file.transport.ts # Combined logs file transport
+│   │   └── service-file.transport.ts  # Service-specific file logging
+│   ├── logger.service.ts          # Main logger service implementation
+│   ├── logger.factory.ts          # Logger factory for service instances
+│   ├── logger.config.ts           # Winston configuration builder
+│   └── logger.module.ts           # NestJS logger module
 ├── utils/                 # Shared utilities and helpers
 │   ├── discord.constants.ts    # Discord-specific constants
 │   ├── github.constants.ts     # GitHub-specific constants
 │   ├── messages.constants.ts   # User-facing messages
 │   ├── workflow.utils.ts       # Workflow status utilities
-│   └── discord.utils.ts        # Discord UI component builders
+│   ├── discord.utils.ts        # Discord UI component builders
+│   └── security.utils.ts       # Security utilities for logging
 ├── interfaces/            # TypeScript type definitions (organized by domain)
 │   ├── services/          # Service interfaces
 │   │   ├── github.interface.ts     # GitHub service contract
@@ -139,6 +153,97 @@ apps/discord-bot/src/
   - Automatic status updates for running workflows
   - Discord message updates with progress
   - Background polling and notification system
+
+### Custom Logging System
+
+The application implements a comprehensive Winston-based logging system with enhanced security, performance monitoring, and flexible configuration.
+
+#### LoggerService (`apps/discord-bot/src/logger/logger.service.ts`)
+- **Purpose**: Custom Winston logger implementation with NestJS integration
+- **Features**:
+  - **Multi-Transport Logging**: Console, error files, combined files, and service-specific files
+  - **Security**: Automatic sensitive data filtering (passwords, tokens, keys)
+  - **Performance Monitoring**: Method timing, memory usage tracking, slow operation detection  
+  - **Error Handling**: Graceful fallbacks, safe flush operations, comprehensive validation
+  - **NestJS Integration**: Full compatibility with NestJS LoggerService interface
+- **Methods**:
+  - `log()`, `error()`, `warn()`, `debug()`, `verbose()` - Standard logging methods
+  - `time()`, `timeEnd()` - Performance timing using performance.now()
+  - `methodEntry()`, `methodExit()` - Method lifecycle logging
+  - `performance()` - Performance metrics with automatic level determination
+  - `child()` - Create child loggers with additional context
+  - `flush()`, `safeFlush()` - Graceful shutdown support
+
+#### Memory Monitoring
+The logger includes intelligent memory monitoring for production environments:
+- **Configurable Thresholds**: Warning and debug levels via environment variables
+- **Automatic Alerts**: Log warnings when memory usage exceeds thresholds
+- **Performance Tracking**: Real-time heap usage monitoring with percentage calculations
+- **Environment Variables**:
+  ```bash
+  MEMORY_WARNING_THRESHOLD=90    # Warning at 90% heap usage (default)
+  MEMORY_DEBUG_THRESHOLD=75      # Debug logging at 75% heap usage (default)
+  MEMORY_CHECK_INTERVAL=30000    # Check every 30 seconds (default)
+  ```
+
+#### File Logging Structure
+```
+logs/
+├── error.log                    # Error-level logs only
+├── combined.log                 # All log levels combined
+└── services/
+    ├── GitHubService.log        # Service-specific logs
+    ├── SessionService.log       # Service-specific logs
+    └── [ServiceName].log        # Dynamic service-specific logs
+```
+
+#### Log Formats
+- **Console**: Colorized output with timestamps, service context, and readable formatting
+- **Files**: JSON format with structured metadata for parsing and analysis
+- **Security**: Automatic masking of sensitive data (tokens, passwords, API keys)
+
+#### Usage Patterns
+```typescript
+// Basic service logging
+export class MyService extends BaseService {
+  constructor(loggerFactory: LoggerFactory) {
+    super('MyService', loggerFactory);
+  }
+
+  async performOperation() {
+    this.logger.info('Starting operation', 'performOperation');
+    
+    // Performance timing
+    this.logger.time('database-query');
+    const result = await this.queryDatabase();
+    const duration = this.logger.timeEnd('database-query');
+    
+    // Automatic slow operation detection
+    this.logger.checkSlowOperation('database-query', duration, 'performOperation');
+    
+    return result;
+  }
+}
+
+// Method lifecycle logging
+this.logger.methodEntry('processRepository', { repoId: repo.id });
+const result = await this.processRepository(repo);
+this.logger.methodExit('processRepository', result);
+```
+
+#### Configuration Options
+All logging behavior is configurable via environment variables:
+```bash
+# Core logging configuration
+LOG_LEVEL=debug                  # Logging level (error, warn, info, debug, verbose)
+ENABLE_FILE_LOGS=true           # Enable file logging (default: true)
+NODE_ENV=development            # Environment mode affects default log level
+
+# Memory monitoring
+MEMORY_WARNING_THRESHOLD=90      # Memory warning threshold percentage
+MEMORY_DEBUG_THRESHOLD=75        # Memory debug threshold percentage  
+MEMORY_CHECK_INTERVAL=30000      # Memory check interval in milliseconds
+```
 
 ## Environment Setup
 
