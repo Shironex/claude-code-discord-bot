@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { LoggerService } from './logger.service';
 
 /**
@@ -8,6 +9,8 @@ import { LoggerService } from './logger.service';
 @Injectable()
 export class LoggerFactory {
 	private readonly loggers = new Map<string, LoggerService>();
+
+	constructor(private readonly configService: ConfigService) {}
 
 	/**
 	 * Create or retrieve a logger for a specific service
@@ -26,10 +29,10 @@ export class LoggerFactory {
 			return existingLogger;
 		}
 
-		// Create new logger for this service
-		const logger = new LoggerService(serviceName);
+		// Create new logger for this service with ConfigService
+		const logger = new LoggerService(serviceName, {}, this.configService);
 		this.loggers.set(serviceName, logger);
-		
+
 		return logger;
 	}
 
@@ -44,7 +47,7 @@ export class LoggerFactory {
 	 * Flush all created loggers
 	 */
 	async flushAll(): Promise<void> {
-		const flushPromises = this.getAllLoggers().map(logger => 
+		const flushPromises = this.getAllLoggers().map(logger =>
 			logger.flush().catch(error => {
 				console.error(`Failed to flush logger:`, error);
 			})

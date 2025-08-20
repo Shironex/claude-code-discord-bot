@@ -9,7 +9,7 @@ export const fileFormatter: Logform.Format = combine(
 	printf(({ timestamp, level, message, service, method, duration, stack, ...meta }) => {
 		// Filter sensitive data from metadata before logging to files
 		const filteredMeta = Object.keys(meta).length > 0 ? filterSensitiveData(meta) : {};
-		
+
 		const logEntry = {
 			timestamp,
 			level,

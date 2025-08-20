@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { ConfigService } from '@nestjs/config';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { AppModule } from './app.module';
 import { LoggerService } from './logger/logger.service';
@@ -13,8 +14,9 @@ async function bootstrap() {
 	const logger = app.get(WINSTON_MODULE_NEST_PROVIDER);
 	app.useLogger(logger);
 
-	// Create application logger
-	const appLogger = new LoggerService('Application');
+	// Create application logger with ConfigService
+	const configService = app.get<ConfigService>(ConfigService);
+	const appLogger = new LoggerService('Application', {}, configService);
 
 	// Log application startup
 	appLogger.info('Discord bot application starting...');
@@ -62,6 +64,7 @@ async function bootstrap() {
 }
 
 bootstrap().catch(error => {
+	// Create bootstrap logger without ConfigService as fallback
 	const logger = new LoggerService('Bootstrap');
 	logger.error('Failed to start application:', error.stack, 'bootstrap');
 	process.exit(1);

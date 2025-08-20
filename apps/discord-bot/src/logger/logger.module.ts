@@ -1,4 +1,5 @@
 import { Module, Global, Provider, Inject } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { WinstonModule } from 'nest-winston';
 import { LoggerService } from './logger.service';
 import { LoggerFactory } from './logger.factory';
@@ -35,7 +36,8 @@ export const createLoggerProvider = (context: string): Provider => ({
 		LoggerFactory,
 		{
 			provide: CUSTOM_LOGGER,
-			useFactory: () => new LoggerService('Application')
+			useFactory: (configService: ConfigService) => new LoggerService('Application', {}, configService),
+			inject: [ConfigService]
 		}
 	],
 	exports: [CUSTOM_LOGGER, LoggerFactory, WinstonModule]
@@ -67,5 +69,6 @@ export const InjectLogger = (context: string = 'Application') => {
  */
 export const createLoggerServiceProvider = (context: string): Provider => ({
 	provide: `${CUSTOM_LOGGER}_${context}`,
-	useFactory: () => new LoggerService(context),
+	useFactory: (configService: ConfigService) => new LoggerService(context, {}, configService),
+	inject: [ConfigService]
 });

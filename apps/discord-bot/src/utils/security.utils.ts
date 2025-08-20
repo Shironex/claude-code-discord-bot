@@ -81,11 +81,9 @@ export function filterSensitiveData(metadata: Record<string, any>): Record<strin
 
 	for (const [key, value] of Object.entries(metadata)) {
 		const lowerKey = key.toLowerCase();
-		
+
 		// Check if key contains any sensitive patterns
-		const isSensitive = SENSITIVE_KEYS.some(sensitiveKey => 
-			lowerKey.includes(sensitiveKey)
-		);
+		const isSensitive = SENSITIVE_KEYS.some(sensitiveKey => lowerKey.includes(sensitiveKey));
 
 		if (isSensitive) {
 			// Mask sensitive data instead of removing completely

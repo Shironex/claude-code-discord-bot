@@ -1,13 +1,9 @@
 import { Injectable, LoggerService as NestLoggerService } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import * as winston from 'winston';
 import { createLoggerConfig, CustomLoggerOptions } from './logger.config';
 import { createServiceFileTransport } from './transports/service-file.transport';
-import { 
-	isValidLogLevel, 
-	validateLogMessage, 
-	validateContext, 
-	validateMetadata 
-} from '../utils/security.utils';
+import { isValidLogLevel, validateLogMessage, validateContext, validateMetadata } from '../utils/security.utils';
 
 @Injectable()
 export class LoggerService implements NestLoggerService {
@@ -15,8 +11,9 @@ export class LoggerService implements NestLoggerService {
 	private readonly serviceName: string;
 	private readonly serviceFileTransport: winston.transport | null = null;
 	private readonly timers: Map<string, number> = new Map();
+	private readonly configService?: ConfigService;
 
-	constructor(serviceName: string, options: CustomLoggerOptions = {}) {
+	constructor(serviceName: string, options: CustomLoggerOptions = {}, configService?: ConfigService) {
 		try {
 			// Validate service name
 			if (!serviceName || typeof serviceName !== 'string' || serviceName.trim().length === 0) {
@@ -24,9 +21,10 @@ export class LoggerService implements NestLoggerService {
 			}
 
 			this.serviceName = serviceName.trim();
+			this.configService = configService;
 
-			// Create base logger configuration
-			const config = createLoggerConfig({ ...options, serviceName: this.serviceName });
+			// Create base logger configuration with ConfigService
+			const config = createLoggerConfig({ ...options, serviceName: this.serviceName, configService: this.configService });
 			this.logger = winston.createLogger(config);
 
 			// Add service-specific file transport if file logging is enabled
@@ -62,7 +60,7 @@ export class LoggerService implements NestLoggerService {
 			// If logger creation fails completely, create a minimal fallback
 			console.error(`Failed to create logger for service "${serviceName}":`, error);
 			this.serviceName = serviceName || 'Unknown';
-			
+
 			// Create minimal fallback logger
 			this.logger = winston.createLogger({
 				level: 'error',
@@ -207,7 +205,7 @@ export class LoggerService implements NestLoggerService {
 			const validatedLabel = validateLogMessage(label);
 			const timerKey = `${this.serviceName}::${validatedLabel}`;
 			const startTime = this.timers.get(timerKey);
-			
+
 			if (startTime === undefined) {
 				this.warn(`Timer "${validatedLabel}" was not started`, 'timeEnd');
 				return 0;
@@ -298,10 +296,10 @@ export class LoggerService implements NestLoggerService {
 		const childLoggerService = Object.create(LoggerService.prototype);
 		childLoggerService.serviceName = this.serviceName;
 		childLoggerService.serviceFileTransport = null; // Child loggers don't need separate file transports
-		
+
 		// Use Winston's built-in child logger functionality
 		childLoggerService.logger = this.logger.child(additionalContext);
-		
+
 		return childLoggerService;
 	}
 
@@ -332,7 +330,7 @@ export class LoggerService implements NestLoggerService {
 	 */
 	safeFlush(): void {
 		try {
-			this.flush().catch((error) => {
+			this.flush().catch(error => {
 				// Use console.error as fallback since logger might be in bad state
 				console.error('Failed to flush logger safely:', error);
 			});
@@ -345,7 +343,40 @@ export class LoggerService implements NestLoggerService {
 	 * Setup memory monitoring (only for main application logger)
 	 */
 	private setupMemoryMonitoring(): void {
-		// Check memory usage every 30 seconds
+		// Get configurable thresholds using ConfigService or fallback to environment variables
+		const warningThreshold = parseInt(
+			this.configService?.get<string>('MEMORY_WARNING_THRESHOLD') || 
+			process.env.MEMORY_WARNING_THRESHOLD || 
+			'90', 
+			10
+		);
+		const debugThreshold = parseInt(
+			this.configService?.get<string>('MEMORY_DEBUG_THRESHOLD') || 
+			process.env.MEMORY_DEBUG_THRESHOLD || 
+			'75', 
+			10
+		);
+		const checkInterval = parseInt(
+			this.configService?.get<string>('MEMORY_CHECK_INTERVAL') || 
+			process.env.MEMORY_CHECK_INTERVAL || 
+			'30000', 
+			10
+		);
+
+		// Validate thresholds
+		const finalWarningThreshold = isNaN(warningThreshold) || warningThreshold < 0 || warningThreshold > 100 
+			? 90 : warningThreshold;
+		const finalDebugThreshold = isNaN(debugThreshold) || debugThreshold < 0 || debugThreshold > 100 
+			? 75 : debugThreshold;
+		const finalCheckInterval = isNaN(checkInterval) || checkInterval < 5000 || checkInterval > 300000 
+			? 30000 : checkInterval; // Min 5s, Max 5min
+
+		this.debug(
+			`Memory monitoring initialized - Warning: ${finalWarningThreshold}%, Debug: ${finalDebugThreshold}%, Interval: ${finalCheckInterval}ms`,
+			'MemoryMonitor'
+		);
+
+		// Check memory usage at configured interval
 		setInterval(() => {
 			try {
 				const memUsage = process.memoryUsage();
@@ -354,22 +385,34 @@ export class LoggerService implements NestLoggerService {
 				const heapUsagePercent = Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100);
 
 				// Log memory warnings if usage is high
-				if (heapUsagePercent >= 90) {
-					this.warn(`High memory usage: ${heapUsagePercent}% (${heapUsedMB}MB/${heapTotalMB}MB)`, 'MemoryMonitor', {
-						heapUsed: heapUsedMB,
-						heapTotal: heapTotalMB,
-						heapUsagePercent,
-						external: Math.round(memUsage.external / 1024 / 1024),
-						rss: Math.round(memUsage.rss / 1024 / 1024)
-					});
-				} else if (heapUsagePercent >= 75) {
-					this.debug(`Memory usage: ${heapUsagePercent}% (${heapUsedMB}MB/${heapTotalMB}MB)`, 'MemoryMonitor');
+				if (heapUsagePercent >= finalWarningThreshold) {
+					this.warn(
+						`High memory usage: ${heapUsagePercent}% (${heapUsedMB}MB/${heapTotalMB}MB) - Threshold: ${finalWarningThreshold}%`,
+						'MemoryMonitor',
+						{
+							heapUsed: heapUsedMB,
+							heapTotal: heapTotalMB,
+							heapUsagePercent,
+							warningThreshold: finalWarningThreshold,
+							external: Math.round(memUsage.external / 1024 / 1024),
+							rss: Math.round(memUsage.rss / 1024 / 1024)
+						}
+					);
+				} else if (heapUsagePercent >= finalDebugThreshold) {
+					this.debug(
+						`Memory usage: ${heapUsagePercent}% (${heapUsedMB}MB/${heapTotalMB}MB)`,
+						'MemoryMonitor',
+						{
+							heapUsagePercent,
+							debugThreshold: finalDebugThreshold
+						}
+					);
 				}
 			} catch (error) {
 				// Don't log memory monitoring errors to avoid recursion
 				console.error('Memory monitoring error:', error);
 			}
-		}, 30000); // Every 30 seconds
+		}, finalCheckInterval);
 	}
 
 	/**
