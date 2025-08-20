@@ -1,0 +1,63 @@
+# Docker Compose for GitHub Actions Self-Hosted Runner
+# Optimized for Coolify.io deployment with official GitHub runner image
+
+version: '3.8'
+
+services:
+  github-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: claude-github-runner
+    restart: unless-stopped
+    
+    # Environment variables for Coolify
+    # Set these in Coolify's environment section
+    environment:
+      # Required: GitHub configuration
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GITHUB_REPOSITORY=${GITHUB_REPOSITORY}
+      
+      # Optional: Runner configuration
+      - RUNNER_NAME=${RUNNER_NAME:-claude-runner}
+      - RUNNER_LABELS=${RUNNER_LABELS:-self-hosted,claude-workflows}
+      - RUNNER_GROUP=${RUNNER_GROUP:-default}
+    
+    # Volume mounts (simplified for official image)
+    volumes:
+      # Persistent work directory
+      - runner_work:/home/runner/_work
+    
+    # Resource limits (adjust based on your VPS capacity)
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "Runner.Listener"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+    # Logging configuration
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+
+# Volumes for persistent data
+volumes:
+  runner_work:
+    driver: local
