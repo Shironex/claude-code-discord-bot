@@ -187,7 +187,9 @@ export class ClaudePromptModalHandler extends BaseService {
 				);
 			} else {
 				// Workflow was dispatched but we couldn't find it yet
-				this.logger.warn(`Could not find workflow run with tracking ID ${trackingId}, showing fallback message`);
+				this.logger.warn(
+					`Could not find workflow run with tracking ID ${trackingId}, showing fallback message`
+				);
 
 				let description = `Claude Code workflow has been triggered for \`${session.repository.fullName}\` on branch \`${branch}\`.\n\n**Prompt:** ${prompt}`;
 
