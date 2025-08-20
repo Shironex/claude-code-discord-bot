@@ -9,10 +9,20 @@ import {
 	WorkflowRunsResponse,
 	WorkflowFile
 } from '../interfaces/models/workflow.interface';
+import { TrackingUtils } from '../utils/tracking.utils';
 
 @Injectable()
 export class WorkflowService extends BaseService implements IWorkflowService {
 	private octokit: Octokit | null = null;
+
+	// Polling configuration constants
+	private static readonly POLLING_CONFIG = {
+		INITIAL_DELAY: 2000,
+		BACKOFF_MULTIPLIER: 1.5,
+		MAX_DELAY: 10000,
+		CLOCK_SKEW_BUFFER: 5000,
+		MATCH_WINDOW: 30000
+	} as const;
 
 	constructor(private configService: ConfigService) {
 		super(WorkflowService.name);
@@ -62,6 +72,9 @@ export class WorkflowService extends BaseService implements IWorkflowService {
 		try {
 			this.logger.log(`Dispatching workflow: ${request.workflowId} for ${request.owner}/${request.repo}`);
 			this.logger.log(`Prompt: ${request.inputs.prompt.substring(0, 100)}...`);
+			if (request.inputs.tracking_id) {
+				this.logger.log(`Tracking ID: ${request.inputs.tracking_id}`);
+			}
 
 			await this.octokit.rest.actions.createWorkflowDispatch({
 				owner: request.owner,
@@ -150,6 +163,124 @@ export class WorkflowService extends BaseService implements IWorkflowService {
 			this.logger.error(`Failed to list workflows: ${error.message}`, error);
 			throw new Error(`Failed to list workflows: ${error.message}`);
 		}
+	}
+
+	async findWorkflowRunByTrackingId(
+		owner: string,
+		repo: string,
+		workflowId: string,
+		trackingId: string,
+		dispatchTime: number,
+		maxAttempts: number = 10
+	): Promise<WorkflowRun | null> {
+		if (!this.octokit) {
+			throw new Error('GitHub token not configured');
+		}
+
+		this.logger.log(`Searching for workflow run with tracking ID: ${trackingId}`);
+		const startTime = Date.now();
+		let attempts = 0;
+
+		while (attempts < maxAttempts) {
+			attempts++;
+			const delay = Math.min(
+				WorkflowService.POLLING_CONFIG.INITIAL_DELAY *
+					Math.pow(WorkflowService.POLLING_CONFIG.BACKOFF_MULTIPLIER, attempts - 1),
+				WorkflowService.POLLING_CONFIG.MAX_DELAY
+			);
+
+			try {
+				// Wait before polling (except on first attempt)
+				if (attempts > 1) {
+					await new Promise(resolve => setTimeout(resolve, delay));
+				}
+
+				const { data }: { data: WorkflowRunsResponse } = await this.octokit.rest.actions.listWorkflowRuns({
+					owner,
+					repo,
+					workflow_id: workflowId,
+					per_page: 20, // Check more runs to find ours
+					status: 'queued' // First check queued runs
+				});
+
+				// Also check in_progress runs
+				const { data: inProgressData }: { data: WorkflowRunsResponse } =
+					await this.octokit.rest.actions.listWorkflowRuns({
+						owner,
+						repo,
+						workflow_id: workflowId,
+						per_page: 20,
+						status: 'in_progress'
+					});
+
+				const allRuns = [...data.workflow_runs, ...inProgressData.workflow_runs];
+
+				this.logger.debug(`Attempt ${attempts}: Found ${allRuns.length} queued/in_progress workflow runs`);
+
+				// Look for our run by checking if it was created after dispatch time
+				// and contains our tracking ID in the prompt
+				for (const run of allRuns) {
+					const runCreatedAt = new Date(run.created_at).getTime();
+					const clockSkewBuffer = WorkflowService.POLLING_CONFIG.CLOCK_SKEW_BUFFER;
+					const matchWindow = WorkflowService.POLLING_CONFIG.MATCH_WINDOW;
+
+					// Check if this run was created within our expected time window
+					if (runCreatedAt >= dispatchTime - clockSkewBuffer) {
+						try {
+							// Get the full run details to check inputs
+							const { data: fullRun } = await this.octokit.rest.actions.getWorkflowRun({
+								owner,
+								repo,
+								run_id: run.id
+							});
+
+							// Use consistent timing logic: allow for clock skew in both directions
+							// but ensure the run was created within our expected window
+							if (
+								runCreatedAt >= dispatchTime - clockSkewBuffer &&
+								runCreatedAt <= dispatchTime + matchWindow
+							) {
+								this.logger.log(
+									`Found matching workflow run: ${run.id} (created at ${new Date(
+										run.created_at
+									).toISOString()})`
+								);
+								return fullRun as WorkflowRun;
+							}
+						} catch (error) {
+							this.logger.debug(`Error fetching run details for ${run.id}: ${error.message}`);
+						}
+					}
+				}
+
+				const elapsed = Date.now() - startTime;
+				const runsInTimeWindow = allRuns.filter(run => {
+					const runCreatedAt = new Date(run.created_at).getTime();
+					const clockSkewBuffer = WorkflowService.POLLING_CONFIG.CLOCK_SKEW_BUFFER;
+					const matchWindow = WorkflowService.POLLING_CONFIG.MATCH_WINDOW;
+					return runCreatedAt >= dispatchTime - clockSkewBuffer && runCreatedAt <= dispatchTime + matchWindow;
+				}).length;
+
+				this.logger.debug(
+					`Tracking ID ${trackingId} not found yet. ` +
+						`Attempt ${attempts}/${maxAttempts}, elapsed: ${elapsed}ms. ` +
+						`Found ${allRuns.length} active runs, ${runsInTimeWindow} in expected time window ` +
+						`(${new Date(dispatchTime - WorkflowService.POLLING_CONFIG.CLOCK_SKEW_BUFFER).toISOString()} to ` +
+						`${new Date(dispatchTime + WorkflowService.POLLING_CONFIG.MATCH_WINDOW).toISOString()})`
+				);
+			} catch (error) {
+				this.logger.error(`Error searching for workflow run: ${error.message}`);
+			}
+		}
+
+		const totalElapsed = Date.now() - startTime;
+		this.logger.warn(
+			`Could not find workflow run with tracking ID ${trackingId} after ${maxAttempts} attempts ` +
+				`(${totalElapsed}ms elapsed). Dispatch time: ${new Date(dispatchTime).toISOString()}. ` +
+				`Expected time window: ${new Date(dispatchTime - WorkflowService.POLLING_CONFIG.CLOCK_SKEW_BUFFER).toISOString()} ` +
+				`to ${new Date(dispatchTime + WorkflowService.POLLING_CONFIG.MATCH_WINDOW).toISOString()}`
+		);
+		return null;
 	}
 
 	getOctokit(): Octokit | null {

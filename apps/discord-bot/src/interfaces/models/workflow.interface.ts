@@ -5,6 +5,7 @@ export interface WorkflowDispatchRequest {
 	ref: string;
 	inputs: {
 		prompt: string;
+		tracking_id?: string;
 	};
 }
 

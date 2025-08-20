@@ -116,6 +116,11 @@ export class RepositorySelectHandler extends BaseService {
 				);
 			}
 
+			this.logger.debug(
+				`Failed to show file selection for ${repository.fullName} (${categorizedError.category}): ${categorizedError.message}`,
+				error
+			);
+
 			// For certain error types, show error message; for others, fallback to prompt ready
 			if (
 				categorizedError.category === 'rate_limit' ||

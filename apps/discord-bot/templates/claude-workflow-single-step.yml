@@ -7,6 +7,10 @@ on:
         description: 'Prompt for Claude'
         required: true
         type: string
+      tracking_id:
+        description: 'Unique tracking ID for this workflow run'
+        required: false
+        type: string
 
 jobs:
   claude:
@@ -42,6 +46,7 @@ jobs:
           allowed_tools: "Bash,Write,Read,Edit,MultiEdit,Glob,Grep"
           custom_instructions: |
             You are running in automation mode triggered by Discord.
+            Workflow Tracking ID: ${{ github.event.inputs.tracking_id }}
             Always complete tasks by creating a pull request.
             Use professional commit messages and PR descriptions.
             Include test instructions in PR description when applicable.
