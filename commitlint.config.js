@@ -14,6 +14,7 @@ export default {
         'deps',            // Dependencies
         'release',         // Release-related changes
         'config',          // Configuration changes
+        'template',        // Template changes
       ],
     ],
     // Allow empty scopes for general changes
