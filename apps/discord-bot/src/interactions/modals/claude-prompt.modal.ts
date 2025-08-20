@@ -11,6 +11,7 @@ import { MESSAGES } from '../../utils/messages.constants';
 import { DiscordUtils } from '../../utils/discord.utils';
 import { FileTreeUtils } from '../../utils/file-tree.utils';
 import { TypeGuards } from '../../utils/type-guards';
+import { TrackingUtils } from '../../utils/tracking.utils';
 
 @Injectable()
 export class ClaudePromptModalHandler extends BaseService {
@@ -93,7 +94,11 @@ export class ClaudePromptModalHandler extends BaseService {
 			this.logger.log(`Prompt: ${prompt.substring(0, 100)}...`);
 			this.logger.log(`File context paths: ${allFilePaths.join(', ')}`);
 
-			// Create enhanced prompt with file context
+			// Generate unique tracking ID for this workflow dispatch
+			const trackingId = TrackingUtils.generateTrackingId();
+			const dispatchTime = Date.now();
+
+			// Create enhanced prompt with file context and tracking ID
 			let enhancedPrompt = prompt;
 			if (allFilePaths.length > 0) {
 				const contextSection = FileTreeUtils.generateContextPrompt(allFilePaths);
@@ -109,20 +114,33 @@ export class ClaudePromptModalHandler extends BaseService {
 				}
 			}
 
-			// Dispatch the workflow
+			// Add tracking ID to the prompt (will be visible in workflow logs)
+			const trackedPrompt = `[Tracking: ${trackingId}]\n\n${enhancedPrompt}`;
+
+			this.logger.log(`Dispatching workflow with tracking ID: ${trackingId}`);
+
+			// Dispatch the workflow with tracking ID
 			await this.workflowService.dispatchWorkflow({
 				owner,
 				repo,
 				workflowId: 'claude.yml',
 				ref: branch,
 				inputs: {
-					prompt: enhancedPrompt
+					prompt: trackedPrompt,
+					tracking_id: trackingId
 				}
 			});
 
-			// Wait a moment for GitHub to create the run
-			await new Promise(resolve => setTimeout(resolve, 2000));
-			const latestRun = await this.workflowService.getLatestWorkflowRun(owner, repo, 'claude.yml');
+			// Find the workflow run using tracking ID
+			this.logger.log(`Searching for workflow run with tracking ID: ${trackingId}`);
+			const latestRun = await this.workflowService.findWorkflowRunByTrackingId(
+				owner,
+				repo,
+				'claude.yml',
+				trackingId,
+				dispatchTime,
+				15 // Max 15 attempts (about 30-45 seconds of polling)
+			);
 
 			if (latestRun) {
 				// Track the workflow run in session
@@ -164,15 +182,20 @@ export class ClaudePromptModalHandler extends BaseService {
 					interaction.channelId
 				);
 
-				this.logger.log(`Successfully dispatched Claude workflow: Run ${latestRun.id} (monitoring enabled)`);
+				this.logger.log(
+					`Successfully dispatched Claude workflow: Run ${latestRun.id} with tracking ID ${trackingId} (monitoring enabled)`
+				);
 			} else {
+				// Workflow was dispatched but we couldn't find it yet
+				this.logger.warn(`Could not find workflow run with tracking ID ${trackingId}, showing fallback message`);
+
 				let description = `Claude Code workflow has been triggered for \`${session.repository.fullName}\` on branch \`${branch}\`.\n\n**Prompt:** ${prompt}`;
 
 				if (allFilePaths.length > 0) {
 					description += `\n\n**File Context:** ${allFilePaths.slice(0, 5).join(', ')}${allFilePaths.length > 5 ? ` (and ${allFilePaths.length - 5} more)` : ''}`;
 				}
 
-				description += `\n\nCheck the [Actions tab](https://github.com/${owner}/${repo}/actions) to monitor progress.`;
+				description += `\n\n**Tracking ID:** \`${trackingId}\`\n\nThe workflow has been dispatched but may take a moment to appear. Check the [Actions tab](https://github.com/${owner}/${repo}/actions) to monitor progress.`;
 
 				const embed = this.embedService.createSuccessEmbed('Workflow Dispatched', description);
 

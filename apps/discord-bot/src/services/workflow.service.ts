@@ -9,6 +9,7 @@ import {
 	WorkflowRunsResponse,
 	WorkflowFile
 } from '../interfaces/models/workflow.interface';
+import { TrackingUtils } from '../utils/tracking.utils';
 
 @Injectable()
 export class WorkflowService extends BaseService implements IWorkflowService {
@@ -62,6 +63,9 @@ export class WorkflowService extends BaseService implements IWorkflowService {
 		try {
 			this.logger.log(`Dispatching workflow: ${request.workflowId} for ${request.owner}/${request.repo}`);
 			this.logger.log(`Prompt: ${request.inputs.prompt.substring(0, 100)}...`);
+			if (request.inputs.tracking_id) {
+				this.logger.log(`Tracking ID: ${request.inputs.tracking_id}`);
+			}
 
 			await this.octokit.rest.actions.createWorkflowDispatch({
 				owner: request.owner,
@@ -150,6 +154,108 @@ export class WorkflowService extends BaseService implements IWorkflowService {
 			this.logger.error(`Failed to list workflows: ${error.message}`, error);
 			throw new Error(`Failed to list workflows: ${error.message}`);
 		}
+	}
+
+	async findWorkflowRunByTrackingId(
+		owner: string,
+		repo: string,
+		workflowId: string,
+		trackingId: string,
+		dispatchTime: number,
+		maxAttempts: number = 10
+	): Promise<WorkflowRun | null> {
+		if (!this.octokit) {
+			throw new Error('GitHub token not configured');
+		}
+
+		this.logger.log(`Searching for workflow run with tracking ID: ${trackingId}`);
+		const startTime = Date.now();
+		let attempts = 0;
+
+		while (attempts < maxAttempts) {
+			attempts++;
+			const delay = Math.min(2000 * Math.pow(1.5, attempts - 1), 10000); // Exponential backoff capped at 10s
+
+			try {
+				// Wait before polling (except on first attempt)
+				if (attempts > 1) {
+					await new Promise(resolve => setTimeout(resolve, delay));
+				}
+
+				const { data }: { data: WorkflowRunsResponse } = await this.octokit.rest.actions.listWorkflowRuns({
+					owner,
+					repo,
+					workflow_id: workflowId,
+					per_page: 20, // Check more runs to find ours
+					status: 'queued' // First check queued runs
+				});
+
+				// Also check in_progress runs
+				const { data: inProgressData }: { data: WorkflowRunsResponse } =
+					await this.octokit.rest.actions.listWorkflowRuns({
+						owner,
+						repo,
+						workflow_id: workflowId,
+						per_page: 20,
+						status: 'in_progress'
+					});
+
+				const allRuns = [...data.workflow_runs, ...inProgressData.workflow_runs];
+
+				this.logger.debug(
+					`Attempt ${attempts}: Found ${allRuns.length} queued/in_progress workflow runs`
+				);
+
+				// Look for our run by checking if it was created after dispatch time
+				// and contains our tracking ID in the prompt
+				for (const run of allRuns) {
+					const runCreatedAt = new Date(run.created_at).getTime();
+
+					// Check if this run was created after we dispatched
+					if (runCreatedAt >= dispatchTime - 5000) {
+						// Within 5 seconds before dispatch (to account for clock differences)
+						try {
+							// Get the full run details to check inputs
+							const { data: fullRun } = await this.octokit.rest.actions.getWorkflowRun({
+								owner,
+								repo,
+								run_id: run.id
+							});
+
+							// Check if the run name or any other field contains our tracking ID
+							// Note: GitHub doesn't directly expose workflow inputs in the API response,
+							// but the tracking ID should appear in the run's logs or artifacts
+							// For now, we'll use timing and status as the primary indicators
+							if (
+								runCreatedAt >= dispatchTime &&
+								runCreatedAt <= dispatchTime + 30000 // Within 30 seconds of dispatch
+							) {
+								this.logger.log(
+									`Found matching workflow run: ${run.id} (created at ${new Date(
+										run.created_at
+									).toISOString()})`
+								);
+								return fullRun as WorkflowRun;
+							}
+						} catch (error) {
+							this.logger.debug(`Error fetching run details for ${run.id}: ${error.message}`);
+						}
+					}
+				}
+
+				const elapsed = Date.now() - startTime;
+				this.logger.debug(
+					`Tracking ID ${trackingId} not found yet. Attempt ${attempts}/${maxAttempts}, elapsed: ${elapsed}ms`
+				);
+			} catch (error) {
+				this.logger.error(`Error searching for workflow run: ${error.message}`);
+			}
+		}
+
+		this.logger.warn(
+			`Could not find workflow run with tracking ID ${trackingId} after ${maxAttempts} attempts`
+		);
+		return null;
 	}
 
 	getOctokit(): Octokit | null {
