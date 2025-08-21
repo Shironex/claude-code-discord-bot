@@ -29,10 +29,12 @@ This document outlines the comprehensive improvements needed for the image servi
   - **✨ Enhanced**: Added ENABLE_SWAGGER and ENABLE_SCALAR env variables for fine control
   - **✨ Enhanced**: Moved Scalar from devDependencies to dependencies for production use
 
-- [ ] **Helmet Configuration** (`apps/image-service/src/config/helmet.config.ts`)
-  - Replace inline helmet setup in main.ts (lines 19-36)
-  - Import and use: `app.use(helmet(helmetConfig()))`
-  - Utilize proper CSP directives from config
+- [x] **Helmet Configuration** (`apps/image-service/src/config/helmet.config.ts`) ✅ **COMPLETED**
+  - ~~Replace inline helmet setup in main.ts (lines 19-36)~~ ✅ Created createHelmetConfig() function
+  - ~~Import and use: `app.use(helmet(helmetConfig()))`~~ ✅ Implemented with single line
+  - ~~Utilize proper CSP directives from config~~ ✅ Environment-aware CSP with Swagger/Scalar support
+  - **✨ Enhanced**: Configurable HSTS, referrer policy, and security headers via env variables
+  - **✨ Enhanced**: Dynamic CSP that adapts to enabled documentation tools
 
 - [ ] **Multer Configuration** (`apps/image-service/src/config/multer.config.ts`)
   - Currently not used anywhere in the application
