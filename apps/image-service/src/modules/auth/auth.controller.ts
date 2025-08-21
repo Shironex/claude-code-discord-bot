@@ -1,4 +1,4 @@
-import { Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiSecurity } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { ApiKeyGuard } from '../../common/guards';
@@ -38,42 +38,6 @@ export class AuthController {
 		requireHmac: boolean;
 	} {
 		return this.authService.getAuthConfig();
-	}
-
-	/**
-	 * Generate setup instructions for authentication
-	 */
-	@Post('setup')
-	@ApiOperation({
-		summary: 'Generate auth setup instructions',
-		description: 'Generates new API keys and HMAC secret with setup instructions.',
-	})
-	@ApiResponse({
-		status: 201,
-		description: 'Setup instructions generated',
-		schema: {
-			type: 'object',
-			properties: {
-				envVars: {
-					type: 'object',
-					properties: {
-						DISCORD_BOT_API_KEY: { type: 'string' },
-						CLAUDE_CODE_API_KEY: { type: 'string' },
-						HMAC_SECRET: { type: 'string' },
-					},
-				},
-				instructions: {
-					type: 'array',
-					items: { type: 'string' },
-				},
-			},
-		},
-	})
-	generateSetup(): {
-		envVars: Record<string, string>;
-		instructions: string[];
-	} {
-		return this.authService.generateSetupInstructions();
 	}
 
 	/**
