@@ -1,71 +1,65 @@
-import { registerAs } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 
-export interface HelmetConfig {
-	contentSecurityPolicy: {
-		directives: {
-			defaultSrc: string[];
-			scriptSrc: string[];
-			styleSrc: string[];
-			imgSrc: string[];
-			connectSrc: string[];
-			fontSrc: string[];
-			objectSrc: string[];
-			mediaSrc: string[];
-			frameSrc: string[];
-		};
-	};
-	crossOriginEmbedderPolicy: boolean;
-	crossOriginOpenerPolicy: { policy: string };
-	crossOriginResourcePolicy: { policy: string };
-	dnsPrefetchControl: { allow: boolean };
-	frameguard: { action: string };
-	hidePoweredBy: boolean;
-	hsts: {
-		maxAge: number;
-		includeSubDomains: boolean;
-		preload: boolean;
-	};
-	ieNoOpen: boolean;
-	noSniff: boolean;
-	originAgentCluster: boolean;
-	permittedCrossDomainPolicies: boolean;
-	referrerPolicy: { policy: string[] };
-	xssFilter: boolean;
-}
+/**
+ * Creates Helmet security configuration based on environment variables
+ * Supports Swagger/Scalar documentation tools with appropriate CSP directives
+ */
+export const createHelmetConfig = (configService: ConfigService) => {
+	const isDevelopment = configService.get<string>('NODE_ENV', 'development') === 'development';
+	const enableSwagger = configService.get<string>('ENABLE_SWAGGER') === 'true' || isDevelopment;
+	const enableScalar = configService.get<string>('ENABLE_SCALAR') === 'true' || isDevelopment;
 
-export default registerAs('helmet', (): HelmetConfig => {
-	const isDevelopment = process.env.NODE_ENV === 'development';
+	// Base CSP directives
+	const baseCspDirectives = {
+		defaultSrc: ["'self'"],
+		scriptSrc: ["'self'"],
+		styleSrc: ["'self'", "'unsafe-inline'"],
+		imgSrc: ["'self'", 'data:', 'blob:'],
+		connectSrc: ["'self'"],
+		fontSrc: ["'self'"],
+		objectSrc: ["'none'"],
+		mediaSrc: ["'self'"],
+		frameSrc: ["'self'"],
+	};
+
+	// Add documentation tool CSP allowances if enabled
+	if (enableSwagger || enableScalar) {
+		// Allow CDN resources for Swagger/Scalar UI
+		baseCspDirectives.scriptSrc.push('https://cdn.jsdelivr.net');
+		baseCspDirectives.styleSrc.push('https://cdn.jsdelivr.net');
+		baseCspDirectives.connectSrc.push('https://cdn.jsdelivr.net');
+		baseCspDirectives.fontSrc.push('https://cdn.jsdelivr.net');
+
+		// Scalar-specific allowances
+		if (enableScalar) {
+			baseCspDirectives.connectSrc.push('https://fonts.scalar.com');
+			baseCspDirectives.fontSrc.push('https://fonts.scalar.com');
+		}
+	}
 
 	return {
 		contentSecurityPolicy: {
-			directives: {
-				defaultSrc: ["'self'"],
-				scriptSrc: ["'self'"],
-				styleSrc: ["'self'", "'unsafe-inline'"],
-				imgSrc: ["'self'", 'data:', 'blob:'],
-				connectSrc: ["'self'"],
-				fontSrc: ["'self'"],
-				objectSrc: ["'none'"],
-				mediaSrc: ["'self'"],
-				frameSrc: ["'none'"],
-			},
+			directives: baseCspDirectives,
 		},
-		crossOriginEmbedderPolicy: !isDevelopment,
-		crossOriginOpenerPolicy: { policy: 'same-origin' },
-		crossOriginResourcePolicy: { policy: 'cross-origin' },
+		// Disable COEP when documentation is enabled to avoid blocking resources
+		crossOriginEmbedderPolicy: !enableSwagger && !enableScalar && !isDevelopment,
+		crossOriginOpenerPolicy: { policy: 'same-origin' as const },
+		crossOriginResourcePolicy: { policy: 'cross-origin' as const },
 		dnsPrefetchControl: { allow: false },
-		frameguard: { action: 'deny' },
+		frameguard: { action: 'deny' as const },
 		hidePoweredBy: true,
 		hsts: {
-			maxAge: 31536000, // 1 year
-			includeSubDomains: true,
-			preload: true,
+			maxAge: parseInt(configService.get<string>('HSTS_MAX_AGE', '31536000'), 10), // 1 year default
+			includeSubDomains: configService.get<string>('HSTS_INCLUDE_SUBDOMAINS') !== 'false',
+			preload: configService.get<string>('HSTS_PRELOAD') !== 'false',
 		},
 		ieNoOpen: true,
 		noSniff: true,
 		originAgentCluster: true,
 		permittedCrossDomainPolicies: false,
-		referrerPolicy: { policy: ['no-referrer'] },
+		referrerPolicy: {
+			policy: [configService.get<string>('REFERRER_POLICY', 'no-referrer') as 'no-referrer'],
+		},
 		xssFilter: true,
 	};
-});
+};

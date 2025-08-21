@@ -6,6 +6,7 @@ import { AppModule } from './app.module';
 import { createCorsConfig } from './config/cors.config';
 import { createStartupConfig, StartupService } from './config/startup.config';
 import { SwaggerService } from './config/swagger.config';
+import { createHelmetConfig } from './config/helmet.config';
 import fs from 'fs';
 
 async function bootstrap() {
@@ -17,25 +18,8 @@ async function bootstrap() {
 	const startupConfig = createStartupConfig(configService);
 	const startupService = new StartupService(configService, startupConfig);
 
-	// Security middleware
-	app.use(
-		helmet({
-			crossOriginEmbedderPolicy: false, // Needed for Swagger/Scalar UI
-			contentSecurityPolicy: {
-				directives: {
-					defaultSrc: ["'self'"],
-					scriptSrc: ["'self'", 'https://cdn.jsdelivr.net'],
-					styleSrc: ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net'],
-					imgSrc: ["'self'", 'data:', 'blob:'],
-					connectSrc: ["'self'", 'https://cdn.jsdelivr.net', 'https://fonts.scalar.com'],
-					fontSrc: ["'self'", 'https://cdn.jsdelivr.net', 'https://fonts.scalar.com'],
-					objectSrc: ["'none'"],
-					mediaSrc: ["'self'"],
-					frameSrc: ["'self'"],
-				},
-			},
-		}),
-	);
+	// Security middleware with configuration from helmet.config.ts
+	app.use(helmet(createHelmetConfig(configService)));
 
 	// Enable CORS with configuration from cors.config.ts
 	app.enableCors(createCorsConfig(configService));
