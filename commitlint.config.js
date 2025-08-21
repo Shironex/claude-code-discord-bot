@@ -8,6 +8,7 @@ export default {
       'always',
       [
         'discord-bot',      // Main Discord bot application
+        'image-service',    // Image service API application
         'root',             // Root workspace changes
         'ci',              // CI/CD changes
         'docs',            // Documentation
