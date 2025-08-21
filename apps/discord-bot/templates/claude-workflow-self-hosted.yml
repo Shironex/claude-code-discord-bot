@@ -58,7 +58,22 @@ jobs:
             1. Extract all image URLs from the prompt
             2. For each image URL, fetch the image using curl with authentication:
                ```bash
-               curl -H "x-api-key: $CLAUDE_CODE_API_KEY" -o "image_$(basename [image_url]).jpg" "[image_url]"
+               IMAGE_ID=$(basename "[image_url]")
+               
+               # Get content type to determine correct file extension
+               CONTENT_TYPE=$(curl -H "x-api-key: $CLAUDE_CODE_API_KEY" -s -I "[image_url]" | grep -i "content-type:" | cut -d: -f2 | tr -d ' \r')
+               
+               # Determine file extension based on content type
+               case "$CONTENT_TYPE" in
+                 "image/jpeg") EXT="jpg" ;;
+                 "image/png") EXT="png" ;;
+                 "image/gif") EXT="gif" ;;
+                 "image/webp") EXT="webp" ;;
+                 *) EXT="jpg" ;;  # Default fallback
+               esac
+               
+               # Download with correct extension
+               curl -H "x-api-key: $CLAUDE_CODE_API_KEY" -o "image_${IMAGE_ID}.${EXT}" "[image_url]"
                ```
             3. The images are stored temporarily and expire after 2 hours
             4. Analyze the images to understand:
@@ -78,14 +93,30 @@ jobs:
             # Extract image ID from URL for filename
             IMAGE_URL="https://your-domain.com/api/v1/images/abc123"
             IMAGE_ID=$(basename "$IMAGE_URL")
-            curl -H "x-api-key: $CLAUDE_CODE_API_KEY" -o "context_image_${IMAGE_ID}.jpg" "$IMAGE_URL"
+            
+            # Get content type to determine correct file extension
+            CONTENT_TYPE=$(curl -H "x-api-key: $CLAUDE_CODE_API_KEY" -s -I "$IMAGE_URL" | grep -i "content-type:" | cut -d: -f2 | tr -d ' \r')
+            
+            # Determine file extension based on content type
+            case "$CONTENT_TYPE" in
+              "image/jpeg") EXT="jpg" ;;
+              "image/png") EXT="png" ;;
+              "image/gif") EXT="gif" ;;
+              "image/webp") EXT="webp" ;;
+              *) EXT="jpg" ;;  # Default fallback
+            esac
+            
+            # Download with correct extension
+            curl -H "x-api-key: $CLAUDE_CODE_API_KEY" -o "context_image_${IMAGE_ID}.${EXT}" "$IMAGE_URL"
             
             # Check if download was successful
-            if [ -f "context_image_${IMAGE_ID}.jpg" ]; then
-              echo "Successfully downloaded image: $IMAGE_ID"
+            if [ -f "context_image_${IMAGE_ID}.${EXT}" ] && [ -s "context_image_${IMAGE_ID}.${EXT}" ]; then
+              echo "Successfully downloaded image: $IMAGE_ID as ${EXT} ($(stat -c%s "context_image_${IMAGE_ID}.${EXT}") bytes)"
               # You can now analyze this image as context
             else
               echo "Failed to download image: $IMAGE_ID"
+              # Check HTTP status for debugging
+              curl -H "x-api-key: $CLAUDE_CODE_API_KEY" -w "HTTP Status: %{http_code}\n" -o /dev/null -s "$IMAGE_URL"
             fi
             ```
             
