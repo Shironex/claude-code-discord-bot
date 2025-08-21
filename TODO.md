@@ -10,11 +10,11 @@ This document outlines the comprehensive improvements needed for the image servi
 **Problem**: Multiple config files exist but are not being used in `apps/image-service/src/main.ts`
 
 **Tasks:**
-- [ ] **CORS Configuration** (`apps/image-service/src/config/cors.config.ts`)
-  - Currently duplicated in main.ts (lines 38-75)
-  - Export CORS options directly from config file
-  - Import and use in main.ts: `app.enableCors(corsConfig())`
-  - Remove inline CORS configuration
+- [x] **CORS Configuration** (`apps/image-service/src/config/cors.config.ts`) ✅ **COMPLETED**
+  - ~~Currently duplicated in main.ts (lines 38-75)~~ ✅ Fixed
+  - ~~Export CORS options directly from config file~~ ✅ Created `createCorsConfig()` function
+  - ~~Import and use in main.ts: `app.enableCors(corsConfig())`~~ ✅ Implemented
+  - ~~Remove inline CORS configuration~~ ✅ Removed 38 lines of duplicate code
 
 - [ ] **Startup Configuration** (`apps/image-service/src/config/startup.config.ts`)
   - Move all console.log statements from main.ts to startup configuration
