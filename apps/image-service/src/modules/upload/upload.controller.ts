@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
-import { ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiSecurity, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiSecurity, ApiQuery, ApiBody } from '@nestjs/swagger';
 import type { Express } from 'express';
 import { UploadService } from './upload.service';
 import { FileValidator } from './validators/file.validator';
@@ -41,6 +41,20 @@ export class UploadController {
 		description: 'Upload a single image file. The image will be stored temporarily with configurable TTL.',
 	})
 	@ApiConsumes('multipart/form-data')
+	@ApiBody({
+		description: 'Image file to upload',
+		schema: {
+			type: 'object',
+			properties: {
+				image: {
+					type: 'string',
+					format: 'binary',
+					description: 'Image file (JPEG, PNG, GIF, WebP, BMP, TIFF)',
+				},
+			},
+			required: ['image'],
+		},
+	})
 	@ApiResponse({
 		status: 201,
 		description: 'Image uploaded successfully',
@@ -104,6 +118,33 @@ export class UploadController {
 		description: 'Upload multiple image files in a single request. All images will have the same TTL.',
 	})
 	@ApiConsumes('multipart/form-data')
+	@ApiBody({
+		description: 'Multiple image files to upload',
+		schema: {
+			type: 'object',
+			properties: {
+				images: {
+					type: 'array',
+					items: {
+						type: 'string',
+						format: 'binary',
+					},
+					description: 'Array of image files (max 10 files)',
+				},
+				ttl: {
+					type: 'number',
+					description: 'Time to live in seconds for all images',
+					example: 3600,
+				},
+				userId: {
+					type: 'string',
+					description: 'User identifier for tracking',
+					example: 'user_123',
+				},
+			},
+			required: ['images'],
+		},
+	})
 	@ApiResponse({
 		status: 201,
 		description: 'Batch upload completed',
