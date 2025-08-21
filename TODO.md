@@ -16,10 +16,11 @@ This document outlines the comprehensive improvements needed for the image servi
   - ~~Import and use in main.ts: `app.enableCors(corsConfig())`~~ ✅ Implemented
   - ~~Remove inline CORS configuration~~ ✅ Removed 38 lines of duplicate code
 
-- [ ] **Startup Configuration** (`apps/image-service/src/config/startup.config.ts`)
-  - Move all console.log statements from main.ts to startup configuration
-  - Implement startup service that handles application initialization logging
-  - Use startup config for enabling/disabling features (Swagger, Scalar, etc.)
+- [x] **Startup Configuration** (`apps/image-service/src/config/startup.config.ts`) ✅ **COMPLETED**
+  - ~~Move all console.log statements from main.ts to startup configuration~~ ✅ Fixed
+  - ~~Implement startup service that handles application initialization logging~~ ✅ Created StartupService class
+  - ~~Use startup config for enabling/disabling features (Swagger, Scalar, etc.)~~ ✅ Implemented conditional setup
+  - ~~use proper IMAGE_SERVICE_BASE_URL env instead of hardcoded localhost endpoint in console logs~~ ✅ Uses configurable baseUrl
 
 - [ ] **Swagger Configuration** (`apps/image-service/src/config/swagger.config.ts`)
   - Replace inline DocumentBuilder in main.ts (lines 90-109)
