@@ -6,11 +6,14 @@ export interface RedisConfig {
 	password?: string;
 	db: number;
 	maxRetriesPerRequest: number;
-	retryDelayOnFailover: number;
 	keyPrefix?: string;
 	connectionName?: string;
 	enableReadyCheck: boolean;
-	maxLoadingTimeout: number;
+	connectTimeout: number;
+	commandTimeout: number;
+	family: number;
+	keepAlive: number;
+	lazyConnect: boolean;
 }
 
 export default registerAs('redis', (): RedisConfig => {
@@ -20,10 +23,13 @@ export default registerAs('redis', (): RedisConfig => {
 		password: process.env.REDIS_PASSWORD,
 		db: parseInt(process.env.REDIS_DB || '0', 10),
 		maxRetriesPerRequest: parseInt(process.env.REDIS_MAX_RETRIES || '3', 10),
-		retryDelayOnFailover: parseInt(process.env.REDIS_RETRY_DELAY || '100', 10),
 		keyPrefix: process.env.REDIS_KEY_PREFIX || 'img_service:',
 		connectionName: process.env.REDIS_CONNECTION_NAME || 'image-service',
 		enableReadyCheck: true,
-		maxLoadingTimeout: parseInt(process.env.REDIS_LOADING_TIMEOUT || '5000', 10),
+		connectTimeout: parseInt(process.env.REDIS_CONNECT_TIMEOUT || '10000', 10),
+		commandTimeout: parseInt(process.env.REDIS_COMMAND_TIMEOUT || '5000', 10),
+		family: 4, // IPv4
+		keepAlive: 1,
+		lazyConnect: true,
 	};
 });

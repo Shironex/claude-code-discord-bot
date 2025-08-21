@@ -21,7 +21,7 @@ export default {
     // Allow empty scopes for general changes
     'scope-empty': [1, 'never'],
     // Allow sentence case (first letter capitalized) and pascal case (PascalCase)
-    'subject-case': [2, 'always', ['sentence-case', 'pascal-case', 'lower-case']],
+    'subject-case': [1, 'always', ['sentence-case', 'pascal-case', 'lower-case']],
     // Limit subject length
     'subject-max-length': [2, 'always', 100],
     // Ensure subject is not empty
