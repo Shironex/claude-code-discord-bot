@@ -67,6 +67,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 			this.client = new Redis(options);
 			this.setupEventHandlers();
 
+			// Explicitly initiate connection when lazyConnect is enabled
+			await this.client.connect();
+
 			// Wait for connection
 			await this.waitForConnection();
 			this.logger.log('Redis connection established successfully');
