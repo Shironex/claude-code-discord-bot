@@ -22,10 +22,12 @@ This document outlines the comprehensive improvements needed for the image servi
   - ~~Use startup config for enabling/disabling features (Swagger, Scalar, etc.)~~ ✅ Implemented conditional setup
   - ~~use proper IMAGE_SERVICE_BASE_URL env instead of hardcoded localhost endpoint in console logs~~ ✅ Uses configurable baseUrl
 
-- [ ] **Swagger Configuration** (`apps/image-service/src/config/swagger.config.ts`)
-  - Replace inline DocumentBuilder in main.ts (lines 90-109)
-  - Import and use: `SwaggerModule.createDocument(app, swaggerConfig())`
-  - Move Scalar API reference setup to swagger config
+- [x] **Swagger Configuration** (`apps/image-service/src/config/swagger.config.ts`) ✅ **COMPLETED**
+  - ~~Replace inline DocumentBuilder in main.ts (lines 90-109)~~ ✅ Created SwaggerService class
+  - ~~Import and use: `SwaggerModule.createDocument(app, swaggerConfig())`~~ ✅ Implemented static methods
+  - ~~Move Scalar API reference setup to swagger config~~ ✅ Centralized in SwaggerService
+  - **✨ Enhanced**: Added ENABLE_SWAGGER and ENABLE_SCALAR env variables for fine control
+  - **✨ Enhanced**: Moved Scalar from devDependencies to dependencies for production use
 
 - [ ] **Helmet Configuration** (`apps/image-service/src/config/helmet.config.ts`)
   - Replace inline helmet setup in main.ts (lines 19-36)
