@@ -4,8 +4,12 @@ import { IMAGE_CONSTANTS } from '../common/constants';
 export interface ImageServiceConfig {
 	port: number;
 	nodeEnv: string;
-	apiKey: string;
-	hmacSecret?: string;
+	auth: {
+		discordBotApiKey?: string;
+		claudeCodeApiKey?: string;
+		hmacSecret?: string;
+		requireHmac: boolean;
+	};
 	redis: {
 		host: string;
 		port: number;
@@ -37,19 +41,15 @@ export interface ImageServiceConfig {
 }
 
 export default registerAs('imageService', (): ImageServiceConfig => {
-	// Validate required environment variables
-	const requiredEnvVars = ['IMAGE_SERVICE_API_KEY'];
-	const missingVars = requiredEnvVars.filter((varName) => !process.env[varName]);
-
-	if (missingVars.length > 0) {
-		throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
-	}
-
 	return {
 		port: parseInt(process.env.PORT || '3001', 10),
 		nodeEnv: process.env.NODE_ENV || 'development',
-		apiKey: process.env.IMAGE_SERVICE_API_KEY!,
-		hmacSecret: process.env.IMAGE_SERVICE_HMAC_SECRET,
+		auth: {
+			discordBotApiKey: process.env.DISCORD_BOT_API_KEY,
+			claudeCodeApiKey: process.env.CLAUDE_CODE_API_KEY,
+			hmacSecret: process.env.HMAC_SECRET,
+			requireHmac: process.env.REQUIRE_HMAC === 'true',
+		},
 
 		redis: {
 			host: process.env.REDIS_HOST || 'localhost',
