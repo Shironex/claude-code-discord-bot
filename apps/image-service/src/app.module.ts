@@ -8,12 +8,13 @@ import { UploadModule } from './modules/upload/upload.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
 import configuration from './config/configuration.config';
+import multerConfig from './config/multer.config';
 
 @Module({
 	imports: [
 		ConfigModule.forRoot({
 			isGlobal: true,
-			load: [configuration],
+			load: [configuration, multerConfig],
 		}),
 		RedisModule,
 		StorageModule,

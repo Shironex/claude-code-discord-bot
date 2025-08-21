@@ -5,7 +5,7 @@ import { StorageModule } from '../storage/storage.module';
 import { UploadService } from './upload.service';
 import { UploadController } from './upload.controller';
 import { FileValidator } from './validators/file.validator';
-import { multerConfig } from '../../config';
+import { createMulterConfig } from '../../config';
 
 @Module({
 	imports: [
@@ -14,8 +14,7 @@ import { multerConfig } from '../../config';
 		MulterModule.registerAsync({
 			imports: [ConfigModule],
 			useFactory: (configService: ConfigService) => {
-				const config = configService.get('multer');
-				return config || multerConfig();
+				return createMulterConfig(configService);
 			},
 			inject: [ConfigService],
 		}),

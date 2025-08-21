@@ -112,7 +112,12 @@ export class UploadController {
 	 * Upload multiple images in batch
 	 */
 	@Post('batch')
-	@UseInterceptors(FilesInterceptor('images', 10)) // Max 10 files
+	@UseInterceptors(
+		FilesInterceptor(
+			'images',
+			IMAGE_CONSTANTS.MAX_FILES_PER_REQUEST, // Use config constant instead of hardcoded value
+		),
+	)
 	@ApiOperation({
 		summary: 'Upload multiple images',
 		description: 'Upload multiple image files in a single request. All images will have the same TTL.',
@@ -129,7 +134,7 @@ export class UploadController {
 						type: 'string',
 						format: 'binary',
 					},
-					description: 'Array of image files (max 10 files)',
+					description: `Array of image files (max ${IMAGE_CONSTANTS.MAX_FILES_PER_REQUEST} files)`,
 				},
 				ttl: {
 					type: 'number',
