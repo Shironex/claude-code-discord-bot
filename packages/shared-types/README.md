@@ -8,6 +8,26 @@ This package provides common types, interfaces, and constants used across the Cl
 
 ## Installation
 
+### For local workspace development
+
+Add to project's `package.json` dependencies:
+
+```json
+{
+  "dependencies": {
+    "@claude-code/shared-types": "workspace:*"
+  }
+}
+```
+
+Then install with:
+
+```bash
+pnpm install
+```
+
+### For external projects
+
 ```bash
 pnpm add @claude-code/shared-types
 ```
