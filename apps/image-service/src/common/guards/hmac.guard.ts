@@ -1,78 +1,153 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
-import * as crypto from 'crypto';
-import { IMAGE_CONSTANTS } from '../constants';
+import { createHmac, timingSafeEqual } from 'crypto';
+
+export interface HmacContext {
+	validated: boolean;
+	timestamp: string;
+	maxAge?: number;
+}
 
 /**
- * Guard to validate HMAC signature authentication
- * Provides additional security by verifying request integrity
+ * Guard to validate HMAC signatures for enhanced security
+ * Prevents replay attacks and ensures request integrity
  */
 @Injectable()
 export class HmacGuard implements CanActivate {
-	constructor(private configService: ConfigService) {}
+	private readonly logger = new Logger(HmacGuard.name);
+
+	constructor(private readonly configService: ConfigService) {}
 
 	canActivate(context: ExecutionContext): boolean {
 		const request = context.switchToHttp().getRequest<Request>();
 
-		const signature = request.headers[IMAGE_CONSTANTS.HMAC_SIGNATURE_HEADER] as string;
-		const timestamp = request.headers[IMAGE_CONSTANTS.TIMESTAMP_HEADER] as string;
+		try {
+			const hmacOptions = this.extractHmacOptions(request);
+			const validationResult = this.validateHmacSignature(hmacOptions);
 
-		if (!signature || !timestamp) {
-			throw new UnauthorizedException('Missing HMAC signature or timestamp');
+			if (!validationResult.isValid) {
+				this.logger.warn(`HMAC validation failed: ${validationResult.reason}`);
+				throw new UnauthorizedException('Invalid HMAC signature');
+			}
+
+			// Add HMAC validation context to request
+			const hmacContext: HmacContext = {
+				validated: true,
+				timestamp: hmacOptions.timestamp,
+				maxAge: hmacOptions.maxAge,
+			};
+
+			request['hmacContext'] = hmacContext;
+			this.logger.debug('HMAC signature validated successfully');
+
+			return true;
+		} catch (error) {
+			if (error instanceof UnauthorizedException || error instanceof BadRequestException) {
+				throw error;
+			}
+
+			this.logger.error('Error during HMAC validation', error);
+			throw new UnauthorizedException('HMAC validation failed');
 		}
+	}
+
+	private extractHmacOptions(request: Request): {
+		timestamp: string;
+		signature: string;
+		body: string;
+		maxAge?: number;
+	} {
+		// Extract timestamp
+		const timestamp = request.headers['x-timestamp'] as string;
+		if (!timestamp) {
+			throw new BadRequestException('Missing x-timestamp header for HMAC validation');
+		}
+
+		// Extract signature
+		const signature = request.headers['x-signature'] as string;
+		if (!signature) {
+			throw new BadRequestException('Missing x-signature header for HMAC validation');
+		}
+
+		// Get request body
+		let body = '';
+		if (request.body) {
+			if (typeof request.body === 'string') {
+				body = request.body;
+			} else if (Buffer.isBuffer(request.body)) {
+				body = request.body.toString('utf8');
+			} else {
+				body = JSON.stringify(request.body);
+			}
+		}
+
+		// Optional max age override
+		const maxAgeHeader = request.headers['x-max-age'] as string;
+		const maxAge = maxAgeHeader ? parseInt(maxAgeHeader, 10) : 300; // Default 5 minutes
+
+		return {
+			timestamp,
+			signature,
+			body,
+			maxAge,
+		};
+	}
+
+	private validateHmacSignature(options: { timestamp: string; signature: string; body: string; maxAge?: number }): {
+		isValid: boolean;
+		reason?: string;
+	} {
+		const { timestamp, signature, body, maxAge = 300 } = options;
 
 		// Check timestamp to prevent replay attacks
+		const now = Math.floor(Date.now() / 1000);
 		const requestTime = parseInt(timestamp, 10);
-		const currentTime = Date.now();
-		const timeDrift = Math.abs(currentTime - requestTime);
 
-		if (timeDrift > IMAGE_CONSTANTS.MAX_TIMESTAMP_DRIFT) {
-			throw new UnauthorizedException(IMAGE_CONSTANTS.ERRORS.TIMESTAMP_TOO_OLD);
+		if (isNaN(requestTime)) {
+			return {
+				isValid: false,
+				reason: 'Invalid timestamp format',
+			};
 		}
 
-		// Verify HMAC signature
-		if (!this.verifySignature(request, signature, timestamp)) {
-			throw new UnauthorizedException(IMAGE_CONSTANTS.ERRORS.INVALID_SIGNATURE);
+		if (now - requestTime > maxAge) {
+			return {
+				isValid: false,
+				reason: `Request too old. Max age: ${maxAge}s`,
+			};
 		}
 
-		return true;
+		// Get HMAC secret from config
+		const hmacSecret = this.configService.get<string>('imageService.auth.hmacSecret') || this.configService.get<string>('HMAC_SECRET');
+
+		if (!hmacSecret) {
+			this.logger.error('HMAC secret not configured');
+			return {
+				isValid: false,
+				reason: 'HMAC validation unavailable - secret not configured',
+			};
+		}
+
+		// Create expected signature
+		const payload = `${timestamp}.${body}`;
+		const expectedSignature = this.createHmacSignature(payload, hmacSecret);
+
+		// Validate signature using timing-safe comparison
+		if (!this.secureCompare(signature, expectedSignature)) {
+			return {
+				isValid: false,
+				reason: 'HMAC signature mismatch',
+			};
+		}
+
+		return { isValid: true };
 	}
 
-	private verifySignature(request: Request, providedSignature: string, timestamp: string): boolean {
-		const secret = this.configService.get<string>('IMAGE_SERVICE_HMAC_SECRET');
-		if (!secret) {
-			throw new UnauthorizedException('HMAC secret not configured on server');
-		}
-
-		// Create payload for signature
-		const method = request.method;
-		const path = request.path;
-		const body = this.getRequestBody(request);
-
-		// Format: timestamp|method|path|body
-		const payload = `${timestamp}|${method}|${path}|${body}`;
-
-		// Generate expected signature
-		const expectedSignature = crypto.createHmac('sha256', secret).update(payload).digest('hex');
-
-		// Use secure comparison to prevent timing attacks
-		return this.secureCompare(providedSignature, expectedSignature);
-	}
-
-	private getRequestBody(request: Request): string {
-		// For multipart/form-data (file uploads), we can't easily include body in signature
-		// So we'll use a simplified approach for file upload endpoints
-		if (request.headers['content-type']?.includes('multipart/form-data')) {
-			return ''; // Empty body for multipart uploads
-		}
-
-		// For JSON requests, stringify the body
-		if (request.body && typeof request.body === 'object') {
-			return JSON.stringify(request.body);
-		}
-
-		return request.body || '';
+	private createHmacSignature(payload: string, secret: string): string {
+		const hmac = createHmac('sha256', secret);
+		hmac.update(payload, 'utf8');
+		return `sha256=${hmac.digest('hex')}`;
 	}
 
 	private secureCompare(a: string, b: string): boolean {
@@ -80,11 +155,13 @@ export class HmacGuard implements CanActivate {
 			return false;
 		}
 
-		let result = 0;
-		for (let i = 0; i < a.length; i++) {
-			result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+		try {
+			const bufferA = Buffer.from(a, 'utf8');
+			const bufferB = Buffer.from(b, 'utf8');
+			return timingSafeEqual(bufferA, bufferB);
+		} catch (error) {
+			this.logger.error('Error in secure comparison', error);
+			return false;
 		}
-
-		return result === 0;
 	}
 }

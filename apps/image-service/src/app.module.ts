@@ -4,9 +4,10 @@ import { AppService } from './app.service';
 import { RedisModule } from './modules/redis/redis.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { UploadModule } from './modules/upload/upload.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
-	imports: [RedisModule, StorageModule, UploadModule],
+	imports: [RedisModule, StorageModule, UploadModule, AuthModule],
 	controllers: [AppController],
 	providers: [AppService],
 })
