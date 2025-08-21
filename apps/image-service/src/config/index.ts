@@ -1,6 +1,6 @@
 export { default as configurationConfig } from './configuration.config';
 export { default as redisConfig } from './redis.config';
-export { default as corsConfig } from './cors.config';
+export { createCorsConfig } from './cors.config';
 export { default as multerConfig } from './multer.config';
 export { default as helmetConfig } from './helmet.config';
 export { default as startupConfig } from './startup.config';
