@@ -71,6 +71,16 @@ export class ClaudePromptModalHandler extends BaseService {
 				// Field might not exist in older modal instances
 			}
 
+			// Get image URLs input (optional)
+			let imageUrlsInput = '';
+			try {
+				imageUrlsInput = this.sanitizeInput(
+					interaction.fields.getTextInputValue(CUSTOM_IDS.CLAUDE_IMAGE_URLS_INPUT) || ''
+				);
+			} catch {
+				// Field might not exist in older modal instances
+			}
+
 			// Parse and combine file paths from session and modal input with validation
 			const sessionPaths = TypeGuards.getFilePathArray(session.selectedFilePaths);
 			const modalPaths = FileTreeUtils.parseFilePathsString(fileContextInput);
@@ -83,6 +93,15 @@ export class ClaudePromptModalHandler extends BaseService {
 			// Log warning if any paths were filtered out
 			if (combinedPaths.length !== allFilePaths.length) {
 				this.logger.warn(`Filtered out ${combinedPaths.length - allFilePaths.length} invalid file paths`);
+			}
+
+			// Parse and validate image URLs
+			const imageUrls = this.parseImageUrls(imageUrlsInput);
+
+			// Log image URLs if present
+			if (imageUrls.length > 0) {
+				this.logger.log(`Image URLs included: ${imageUrls.length} images`);
+				this.logger.log(`Image URLs: ${imageUrls.join(', ')}`);
 			}
 
 			const [owner, repo] = session.repository.fullName.split('/');
@@ -98,20 +117,28 @@ export class ClaudePromptModalHandler extends BaseService {
 			const trackingId = TrackingUtils.generateTrackingId();
 			const dispatchTime = Date.now();
 
-			// Create enhanced prompt with file context and tracking ID
+			// Create enhanced prompt with file context, image context, and tracking ID
 			let enhancedPrompt = prompt;
+
+			// Add file context if present
 			if (allFilePaths.length > 0) {
 				const contextSection = FileTreeUtils.generateContextPrompt(allFilePaths);
 				enhancedPrompt = contextSection + prompt;
+			}
 
-				// Validate total prompt length including context
-				if (enhancedPrompt.length > 6000) {
-					// Conservative limit including context
-					return interaction.editReply({
-						content:
-							'❌ Combined prompt and file context is too long. Please reduce your file selections or shorten your prompt.'
-					});
-				}
+			// Add image context if present
+			if (imageUrls.length > 0) {
+				const imageContextSection = this.generateImageContextPrompt(imageUrls);
+				enhancedPrompt = imageContextSection + enhancedPrompt;
+			}
+
+			// Validate total prompt length including all context
+			if (enhancedPrompt.length > 6000) {
+				// Conservative limit including context
+				return interaction.editReply({
+					content:
+						'❌ Combined prompt, file context, and image context is too long. Please reduce your selections or shorten your prompt.'
+				});
 			}
 
 			// Add tracking ID to the prompt (will be visible in workflow logs)
@@ -211,6 +238,63 @@ export class ClaudePromptModalHandler extends BaseService {
 			);
 			return interaction.editReply({ embeds: [embed] });
 		}
+	}
+
+	/**
+	 * Parse and validate image URLs from input string
+	 */
+	private parseImageUrls(input: string): string[] {
+		if (!input || !input.trim()) {
+			return [];
+		}
+
+		// Split by comma and clean up URLs
+		const urls = input
+			.split(',')
+			.map(url => url.trim())
+			.filter(Boolean)
+			.filter(url => {
+				// Basic URL validation and ensure it looks like an image service URL
+				try {
+					const parsedUrl = new URL(url);
+					return (
+						parsedUrl.pathname.includes('/api/v1/images/') &&
+						(parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:')
+					);
+				} catch {
+					return false;
+				}
+			});
+
+		return urls;
+	}
+
+	/**
+	 * Generate image context section for the prompt
+	 */
+	private generateImageContextPrompt(imageUrls: string[]): string {
+		if (imageUrls.length === 0) {
+			return '';
+		}
+
+		let contextPrompt = '\n--- Image Context ---\n';
+		contextPrompt += 'The following images are provided for analysis:\n\n';
+
+		imageUrls.forEach((url, index) => {
+			contextPrompt += `${index + 1}. ${url}\n`;
+		});
+
+		contextPrompt += '\nIMPORTANT: To analyze these images:\n';
+		contextPrompt += '1. Use curl with x-api-key header to fetch each image:\n';
+		contextPrompt += '   ```bash\n';
+		contextPrompt += '   curl -H "x-api-key: $CLAUDE_CODE_API_KEY" -o "image_[id].jpg" "[image_url]"\n';
+		contextPrompt += '   ```\n';
+		contextPrompt += '2. Analyze the visual content to inform your implementation\n';
+		contextPrompt += '3. Consider the images as additional context for the task\n';
+		contextPrompt += '4. If images fail to fetch, continue with available context\n';
+		contextPrompt += '---\n\n';
+
+		return contextPrompt;
 	}
 
 	/**

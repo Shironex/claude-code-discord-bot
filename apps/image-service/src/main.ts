@@ -36,11 +36,43 @@ async function bootstrap() {
 		}),
 	);
 
-	// Enable CORS
+	// Enable CORS - Allow multiple origins for different environments
+	const corsOrigins = configService.get<string>('CORS_ORIGIN', 'http://localhost:3000,https://github.com,https://actions.github.com');
+	const allowedOrigins = corsOrigins
+		.split(',')
+		.map((origin) => origin.trim())
+		.filter(Boolean);
+
 	app.enableCors({
-		origin: configService.get<string>('CORS_ORIGIN', 'http://localhost:3000'),
+		origin: (origin: string | undefined, callback: (error: Error | null, success?: boolean) => void) => {
+			// Allow requests with no origin (like mobile apps, curl, Postman, or server-to-server)
+			if (!origin) return callback(null, true);
+
+			// Check if origin matches any allowed origins or patterns
+			const isAllowed = allowedOrigins.some((allowedOrigin) => {
+				// Exact match
+				if (origin === allowedOrigin) return true;
+
+				// GitHub Actions runners (dynamic IPs)
+				if (allowedOrigin === 'https://github.com' && origin.includes('github')) return true;
+				if (allowedOrigin === 'https://actions.github.com' && origin.includes('github')) return true;
+
+				// Self-hosted runners (configurable)
+				if (allowedOrigin === '*') return true;
+
+				return false;
+			});
+
+			if (isAllowed) {
+				callback(null, true);
+			} else {
+				console.warn(`CORS blocked origin: ${origin}`);
+				callback(new Error('Not allowed by CORS'), false);
+			}
+		},
 		methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
 		allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'x-timestamp', 'x-signature'],
+		credentials: false, // API key auth doesn't need credentials
 	});
 
 	// Global validation pipe
@@ -102,7 +134,7 @@ async function bootstrap() {
 	const port = configService.get<number>('PORT', 3001);
 	await app.listen(port);
 
-	logger.log(`🚀 Image Service API is running on: http://localhost:${port}`);
+	logger.log(`🚀 Image Service API is running on: http://localhost:${port}/api/v1`);
 	logger.log(`📚 API Documentation available at: http://localhost:${port}/api/docs/swagger`);
 	logger.log(`📚 API Scalar Reference available at: http://localhost:${port}/api/docs/scalar`);
 	logger.log(`🏥 Health check available at: http://localhost:${port}/api/v1/health`);

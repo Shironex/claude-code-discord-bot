@@ -37,16 +37,23 @@ export class FilePathSelectHandler extends BaseService {
 			this.logger.log(`File path selection: ${selectedPaths.length} paths selected by ${interaction.user.tag}`);
 			this.logger.log(`Selected paths: ${selectedPaths.join(', ')}`);
 
-			// Update session with selected file paths
+			// Update session with selected file paths and move to image selection step
 			this.sessionService.updateSession(userId, {
-				selectedFilePaths: selectedPaths
+				selectedFilePaths: selectedPaths,
+				action: 'claude_image_selection'
 			});
 
-			// Create and show the prompt modal with pre-filled file paths
-			const modal = await this.createPromptModal(selectedPaths);
-			await interaction.showModal(modal);
+			// Import DiscordUtils dynamically to avoid circular dependencies
+			const { createImageUploadPrompt } = await import('../../utils/discord.utils');
 
-			this.logger.log(`Prompt modal displayed with ${selectedPaths.length} pre-selected file paths`);
+			// Create embed and components for image upload step
+			const { embed, components } = createImageUploadPrompt(session.repository.name);
+
+			await interaction.update({ embeds: [embed], components });
+
+			this.logger.log(
+				`Image upload prompt displayed for ${session.repository.fullName} with ${selectedPaths.length} pre-selected files`
+			);
 		} catch (error: any) {
 			// Categorize the error for proper handling and logging
 			const categorizedError = ErrorCategorizer.categorizeError(error);
@@ -67,7 +74,7 @@ export class FilePathSelectHandler extends BaseService {
 			}
 
 			return interaction.reply({
-				content: categorizedError.userMessage,
+				content: 'Failed to show image upload step. Please try again.',
 				flags: [MessageFlags.Ephemeral]
 			});
 		}

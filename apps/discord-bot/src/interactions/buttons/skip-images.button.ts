@@ -5,16 +5,15 @@ import { BaseService } from '../../services/base/base.service';
 import { SessionService } from '../../services/session.service';
 import { CUSTOM_IDS } from '../../utils/discord.constants';
 import { MESSAGES } from '../../utils/messages.constants';
-import { FileTreeUtils } from '../../utils/file-tree.utils';
 
 @Injectable()
-export class SkipFileSelectionButtonHandler extends BaseService {
+export class SkipImagesButtonHandler extends BaseService {
 	constructor(private readonly sessionService: SessionService) {
-		super(SkipFileSelectionButtonHandler.name);
+		super(SkipImagesButtonHandler.name);
 	}
 
-	@Button(CUSTOM_IDS.SKIP_FILE_SELECTION)
-	public async onSkipFileSelection(@Context() [interaction]: ButtonContext) {
+	@Button(CUSTOM_IDS.SKIP_IMAGES)
+	public async onSkipImages(@Context() [interaction]: ButtonContext) {
 		const userId = interaction.user.id;
 		const session = this.sessionService.getSession(userId);
 
@@ -26,34 +25,30 @@ export class SkipFileSelectionButtonHandler extends BaseService {
 		}
 
 		try {
-			this.logger.log(`User ${interaction.user.tag} (${userId}) skipped file selection`);
+			this.logger.log(`User ${interaction.user.tag} (${userId}) skipped image upload`);
 
-			// Clear any previously selected file paths and move to image upload step
+			// Update session to move to prompt input (no images)
 			this.sessionService.updateSession(userId, {
-				selectedFilePaths: [],
-				action: 'claude_image_selection'
+				action: 'claude_prompt_input',
+				uploadedImages: [], // Ensure no images are included
+				awaitingImages: false
 			});
 
-			// Import EmbedService and DiscordUtils dynamically to avoid circular dependencies
-			const { EmbedService } = await import('../../services/embed.service');
-			const { createImageUploadPrompt } = await import('../../utils/discord.utils');
+			// Create and show the prompt modal
+			const modal = this.createPromptModal(session.repository.name, session.selectedFilePaths || []);
+			await interaction.showModal(modal);
 
-			// Create embed and components for image upload step
-			const { embed, components } = createImageUploadPrompt(session.repository.name);
-
-			await interaction.update({ embeds: [embed], components });
-
-			this.logger.log(`Image upload prompt displayed for ${session.repository.fullName}`);
+			this.logger.log(`Prompt modal displayed (no images) for ${session.repository.fullName}`);
 		} catch (error) {
-			this.logger.error(`Failed to handle skip file selection: ${error.message}`, error);
+			this.logger.error(`Failed to handle skip images: ${error.message}`, error);
 			return interaction.reply({
-				content: 'Failed to show image upload step. Please try again.',
+				content: 'Failed to open prompt modal. Please try again.',
 				flags: [MessageFlags.Ephemeral]
 			});
 		}
 	}
 
-	private createPromptModal(repositoryName: string): ModalBuilder {
+	private createPromptModal(repositoryName: string, selectedFilePaths: string[]): ModalBuilder {
 		const modal = new ModalBuilder()
 			.setCustomId(CUSTOM_IDS.CLAUDE_PROMPT_MODAL)
 			.setTitle(`🤖 Analyze ${repositoryName}`);
@@ -78,7 +73,7 @@ export class SkipFileSelectionButtonHandler extends BaseService {
 			.setValue('main')
 			.setMaxLength(100);
 
-		// File context input (optional, empty)
+		// File context input (optional, with pre-selected files if any)
 		const fileContextInput = new TextInputBuilder()
 			.setCustomId(CUSTOM_IDS.CLAUDE_FILE_CONTEXT_INPUT)
 			.setLabel('File Context (optional)')
@@ -87,11 +82,27 @@ export class SkipFileSelectionButtonHandler extends BaseService {
 			.setRequired(false)
 			.setMaxLength(2000);
 
+		// Pre-populate with selected file paths
+		if (selectedFilePaths.length > 0) {
+			fileContextInput.setValue(selectedFilePaths.join(', '));
+		}
+
+		// Image URLs input (empty since we're skipping images)
+		const imageUrlsInput = new TextInputBuilder()
+			.setCustomId(CUSTOM_IDS.CLAUDE_IMAGE_URLS_INPUT)
+			.setLabel('Image URLs (optional)')
+			.setStyle(TextInputStyle.Paragraph)
+			.setPlaceholder('https://example.com/image1.png, https://example.com/image2.jpg')
+			.setRequired(false)
+			.setMaxLength(2000)
+			.setValue(''); // Empty since no images
+
 		const promptRow = new ActionRowBuilder<TextInputBuilder>().addComponents(promptInput);
 		const branchRow = new ActionRowBuilder<TextInputBuilder>().addComponents(branchInput);
 		const fileContextRow = new ActionRowBuilder<TextInputBuilder>().addComponents(fileContextInput);
+		const imageUrlsRow = new ActionRowBuilder<TextInputBuilder>().addComponents(imageUrlsInput);
 
-		modal.addComponents(promptRow, branchRow, fileContextRow);
+		modal.addComponents(promptRow, branchRow, fileContextRow, imageUrlsRow);
 
 		return modal;
 	}

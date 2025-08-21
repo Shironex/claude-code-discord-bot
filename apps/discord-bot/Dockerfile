@@ -1,31 +1,39 @@
-# Standalone Docker build for Discord Bot
-# Build from apps/discord-bot directory: docker build -t claude-discord-bot .
+# Production Dockerfile for Discord Bot
+# Build from monorepo root: docker build -f apps/discord-bot/Dockerfile -t claude-discord-bot .
 # Optimized for Coolify.io deployment platform
 
 # ============================================
-# Build Stage
+# Base Stage
 # ============================================
-FROM node:20-alpine AS builder
+FROM node:20-alpine AS base
 
 # Install pnpm globally
 RUN npm install -g pnpm@latest
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package.json ./
+# Copy workspace root files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# Install all dependencies (including dev dependencies for build)
-# Note: Using --no-frozen-lockfile as this is a standalone build without pnpm-lock.yaml
-RUN pnpm install --no-frozen-lockfile
+# ============================================
+# Build Stage
+# ============================================
+FROM base AS build
 
-# Copy source code and TypeScript configuration
-COPY src ./src
-COPY tsconfig.json tsconfig.build.json ./
+# Copy shared packages
+COPY packages/ ./packages/
+
+# Copy Discord bot source
+COPY apps/discord-bot/ ./apps/discord-bot/
+
+# Install all dependencies (including dev dependencies for building)
+RUN pnpm install --frozen-lockfile
+
+# Build shared packages first
+RUN pnpm --filter @claude-code/shared-types build
 
 # Build the Discord bot application
-RUN pnpm build
+RUN pnpm --filter @claude-code/discord-bot build
 
 # ============================================
 # Production Stage
@@ -36,27 +44,31 @@ FROM node:20-alpine AS production
 RUN npm install -g pnpm@latest
 
 # Create non-root user for security
-RUN addgroup -g 1001 -S discord && \
-    adduser -S discord -u 1001
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S discordbot -u 1001
 
 # Set working directory
 WORKDIR /app
 
-# Copy package.json and install only production dependencies
-COPY package.json ./
-RUN pnpm install --no-frozen-lockfile --prod
+# Copy package files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# Copy built application from builder stage
-COPY --from=builder /app/dist ./dist
+# Copy built packages
+COPY --from=build --chown=discordbot:nodejs /app/packages/ ./packages/
+COPY --from=build --chown=discordbot:nodejs /app/apps/discord-bot/dist ./apps/discord-bot/dist
+COPY --from=build --chown=discordbot:nodejs /app/apps/discord-bot/package.json ./apps/discord-bot/
 
-# Change ownership to non-root user
-RUN chown -R discord:discord /app
+# Install only production dependencies (skip scripts like husky prepare)
+RUN pnpm install --frozen-lockfile --prod --ignore-scripts
+
+# Create logs directory
+RUN mkdir -p logs && chown -R discordbot:nodejs logs
 
 # Switch to non-root user
-USER discord
+USER discordbot
 
 # Set environment variables
 ENV NODE_ENV=production
 
 # Start the application
-CMD ["node", "dist/main.js"]
+CMD ["node", "apps/discord-bot/dist/main.js"]

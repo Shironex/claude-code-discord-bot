@@ -1,5 +1,5 @@
 import { IsOptional, IsString, IsNumber, Min, Max, IsArray, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IMAGE_CONSTANTS } from '../constants';
 
@@ -62,6 +62,13 @@ export class BatchUploadOptionsDto {
 		example: 1800,
 	})
 	@IsOptional()
+	@Transform(({ value }) => {
+		if (typeof value === 'string') {
+			const parsed = parseInt(value, 10);
+			return isNaN(parsed) ? value : parsed;
+		}
+		return value;
+	})
 	@IsNumber()
 	@Min(IMAGE_CONSTANTS.MIN_TTL_SECONDS)
 	@Max(IMAGE_CONSTANTS.MAX_TTL_SECONDS)

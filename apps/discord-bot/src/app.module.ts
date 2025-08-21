@@ -13,9 +13,12 @@ import { EmbedService } from './services/embed.service';
 import { WorkflowService } from './services/workflow.service';
 import { WorkflowMonitorService } from './services/workflow-monitor.service';
 import { FileExplorerService } from './services/file-explorer.service';
+import { StartupService } from './services/startup.service';
+import { ImageServiceModule } from './services/image-service/image-service.module';
 
 // Commands
 import { ClaudeCommand } from './commands/repository/claude.command';
+import { ImageServiceCommand } from './commands/debug/image-service.command';
 
 // Interaction Handlers
 import { RepositorySelectHandler } from './interactions/selects/repository.select';
@@ -24,8 +27,12 @@ import { CancelButtonHandler } from './interactions/buttons/cancel.button';
 import { WorkflowStatusButtonHandler } from './interactions/buttons/workflow-status.button';
 import { SkipFileSelectionButtonHandler } from './interactions/buttons/skip-file-selection.button';
 import { ClaudePromptTriggerButtonHandler } from './interactions/buttons/claude-prompt-trigger.button';
+import { AddImagesButtonHandler } from './interactions/buttons/add-images.button';
+import { SkipImagesButtonHandler } from './interactions/buttons/skip-images.button';
+import { OpenClaudePromptButtonHandler } from './interactions/buttons/open-claude-prompt.button';
 import { ClaudePromptModalHandler } from './interactions/modals/claude-prompt.modal';
 import { ClaudeRepoSearchModalHandler } from './interactions/modals/claude-repo-search.modal';
+import { ImageUploadListener } from './interactions/listeners/image-upload.listener';
 
 @Module({
 	imports: [
@@ -33,6 +40,7 @@ import { ClaudeRepoSearchModalHandler } from './interactions/modals/claude-repo-
 			isGlobal: true
 		}), // Load .env file
 		LoggerModule, // Global logger configuration
+		ImageServiceModule, // Image service integration
 		NecordModule.forRootAsync({
 			imports: [ConfigModule],
 			useFactory: (configService: ConfigService) => ({
@@ -49,6 +57,7 @@ import { ClaudeRepoSearchModalHandler } from './interactions/modals/claude-repo-
 	],
 	providers: [
 		// Services
+		StartupService,
 		GitHubService,
 		SessionService,
 		EmbedService,
@@ -57,6 +66,7 @@ import { ClaudeRepoSearchModalHandler } from './interactions/modals/claude-repo-
 		FileExplorerService,
 		// Commands
 		ClaudeCommand,
+		ImageServiceCommand,
 		// Interaction Handlers
 		RepositorySelectHandler,
 		FilePathSelectHandler,
@@ -64,8 +74,13 @@ import { ClaudeRepoSearchModalHandler } from './interactions/modals/claude-repo-
 		WorkflowStatusButtonHandler,
 		SkipFileSelectionButtonHandler,
 		ClaudePromptTriggerButtonHandler,
+		AddImagesButtonHandler,
+		SkipImagesButtonHandler,
+		OpenClaudePromptButtonHandler,
 		ClaudePromptModalHandler,
-		ClaudeRepoSearchModalHandler
+		ClaudeRepoSearchModalHandler,
+		// Listeners
+		ImageUploadListener
 	]
 })
 export class AppModule {}

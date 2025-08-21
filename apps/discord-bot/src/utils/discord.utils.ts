@@ -1,4 +1,11 @@
-import { ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import {
+	ActionRowBuilder,
+	StringSelectMenuBuilder,
+	ButtonBuilder,
+	ButtonStyle,
+	EmbedBuilder,
+	Colors
+} from 'discord.js';
 import { Repository } from '../interfaces/models/repository.interface';
 import { FileTreeItem } from '../services/file-explorer.service';
 import { CUSTOM_IDS } from './discord.constants';
@@ -148,4 +155,71 @@ export class DiscordUtils {
 			.setStyle(ButtonStyle.Secondary)
 			.setEmoji('⏭️');
 	}
+
+	static createAddImagesButton(): ButtonBuilder {
+		return new ButtonBuilder()
+			.setCustomId(CUSTOM_IDS.ADD_IMAGES)
+			.setLabel('Add Images')
+			.setStyle(ButtonStyle.Primary)
+			.setEmoji('🖼️');
+	}
+
+	static createSkipImagesButton(): ButtonBuilder {
+		return new ButtonBuilder()
+			.setCustomId(CUSTOM_IDS.SKIP_IMAGES)
+			.setLabel('Skip Images')
+			.setStyle(ButtonStyle.Secondary)
+			.setEmoji('⏭️');
+	}
+
+	static createImageUploadComponents(): ActionRowBuilder<ButtonBuilder>[] {
+		const addImagesButton = this.createAddImagesButton();
+		const skipImagesButton = this.createSkipImagesButton();
+		const cancelButton = this.createCancelButton();
+
+		const buttonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+			addImagesButton,
+			skipImagesButton,
+			cancelButton
+		);
+
+		return [buttonRow];
+	}
+}
+
+/**
+ * Create image upload prompt embed and components
+ */
+export function createImageUploadPrompt(repositoryName: string): {
+	embed: EmbedBuilder;
+	components: ActionRowBuilder<ButtonBuilder>[];
+} {
+	const embed = new EmbedBuilder()
+		.setTitle('🖼️ Add Images to Context')
+		.setColor(Colors.Blue)
+		.setDescription(
+			`**Repository:** ${repositoryName}\n\n` +
+				'Would you like to add images to provide additional context for your Claude Code analysis?\n\n' +
+				'**If you choose "Add Images":**\n' +
+				'• Upload images in your next message\n' +
+				'• Supported formats: PNG, JPG, GIF, WebP, BMP, TIFF\n' +
+				'• Max file size: 10MB per image\n' +
+				'• Up to 10 images at once\n' +
+				'• Images will be processed and URLs will be included in your prompt'
+		)
+		.addFields([
+			{
+				name: '💡 Use Cases',
+				value: '• Screenshots of UI/errors\n• Diagrams or mockups\n• Documentation images\n• Design references',
+				inline: false
+			}
+		])
+		.setFooter({
+			text: 'Images will be temporarily stored and automatically cleaned up after analysis'
+		})
+		.setTimestamp();
+
+	const components = DiscordUtils.createImageUploadComponents();
+
+	return { embed, components };
 }
