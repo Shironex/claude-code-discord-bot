@@ -43,15 +43,18 @@ This document outlines the comprehensive improvements needed for the image servi
   - **✨ Enhanced**: Environment-aware file size and count limits from configuration
   - **✨ Enhanced**: Proper integration with upload.module.ts using function instead of fallback
 
-#### 2. Configuration Validation
+#### 2. Configuration Validation ✅ **COMPLETED**
 **Problem**: No validation of environment variables at startup
 
 **Tasks:**
-- [ ] **Add Joi Validation** (`apps/image-service/src/app.module.ts`)
-  - Install `joi` and `@nestjs/config` validation
-  - Create comprehensive validation schema for all env variables
-  - Add to ConfigModule.forRoot({ validationSchema })
-  - Ensure application fails fast with clear error messages
+- [x] **Add Joi Validation** (`apps/image-service/src/app.module.ts`) ✅ **COMPLETED**
+  - ~~Install `joi` and `@nestjs/config` validation~~ ✅ Added joi ^18.0.1 dependency
+  - ~~Create comprehensive validation schema for all env variables~~ ✅ Created validation.schema.ts with 30+ variables
+  - ~~Add to ConfigModule.forRoot({ validationSchema })~~ ✅ Integrated with ConfigModule
+  - ~~Ensure application fails fast with clear error messages~~ ✅ Validated with custom error messages
+  - **✨ Enhanced**: Custom validation rules for TTL relationships and production security requirements
+  - **✨ Enhanced**: Comprehensive validation covering core, auth, Redis, uploads, TTL, rate limiting, CORS, security
+  - **✨ Enhanced**: Production-specific validation for API keys and HMAC configuration
 
 - [ ] **Environment Documentation**
   - Update `apps/image-service/.env.example` with all config options
