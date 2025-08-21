@@ -25,6 +25,7 @@ module.exports = {
         'commitlint',      // Commitlint changes
         'husky',           // Husky changes
         'turbo',           // Turbo changes
+        'claude',          // Claude changes (workflows, commands, config, docs, etc.)
       ],
     ],
     // Allow empty scopes for general changes

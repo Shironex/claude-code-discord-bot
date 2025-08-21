@@ -21,18 +21,36 @@ This is a Discord bot built with NestJS and Necord that integrates with GitHub t
 ```
 claude-code-discord-bot/
 ├── apps/
-│   └── discord-bot/            # Discord bot application
-│       ├── src/                # Application source code
-│       ├── .env                # Bot environment variables
-│       ├── .env.example        # Environment template
-│       ├── package.json        # Bot dependencies
-│       └── dist/               # Build output
-├── packages/                   # Shared packages (future)
-├── .github/                    # GitHub Actions workflows
+│   ├── discord-bot/            # Discord bot application
+│   │   ├── src/                # Application source code
+│   │   ├── .env                # Bot environment variables
+│   │   ├── .env.example        # Environment template
+│   │   ├── package.json        # Bot dependencies
+│   │   ├── templates/          # Claude workflow templates
+│   │   └── dist/               # Build output
+│   └── image-service/          # Standalone image storage API
+│       ├── src/                # Image service source code
+│       ├── .env.example        # Image service environment template
+│       ├── Dockerfile          # Production image service container
+│       ├── docker-compose.dev.yml # Development docker setup
+│       └── scripts/            # Key generation and utility scripts
+├── packages/
+│   └── shared-types/           # Shared TypeScript types between services
+│       ├── src/                # Type definitions
+│       └── dist/               # Built type definitions
+├── runners/
+│   └── github-actions/         # Self-hosted GitHub Actions runner
+│       ├── Dockerfile          # Runner container configuration
+│       ├── docker-compose.yml  # Runner deployment setup
+│       └── entrypoint.sh       # Runner auto-registration script
+├── .github/
+│   ├── workflows/              # CI/CD workflows
+│   └── docs/                   # Additional documentation
 ├── .claude/                    # Claude Code configuration
 ├── turbo.json                  # Turborepo configuration
 ├── package.json                # Root workspace configuration
 ├── pnpm-workspace.yaml         # PNPM workspace settings
+├── commitlint.config.js        # Commit message validation
 └── CLAUDE.md                   # This file
 ```
 
@@ -49,18 +67,34 @@ apps/discord-bot/src/
 │   ├── session.service.ts          # User session management with cleanup
 │   ├── embed.service.ts            # Discord embed creation utilities
 │   ├── workflow.service.ts         # GitHub Actions workflow management
-│   └── workflow-monitor.service.ts # Real-time workflow status monitoring
+│   ├── workflow-monitor.service.ts # Real-time workflow status monitoring
+│   ├── file-explorer.service.ts    # Repository file tree exploration
+│   ├── startup.service.ts          # Application startup and configuration
+│   └── image-service/              # Image handling integration
+│       ├── image-service.client.ts # Image service API client
+│       ├── image-service.module.ts # Image service module configuration
+│       └── image-upload.service.ts # Discord attachment uploading
 ├── commands/              # Discord slash command handlers
+│   ├── debug/
+│   │   └── image-service.command.ts # /image-service debug command
 │   └── repository/
 │       └── claude.command.ts       # /claude command - unified workflow entry
 ├── interactions/          # Discord interaction handlers
 │   ├── buttons/
+│   │   ├── add-images.button.ts           # Add images to analysis
 │   │   ├── cancel.button.ts               # Cancel operation button
+│   │   ├── claude-prompt-trigger.button.ts # Trigger Claude prompt modal
+│   │   ├── open-claude-prompt.button.ts   # Open Claude prompt interface
+│   │   ├── skip-file-selection.button.ts  # Skip file selection step
+│   │   ├── skip-images.button.ts          # Skip image attachment step
 │   │   └── workflow-status.button.ts      # Check workflow status
+│   ├── listeners/
+│   │   └── image-upload.listener.ts       # Handle image upload events
 │   ├── modals/
 │   │   ├── claude-prompt.modal.ts         # Final prompt input modal
 │   │   └── claude-repo-search.modal.ts    # Repository search modal
 │   └── selects/
+│       ├── file-path.select.ts            # File/directory selection handler
 │       └── repository.select.ts           # Repository selection handler
 ├── logger/                # Custom Winston-based logging system
 │   ├── formatters/        # Log formatting utilities
@@ -77,11 +111,15 @@ apps/discord-bot/src/
 │   └── logger.module.ts           # NestJS logger module
 ├── utils/                 # Shared utilities and helpers
 │   ├── discord.constants.ts    # Discord-specific constants
+│   ├── discord.utils.ts        # Discord UI component builders
+│   ├── error.types.ts          # Error type definitions
+│   ├── file-tree.utils.ts      # File tree manipulation utilities
 │   ├── github.constants.ts     # GitHub-specific constants
 │   ├── messages.constants.ts   # User-facing messages
-│   ├── workflow.utils.ts       # Workflow status utilities
-│   ├── discord.utils.ts        # Discord UI component builders
-│   └── security.utils.ts       # Security utilities for logging
+│   ├── security.utils.ts       # Security utilities for logging
+│   ├── tracking.utils.ts       # User interaction tracking utilities
+│   ├── type-guards.ts          # TypeScript type guard functions
+│   └── workflow.utils.ts       # Workflow status utilities
 ├── interfaces/            # TypeScript type definitions (organized by domain)
 │   ├── services/          # Service interfaces
 │   │   ├── github.interface.ts     # GitHub service contract
@@ -153,6 +191,30 @@ apps/discord-bot/src/
   - Automatic status updates for running workflows
   - Discord message updates with progress
   - Background polling and notification system
+
+#### FileExplorerService (`apps/discord-bot/src/services/file-explorer.service.ts`)
+- **Purpose**: Repository file tree exploration and selection
+- **Features**:
+  - Recursive file tree traversal with caching
+  - Prioritization of common development files and directories
+  - Interactive file/directory selection interface
+  - Pagination for large repositories
+- **Methods**:
+  - `getFileTree()` - Fetch and cache repository file structure
+  - `buildFileTreeResponse()` - Build paginated file tree for Discord UI
+  - `clearCache()` - Manual cache invalidation
+
+#### ImageUploadService (`apps/discord-bot/src/services/image-service/image-upload.service.ts`)
+- **Purpose**: Discord attachment processing and image service integration
+- **Features**:
+  - Discord attachment validation and processing
+  - Integration with standalone image service API
+  - Batch upload support for multiple attachments
+  - Automatic file type detection and validation
+- **Methods**:
+  - `uploadDiscordAttachment()` - Upload single Discord attachment
+  - `uploadDiscordAttachments()` - Batch upload multiple attachments
+  - `isImageAttachment()` - Validate attachment as supported image type
 
 ### Custom Logging System
 
@@ -244,6 +306,114 @@ MEMORY_WARNING_THRESHOLD=90      # Memory warning threshold percentage
 MEMORY_DEBUG_THRESHOLD=75        # Memory debug threshold percentage  
 MEMORY_CHECK_INTERVAL=30000      # Memory check interval in milliseconds
 ```
+
+## Image Service API
+
+The monorepo includes a standalone NestJS image service (`apps/image-service/`) that provides secure, temporary image storage for Discord attachments and other image processing needs.
+
+### Architecture & Features
+
+#### Core Modules
+- **Upload Module**: Handles file uploads with validation and metadata extraction
+- **Storage Module**: Manages temporary file storage with automatic cleanup
+- **Auth Module**: Provides API key and HMAC signature authentication
+- **Health Module**: Health checks and service monitoring
+- **Redis Module**: Caching and session management
+
+#### Security Features
+- **Dual Authentication**: API key + HMAC signature validation
+- **File Validation**: Content type and file size validation
+- **Temporary Storage**: Automatic file cleanup with configurable TTL
+- **Request Rate Limiting**: Protection against abuse
+- **CORS Configuration**: Secure cross-origin resource sharing
+
+#### Key Environment Variables
+```bash
+# Image Service Configuration (.env)
+PORT=3001                           # Service port
+NODE_ENV=production                 # Environment mode
+
+# Security
+API_KEY="generated-api-key"         # API authentication key
+SECRET_KEY="generated-secret-key"   # HMAC signature secret
+
+# Redis Configuration
+REDIS_HOST=localhost                # Redis server host
+REDIS_PORT=6379                     # Redis server port
+REDIS_PASSWORD=""                   # Redis authentication
+
+# Storage Configuration
+UPLOAD_PATH=./uploads               # File storage directory
+MAX_FILE_SIZE=10485760             # Maximum file size (10MB)
+DEFAULT_TTL=3600                   # Default file TTL (1 hour)
+
+# Cleanup
+CLEANUP_INTERVAL=300               # Cleanup check interval (5 minutes)
+```
+
+#### API Endpoints
+- `POST /upload` - Upload single or multiple images with metadata
+- `GET /files/:id` - Retrieve stored images by ID
+- `DELETE /files/:id` - Delete specific images
+- `GET /health` - Service health check
+- `GET /api-docs` - Interactive API documentation (Swagger)
+
+#### Integration with Discord Bot
+The Discord bot integrates with the image service through:
+- **ImageServiceClient** - HTTP client for image service API
+- **ImageUploadService** - Discord attachment processing
+- **Automatic Authentication** - HMAC signature generation for secure requests
+
+### Development Commands (Image Service)
+```bash
+# Start image service in development
+pnpm dev --filter=@claude-code/image-service
+
+# Generate API keys for development
+cd apps/image-service && bash scripts/generate-keys.sh
+
+# Build image service only
+pnpm build --filter=@claude-code/image-service
+
+# Docker development environment
+cd apps/image-service && docker-compose -f docker-compose.dev.yml up
+```
+
+## Shared Types Package
+
+The `packages/shared-types/` package provides centralized TypeScript type definitions used across both the Discord bot and image service applications.
+
+### Package Structure
+```
+packages/shared-types/src/
+├── api.types.ts          # Common API response types
+├── constants.ts          # Shared constants across services
+├── health.types.ts       # Health check type definitions
+├── image.types.ts        # Image service specific types
+└── index.ts             # Package exports
+```
+
+### Key Type Definitions
+- **ImageUploadResponse** - Standard image upload response format
+- **BatchUploadResponse** - Multi-file upload response format
+- **HealthCheckResponse** - Service health status format
+- **ApiResponse<T>** - Generic API response wrapper
+- **SHARED_IMAGE_CONSTANTS** - Image validation and processing constants
+
+### Usage in Applications
+```typescript
+// In Discord Bot
+import { ImageUploadResponse, SHARED_IMAGE_CONSTANTS } from '@claude-code/shared-types';
+
+// In Image Service
+import { ApiResponse, HealthCheckResponse } from '@claude-code/shared-types';
+```
+
+### Build Configuration
+- **Build Tool**: tsup for fast TypeScript compilation
+- **Output Formats**: ESM and CommonJS for compatibility
+- **Type Definitions**: Automatic .d.ts generation
+- **Watch Mode**: Real-time rebuilding during development
 
 ## Environment Setup
 
@@ -439,32 +609,43 @@ Comprehensive deployment guide available at [`.github/docs/DEPLOYMENT.md`](./.gi
 
 ## Current Features
 
-This Discord bot provides streamlined GitHub integration with Claude Code workflow automation through a unified command interface:
+This Discord bot provides comprehensive GitHub integration with Claude Code workflow automation through an enhanced multi-step interface:
 
-### Streamlined Workflow
-- **Single Command**: `/claude` handles the entire workflow
+### Enhanced Workflow
+- **Single Command**: `/claude` handles the entire workflow from search to execution
+- **Multi-Step Process**: Repository search → File selection → Image upload → Analysis prompt
 - **Modal-Based UX**: Interactive text input for repository search and prompts  
 - **Smart Validation**: Only shows repositories with `claude.yml` workflow
-- **Direct Integration**: Repository selection immediately leads to prompt input
+- **File Explorer**: Interactive file and directory selection for focused analysis
+- **Image Integration**: Upload Discord attachments for visual context in analysis
 - **Real-time Monitoring**: Automatic status updates and workflow tracking
 
 ### Core Repository Management
 - Repository search through text input modal
 - Intelligent repository matching (exact names and fuzzy search)
 - Repository validation with Claude Code workflow detection
+- Interactive file tree exploration with common path prioritization
 - Session management for multi-step user interactions
 
 ### Claude Code Integration
-- Unified workflow triggering via single `/claude` command
+- Enhanced workflow triggering with file and image context
 - Real-time workflow status monitoring with Discord message updates
 - Custom prompt input through dedicated modal interface
+- File selection for targeted analysis of specific code sections
+- Image attachment support for visual context (screenshots, diagrams, etc.)
 - Automatic workflow file detection and validation (`claude.yml`)
 - Background monitoring with status updates and completion notifications
+
+### Image Processing Features
+- **Discord Attachment Processing**: Automatic validation and upload of image attachments
+- **Temporary Storage**: Secure image storage with automatic cleanup
+- **Batch Upload Support**: Handle multiple images in a single workflow
+- **Integration Security**: HMAC-signed requests between bot and image service
 
 ### Discord Command
 
 #### `/claude`
-**Complete Claude Code workflow in one command**
+**Complete Claude Code workflow with enhanced multi-step interface**
 1. **Repository Search**: Opens modal to search your repositories
    - Text input for repository name or search term
    - Supports exact matches (`owner/repo`) and fuzzy search
@@ -473,17 +654,31 @@ This Discord bot provides streamlined GitHub integration with Claude Code workfl
 2. **Repository Selection**: Shows validated repositories with Claude Code support
    - Only displays repositories containing `claude.yml` workflow
    - Clear indication of repositories without Claude Code setup
-   - Direct selection leads to prompt input
+   - Direct selection leads to file explorer
 
-3. **Prompt Input**: Modal for analysis details
+3. **File Selection** (Optional): Interactive file tree exploration
+   - Browse repository files and directories
+   - Select specific files for focused analysis
+   - Common paths prioritized (src/, lib/, README.md, etc.)
+   - Skip option for full repository analysis
+
+4. **Image Upload** (Optional): Attach visual context
+   - Upload screenshots, diagrams, or other images
+   - Automatic validation and processing
+   - Batch upload support for multiple images
+   - Skip option if no images needed
+
+5. **Analysis Prompt**: Modal for analysis details
    - Custom analysis prompt (required)
    - Optional branch specification (defaults to 'main')
-   - Example prompts: "Review code for security vulnerabilities", "Optimize performance"
+   - Context includes selected files and uploaded images
+   - Example prompts: "Review code for security vulnerabilities", "Analyze this UI component"
 
-4. **Workflow Execution**: Automatic dispatch and monitoring
+6. **Workflow Execution**: Automatic dispatch and monitoring
    - Real-time status updates in Discord
    - Workflow progress tracking with status buttons
    - Completion notifications with results
+   - Enhanced context from files and images
 
 ### Workflow Requirements
 For repositories to support Claude Code analysis, they must contain:
@@ -491,12 +686,14 @@ For repositories to support Claude Code analysis, they must contain:
 - Proper workflow inputs configuration for prompt handling
 - Repository access permissions for the bot's GitHub token
 
-### Benefits of New Design
-- **Simplified UX**: One command instead of three (`/run`, `/search`, `/claude`)
+### Benefits of Enhanced Design
+- **Unified Workflow**: Single `/claude` command handles complete analysis pipeline
+- **Contextual Analysis**: File selection and image uploads provide targeted context
 - **Better Validation**: Pre-validates Claude Code support before prompting
-- **Faster Workflow**: Fewer steps from search to execution
-- **Error Prevention**: Only shows compatible repositories
-- **Cleaner Interface**: No pagination complexity or analyze buttons
+- **Interactive Experience**: Step-by-step guided workflow with clear skip options
+- **Visual Context**: Support for screenshots, diagrams, and visual documentation
+- **Error Prevention**: Only shows compatible repositories with validation
+- **Flexible Usage**: Optional steps allow both quick and detailed analysis workflows
 
 ## Commit and Release Workflow (CRITICAL - READ FIRST)
 
@@ -532,19 +729,33 @@ Format: `type(scope): description`
 
 **Required Scopes:**
 - `discord-bot` - Discord bot application changes
+- `image-service` - Image service API application changes
+- `shared-types` - Shared types package changes
 - `root` - Root workspace changes
 - `ci` - CI/CD changes
 - `docs` - Documentation
 - `deps` - Dependencies
 - `release` - Release-related
-- `config` - Configuration
+- `config` - Configuration changes
+- `template` - Template changes
+- `packages` - Packages directory
+- `scripts` - Scripts directory
+- `docker` - Docker changes
+- `docker-compose` - Docker compose changes
+- `dockerfile` - Dockerfile changes
+- `commitlint` - Commitlint changes
+- `husky` - Husky changes
+- `turbo` - Turbo changes
 
 **Examples:**
 ```bash
 git commit -m "feat(discord-bot): add repository search modal"
+git commit -m "feat(image-service): implement image upload API with HMAC auth"
+git commit -m "feat(shared-types): add image upload response types"
 git commit -m "fix(discord-bot): resolve session timeout issue"  
 git commit -m "docs(root): update contributing guidelines"
 git commit -m "ci(root): add release automation workflow"
+git commit -m "docker(image-service): optimize production dockerfile"
 ```
 
 ### 4. Changeset Management (REQUIRED FOR RELEASES)
