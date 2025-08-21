@@ -4,6 +4,7 @@ import { IMAGE_CONSTANTS } from '../common/constants';
 export interface ImageServiceConfig {
 	port: number;
 	nodeEnv: string;
+	baseUrl: string;
 	auth: {
 		discordBotApiKey?: string;
 		claudeCodeApiKey?: string;
@@ -44,6 +45,7 @@ export default registerAs('imageService', (): ImageServiceConfig => {
 	return {
 		port: parseInt(process.env.PORT || '3001', 10),
 		nodeEnv: process.env.NODE_ENV || 'development',
+		baseUrl: process.env.IMAGE_SERVICE_BASE_URL || `http://localhost:${process.env.PORT || '3001'}`,
 		auth: {
 			discordBotApiKey: process.env.DISCORD_BOT_API_KEY,
 			claudeCodeApiKey: process.env.CLAUDE_CODE_API_KEY,

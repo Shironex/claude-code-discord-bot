@@ -242,7 +242,7 @@ export class UploadService {
 	 * Generate image URL
 	 */
 	private generateImageUrl(id: string): string {
-		const baseUrl = this.configService.get<string>('imageService.baseUrl', 'http://localhost:3001');
+		const baseUrl = this.configService.get<string>('imageService.baseUrl');
 		return `${baseUrl}/api/v1/images/${id}`;
 	}
 
