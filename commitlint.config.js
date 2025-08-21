@@ -16,6 +16,15 @@ module.exports = {
         'release',         // Release-related changes
         'config',          // Configuration changes
         'template',        // Template changes
+        'shared-types',    // Shared types package
+        'packages',        // Packages directory
+        'scripts',         // Scripts directory
+        'docker',          // Docker changes
+        'docker-compose',  // Docker compose changes
+        'dockerfile',      // Dockerfile changes,
+        'commitlint',      // Commitlint changes
+        'husky',           // Husky changes
+        'turbo',           // Turbo changes
       ],
     ],
     // Allow empty scopes for general changes
@@ -26,6 +35,8 @@ module.exports = {
     'subject-max-length': [2, 'always', 100],
     // Ensure subject is not empty
     'subject-empty': [2, 'never'],
+    // Limit body length
+    'body-max-line-length': [1, 'always', 100],
     // Ensure type is present
     'type-empty': [2, 'never'],
     // Custom type enum to include common monorepo types
