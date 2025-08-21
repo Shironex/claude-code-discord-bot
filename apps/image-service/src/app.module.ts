@@ -9,12 +9,18 @@ import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
 import configuration from './config/configuration.config';
 import multerConfig from './config/multer.config';
+import { validationSchema } from './config/validation.schema';
 
 @Module({
 	imports: [
 		ConfigModule.forRoot({
 			isGlobal: true,
 			load: [configuration, multerConfig],
+			validationSchema,
+			validationOptions: {
+				allowUnknown: true, // Allow system environment variables
+				abortEarly: false, // Show all validation errors, not just the first one
+			},
 		}),
 		RedisModule,
 		StorageModule,

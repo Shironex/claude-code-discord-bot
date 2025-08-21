@@ -5,6 +5,7 @@ export { default as multerConfig, createMulterConfig } from './multer.config';
 export { createHelmetConfig } from './helmet.config';
 export { createStartupConfig, StartupService } from './startup.config';
 export { SwaggerService, createSwaggerConfig, getSwaggerSetupOptions } from './swagger.config';
+export { validationSchema } from './validation.schema';
 
 export * from './configuration.config';
 export * from './redis.config';
