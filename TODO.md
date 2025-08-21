@@ -56,11 +56,14 @@ This document outlines the comprehensive improvements needed for the image servi
   - **✨ Enhanced**: Comprehensive validation covering core, auth, Redis, uploads, TTL, rate limiting, CORS, security
   - **✨ Enhanced**: Production-specific validation for API keys and HMAC configuration
 
-- [ ] **Environment Documentation**
-  - Update `apps/image-service/.env.example` with all config options
-  - Organize into REQUIRED and OPTIONAL sections
-  - Add descriptions for each variable
-  - Document validation rules and limits
+- [x] **Environment Documentation** ✅ **COMPLETED**
+  - ~~Update `apps/image-service/.env.example` with all config options~~ ✅ Comprehensive 30+ variable documentation
+  - ~~Organize into REQUIRED and OPTIONAL sections~~ ✅ Clear section headers and organization
+  - ~~Add descriptions for each variable~~ ✅ Detailed descriptions with validation rules and defaults
+  - ~~Document validation rules and limits~~ ✅ Complete validation notes and production guidance
+  - **✨ Enhanced**: Redis username support added to validation schema and service
+  - **✨ Enhanced**: Production deployment guidance and security recommendations
+  - **✨ Enhanced**: Examples for complex configurations (CORS, MIME types, TTL relationships)
 
 ## 🔄 Medium Priority - Shared Package Refactoring
 
