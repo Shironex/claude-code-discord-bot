@@ -18,6 +18,7 @@ export const redisProviders: Provider[] = [
 			return new Redis({
 				host: config.host,
 				port: config.port,
+				username: config.username,
 				password: config.password,
 				db: config.db,
 				keyPrefix: config.keyPrefix,
