@@ -55,6 +55,10 @@ export class StorageService implements IImageStorage {
 
 			const metadata = JSON.parse(metadataJson) as ImageMetadata;
 
+			// Convert date strings back to Date objects
+			metadata.uploadedAt = new Date(metadata.uploadedAt);
+			metadata.expiresAt = new Date(metadata.expiresAt);
+
 			// Check if expired
 			if (new Date() > metadata.expiresAt) {
 				// Clean up expired image
@@ -121,6 +125,10 @@ export class StorageService implements IImageStorage {
 			}
 
 			const metadata = JSON.parse(metadataJson) as ImageMetadata;
+
+			// Convert date strings back to Date objects
+			metadata.uploadedAt = new Date(metadata.uploadedAt);
+			metadata.expiresAt = new Date(metadata.expiresAt);
 
 			// Check if expired
 			if (new Date() > metadata.expiresAt) {

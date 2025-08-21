@@ -57,12 +57,17 @@ export class StorageController {
 		}
 
 		// Set appropriate headers
+		const lastModified =
+			storedImage.metadata.uploadedAt instanceof Date
+				? storedImage.metadata.uploadedAt.toUTCString()
+				: new Date(storedImage.metadata.uploadedAt).toUTCString();
+
 		res.set({
 			'Content-Type': storedImage.metadata.mimeType,
 			'Content-Length': storedImage.metadata.size.toString(),
 			'Cache-Control': 'public, max-age=3600', // 1 hour cache
 			ETag: `"${id}"`,
-			'Last-Modified': storedImage.metadata.uploadedAt.toUTCString(),
+			'Last-Modified': lastModified,
 		});
 
 		// Add filename if available
