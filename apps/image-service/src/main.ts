@@ -4,7 +4,6 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
-import { apiReference } from '@scalar/nestjs-api-reference';
 import fs from 'fs';
 
 async function bootstrap() {
@@ -120,15 +119,31 @@ async function bootstrap() {
 		customSiteTitle: 'Image Service API Documentation',
 	});
 
-	fs.writeFileSync('./swagger-spec.json', JSON.stringify(document));
+	// Only setup Scalar API reference in development
+	const environment = configService.get<string>('NODE_ENV', 'development');
+	if (environment !== 'production') {
+		try {
+			// Dynamic import to avoid production dependency issues
+			const { apiReference } = await import('@scalar/nestjs-api-reference');
 
-	app.use(
-		'/api/docs/scalar',
-		apiReference({
-			content: document,
-			theme: 'deepSpace',
-		}),
-	);
+			app.use(
+				'/api/docs/scalar',
+				apiReference({
+					content: document,
+					theme: 'deepSpace',
+				}),
+			);
+
+			logger.log(`📚 API Scalar Reference available at: http://localhost:${configService.get<number>('PORT', 3001)}/api/docs/scalar`);
+		} catch {
+			logger.warn('Scalar API reference not available (dev dependency not installed)');
+		}
+	}
+
+	// Only write swagger spec in development
+	if (environment !== 'production') {
+		fs.writeFileSync('./swagger-spec.json', JSON.stringify(document));
+	}
 
 	// Start server
 	const port = configService.get<number>('PORT', 3001);
@@ -136,11 +151,12 @@ async function bootstrap() {
 
 	logger.log(`🚀 Image Service API is running on: http://localhost:${port}/api/v1`);
 	logger.log(`📚 API Documentation available at: http://localhost:${port}/api/docs/swagger`);
-	logger.log(`📚 API Scalar Reference available at: http://localhost:${port}/api/docs/scalar`);
+	if (environment !== 'production') {
+		// Scalar reference log is handled above when setting it up
+	}
 	logger.log(`🏥 Health check available at: http://localhost:${port}/api/v1/health`);
 
 	// Log configuration status
-	const environment = configService.get<string>('NODE_ENV', 'development');
 	const hasDiscordKey = !!configService.get<string>('DISCORD_BOT_API_KEY');
 	const hasClaudeKey = !!configService.get<string>('CLAUDE_CODE_API_KEY');
 	const hasHmacSecret = !!configService.get<string>('HMAC_SECRET');
