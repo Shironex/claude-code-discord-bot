@@ -34,6 +34,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 			const options: RedisOptions = {
 				host: redisConfig.host,
 				port: redisConfig.port,
+				username: redisConfig.username,
 				password: redisConfig.password,
 				db: redisConfig.db,
 				keyPrefix: redisConfig.keyPrefix,

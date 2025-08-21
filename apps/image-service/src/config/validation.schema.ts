@@ -29,6 +29,8 @@ export const validationSchema = Joi.object({
 
 	REDIS_PORT: Joi.number().port().default(6379).description('Redis server port'),
 
+	REDIS_USERNAME: Joi.string().optional().allow('').description('Redis server username (optional)'),
+
 	REDIS_PASSWORD: Joi.string().optional().allow('').description('Redis server password (optional)'),
 
 	REDIS_DB: Joi.number().integer().min(0).max(15).default(0).description('Redis database number (0-15)'),
