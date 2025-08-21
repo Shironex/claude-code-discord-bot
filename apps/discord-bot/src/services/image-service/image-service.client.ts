@@ -9,7 +9,7 @@ import {
 	AuthConfig,
 	StorageStats,
 	SHARED_IMAGE_CONSTANTS
-} from '@claude-code/shared-types';
+} from '@claude-code/shared';
 
 export interface ImageServiceConfig {
 	baseUrl: string;

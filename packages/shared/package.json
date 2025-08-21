@@ -1,5 +1,5 @@
 {
-  "name": "@claude-code/shared-types",
+  "name": "@claude-code/shared",
   "version": "0.0.0",
   "description": "Shared TypeScript types and interfaces for Claude Code Discord Bot and Image Service",
   "type": "module",

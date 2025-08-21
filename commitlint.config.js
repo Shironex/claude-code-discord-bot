@@ -16,7 +16,7 @@ module.exports = {
         'release',         // Release-related changes
         'config',          // Configuration changes
         'template',        // Template changes
-        'shared-types',    // Shared types package
+        'shared',          // Shared package
         'packages',        // Packages directory
         'scripts',         // Scripts directory
         'docker',          // Docker changes

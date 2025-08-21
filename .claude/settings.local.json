@@ -6,6 +6,12 @@
       "Bash(pnpm add:*)",
       "Bash(mkdir:*)",
       "Bash(pnpm build:*)",
+      "Bash(git add:*)",
+      "Bash(pnpm typecheck:*)",
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm format:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm lint:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

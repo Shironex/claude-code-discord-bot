@@ -1,6 +1,6 @@
-# @claude-code/shared-types
+# @claude-code/shared
 
-Shared TypeScript types and interfaces for the Claude Code Discord Bot ecosystem.
+Shared TypeScript types, interfaces, and utilities for the Claude Code Discord Bot ecosystem.
 
 ## Overview
 
@@ -15,7 +15,7 @@ Add to project's `package.json` dependencies:
 ```json
 {
   "dependencies": {
-    "@claude-code/shared-types": "workspace:*"
+    "@claude-code/shared": "workspace:*"
   }
 }
 ```
@@ -29,7 +29,7 @@ pnpm install
 ### For external projects
 
 ```bash
-pnpm add @claude-code/shared-types
+pnpm add @claude-code/shared
 ```
 
 ## Usage
@@ -40,7 +40,7 @@ import {
   ImageUploadResponse, 
   ApiResponse,
   SHARED_IMAGE_CONSTANTS 
-} from '@claude-code/shared-types';
+} from '@claude-code/shared';
 
 // Use shared types
 const metadata: ImageMetadata = {

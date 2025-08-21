@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Attachment } from 'discord.js';
 import axios from 'axios';
 import { ImageServiceClient } from './image-service.client';
-import { ImageUploadResponse, BatchUploadResponse, SHARED_IMAGE_CONSTANTS } from '@claude-code/shared-types';
+import { ImageUploadResponse, BatchUploadResponse, SHARED_IMAGE_CONSTANTS } from '@claude-code/shared';
 
 export interface DiscordImageUploadOptions {
 	ttl?: number;

@@ -23,7 +23,7 @@ COPY apps/image-service/ ./apps/image-service/
 RUN pnpm install --frozen-lockfile
 
 # Build shared packages first
-RUN pnpm --filter @claude-code/shared-types build
+RUN pnpm --filter @claude-code/shared build
 
 # Build the image service
 RUN pnpm --filter @claude-code/image-service build

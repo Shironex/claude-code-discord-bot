@@ -30,7 +30,7 @@ COPY apps/discord-bot/ ./apps/discord-bot/
 RUN pnpm install --frozen-lockfile
 
 # Build shared packages first
-RUN pnpm --filter @claude-code/shared-types build
+RUN pnpm --filter @claude-code/shared build
 
 # Build the Discord bot application
 RUN pnpm --filter @claude-code/discord-bot build

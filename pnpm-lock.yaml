@@ -26,9 +26,9 @@ importers:
 
   apps/discord-bot:
     dependencies:
-      '@claude-code/shared-types':
+      '@claude-code/shared':
         specifier: workspace:*
-        version: link:../../packages/shared-types
+        version: link:../../packages/shared
       '@nestjs/common':
         specifier: ^11.0.6
         version: 11.1.6(class-transformer@0.5.1)(class-validator@0.14.2)(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -245,7 +245,7 @@ importers:
         specifier: ^8.20.0
         version: 8.40.0(eslint@9.32.0(jiti@2.5.1))(typescript@5.8.3)
 
-  packages/shared-types:
+  packages/shared:
     devDependencies:
       '@types/node':
         specifier: ^22.10.7

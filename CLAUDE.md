@@ -35,7 +35,7 @@ claude-code-discord-bot/
 │       ├── docker-compose.dev.yml # Development docker setup
 │       └── scripts/            # Key generation and utility scripts
 ├── packages/
-│   └── shared-types/           # Shared TypeScript types between services
+│   └── shared/                 # Shared TypeScript types and utilities between services
 │       ├── src/                # Type definitions
 │       └── dist/               # Built type definitions
 ├── runners/
@@ -379,13 +379,13 @@ pnpm build --filter=@claude-code/image-service
 cd apps/image-service && docker-compose -f docker-compose.dev.yml up
 ```
 
-## Shared Types Package
+## Shared Package
 
-The `packages/shared-types/` package provides centralized TypeScript type definitions used across both the Discord bot and image service applications.
+The `packages/shared/` package provides centralized TypeScript type definitions and utilities used across both the Discord bot and image service applications.
 
 ### Package Structure
 ```
-packages/shared-types/src/
+packages/shared/src/
 ├── api.types.ts          # Common API response types
 ├── constants.ts          # Shared constants across services
 ├── health.types.ts       # Health check type definitions
@@ -403,10 +403,10 @@ packages/shared-types/src/
 ### Usage in Applications
 ```typescript
 // In Discord Bot
-import { ImageUploadResponse, SHARED_IMAGE_CONSTANTS } from '@claude-code/shared-types';
+import { ImageUploadResponse, SHARED_IMAGE_CONSTANTS } from '@claude-code/shared';
 
 // In Image Service
-import { ApiResponse, HealthCheckResponse } from '@claude-code/shared-types';
+import { ApiResponse, HealthCheckResponse } from '@claude-code/shared';
 ```
 
 ### Build Configuration
@@ -730,7 +730,7 @@ Format: `type(scope): description`
 **Required Scopes:**
 - `discord-bot` - Discord bot application changes
 - `image-service` - Image service API application changes
-- `shared-types` - Shared types package changes
+- `shared` - Shared package changes
 - `root` - Root workspace changes
 - `ci` - CI/CD changes
 - `docs` - Documentation
@@ -751,7 +751,7 @@ Format: `type(scope): description`
 ```bash
 git commit -m "feat(discord-bot): add repository search modal"
 git commit -m "feat(image-service): implement image upload API with HMAC auth"
-git commit -m "feat(shared-types): add image upload response types"
+git commit -m "feat(shared): add image upload response types"
 git commit -m "fix(discord-bot): resolve session timeout issue"  
 git commit -m "docs(root): update contributing guidelines"
 git commit -m "ci(root): add release automation workflow"

@@ -16,7 +16,7 @@
 		"typecheck": "turbo run typecheck",
 		"start": "turbo run start",
 		"start:prod": "turbo run start:prod",
-		"prepare": "husky && pnpm --filter @claude-code/shared-types build",
+		"prepare": "husky && pnpm --filter @claude-code/shared build",
 		"changeset": "changeset",
 		"changeset:add": "changeset add",
 		"changeset:status": "changeset status",
