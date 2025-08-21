@@ -36,10 +36,12 @@ This document outlines the comprehensive improvements needed for the image servi
   - **✨ Enhanced**: Configurable HSTS, referrer policy, and security headers via env variables
   - **✨ Enhanced**: Dynamic CSP that adapts to enabled documentation tools
 
-- [ ] **Multer Configuration** (`apps/image-service/src/config/multer.config.ts`)
-  - Currently not used anywhere in the application
-  - Integrate with file upload endpoints
-  - Replace manual file validation with multer config
+- [x] **Multer Configuration** (`apps/image-service/src/config/multer.config.ts`) ✅ **COMPLETED**
+  - ~~Currently not used anywhere in the application~~ ✅ Added to app.module.ts ConfigModule
+  - ~~Integrate with file upload endpoints~~ ✅ Created createMulterConfig() function with ConfigService
+  - ~~Replace manual file validation with multer config~~ ✅ Replaced hardcoded limits with configuration constants
+  - **✨ Enhanced**: Environment-aware file size and count limits from configuration
+  - **✨ Enhanced**: Proper integration with upload.module.ts using function instead of fallback
 
 #### 2. Configuration Validation
 **Problem**: No validation of environment variables at startup
