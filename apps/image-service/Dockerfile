@@ -57,24 +57,6 @@ RUN mkdir -p logs && chown -R imageservice:nodejs logs
 # Switch to non-root user
 USER imageservice
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD node -e " \
-    const http = require('http'); \
-    const options = { \
-      hostname: 'localhost', \
-      port: 3001, \
-      path: '/api/v1/health/live', \
-      timeout: 5000, \
-      headers: { 'User-Agent': 'Docker-Healthcheck' } \
-    }; \
-    const req = http.request(options, (res) => { \
-      process.exit(res.statusCode === 200 ? 0 : 1); \
-    }); \
-    req.on('error', () => process.exit(1)); \
-    req.on('timeout', () => process.exit(1)); \
-    req.end();"
-
 # Expose port
 EXPOSE 3001
 
