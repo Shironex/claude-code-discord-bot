@@ -1,20 +1,21 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, Logger } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { createCorsConfig } from './config/cors.config';
+import { createStartupConfig, StartupService } from './config/startup.config';
 import fs from 'fs';
 
 async function bootstrap() {
-	const logger = new Logger('Bootstrap');
-
 	// Create NestJS application
 	const app = await NestFactory.create(AppModule);
 
-	// Get configuration service
+	// Get configuration service and create startup config
 	const configService = app.get(ConfigService);
+	const startupConfig = createStartupConfig(configService);
+	const startupService = new StartupService(configService, startupConfig);
 
 	// Security middleware
 	app.use(
@@ -48,45 +49,46 @@ async function bootstrap() {
 		}),
 	);
 
-	// API prefix
-	app.setGlobalPrefix('api/v1');
+	// API prefix from startup config
+	app.setGlobalPrefix(startupConfig.globalPrefix);
 
-	// Swagger documentation
-	const swaggerConfig = new DocumentBuilder()
-		.setTitle('Image Service API')
-		.setDescription('Temporary image storage service for Discord bot and Claude Code integration')
-		.setVersion('1.0.0')
-		.addTag('upload', 'Image upload operations')
-		.addTag('storage', 'Image storage and retrieval')
-		.addTag('auth', 'Authentication endpoints')
-		.addTag('health', 'Health check endpoints')
-		.addApiKey(
-			{
-				type: 'apiKey',
-				name: 'x-api-key',
-				in: 'header',
-				description: 'API key for authentication (Discord bot or Claude Code)',
+	// Swagger documentation (only if enabled)
+	let document: any;
+	if (startupConfig.enableSwagger) {
+		const swaggerConfig = new DocumentBuilder()
+			.setTitle('Image Service API')
+			.setDescription('Temporary image storage service for Discord bot and Claude Code integration')
+			.setVersion('1.0.0')
+			.addTag('upload', 'Image upload operations')
+			.addTag('storage', 'Image storage and retrieval')
+			.addTag('auth', 'Authentication endpoints')
+			.addTag('health', 'Health check endpoints')
+			.addApiKey(
+				{
+					type: 'apiKey',
+					name: 'x-api-key',
+					in: 'header',
+					description: 'API key for authentication (Discord bot or Claude Code)',
+				},
+				'api-key',
+			)
+			.addServer(startupConfig.baseUrl, 'API Server')
+			.build();
+
+		document = SwaggerModule.createDocument(app, swaggerConfig);
+
+		SwaggerModule.setup('api/docs/swagger', app, document, {
+			swaggerOptions: {
+				persistAuthorization: true,
+				tagsSorter: 'alpha',
+				operationsSorter: 'alpha',
 			},
-			'api-key',
-		)
-		.addServer('http://localhost:3001', 'Development server')
-		.addServer('https://your-domain.com', 'Production server')
-		.build();
+			customSiteTitle: 'Image Service API Documentation',
+		});
+	}
 
-	const document = SwaggerModule.createDocument(app, swaggerConfig);
-
-	SwaggerModule.setup('api/docs/swagger', app, document, {
-		swaggerOptions: {
-			persistAuthorization: true,
-			tagsSorter: 'alpha',
-			operationsSorter: 'alpha',
-		},
-		customSiteTitle: 'Image Service API Documentation',
-	});
-
-	// Only setup Scalar API reference in development
-	const environment = configService.get<string>('NODE_ENV', 'development');
-	if (environment !== 'production') {
+	// Only setup Scalar API reference if enabled (development only)
+	if (startupConfig.enableScalar && document) {
 		try {
 			// Dynamic import to avoid production dependency issues
 			const { apiReference } = await import('@scalar/nestjs-api-reference');
@@ -99,14 +101,15 @@ async function bootstrap() {
 				}),
 			);
 
-			logger.log(`📚 API Scalar Reference available at: http://localhost:${configService.get<number>('PORT', 3001)}/api/docs/scalar`);
+			startupService.logScalarSetup();
 		} catch {
-			logger.warn('Scalar API reference not available (dev dependency not installed)');
+			startupService.logScalarWarning();
 		}
 	}
 
 	// Only write swagger spec in development
-	if (environment !== 'production') {
+	const environment = configService.get<string>('NODE_ENV', 'development');
+	if (environment !== 'production' && document) {
 		fs.writeFileSync('./swagger-spec.json', JSON.stringify(document));
 	}
 
@@ -114,20 +117,8 @@ async function bootstrap() {
 	const port = configService.get<number>('PORT', 3001);
 	await app.listen(port);
 
-	logger.log(`🚀 Image Service API is running on: http://localhost:${port}/api/v1`);
-	logger.log(`📚 API Documentation available at: http://localhost:${port}/api/docs/swagger`);
-	if (environment !== 'production') {
-		// Scalar reference log is handled above when setting it up
-	}
-	logger.log(`🏥 Health check available at: http://localhost:${port}/api/v1/health`);
-
-	// Log configuration status
-	const hasDiscordKey = !!configService.get<string>('DISCORD_BOT_API_KEY');
-	const hasClaudeKey = !!configService.get<string>('CLAUDE_CODE_API_KEY');
-	const hasHmacSecret = !!configService.get<string>('HMAC_SECRET');
-
-	logger.log(`Environment: ${environment}`);
-	logger.log(`Auth configuration: Discord=${hasDiscordKey}, Claude=${hasClaudeKey}, HMAC=${hasHmacSecret}`);
+	// Log startup information using startup service
+	startupService.logStartupInfo();
 }
 
 void bootstrap();
