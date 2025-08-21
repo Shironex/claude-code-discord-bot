@@ -1,11 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { createCorsConfig } from './config/cors.config';
 import { createStartupConfig, StartupService } from './config/startup.config';
+import { SwaggerService } from './config/swagger.config';
 import fs from 'fs';
 
 async function bootstrap() {
@@ -55,54 +55,16 @@ async function bootstrap() {
 	// Swagger documentation (only if enabled)
 	let document: any;
 	if (startupConfig.enableSwagger) {
-		const swaggerConfig = new DocumentBuilder()
-			.setTitle('Image Service API')
-			.setDescription('Temporary image storage service for Discord bot and Claude Code integration')
-			.setVersion('1.0.0')
-			.addTag('upload', 'Image upload operations')
-			.addTag('storage', 'Image storage and retrieval')
-			.addTag('auth', 'Authentication endpoints')
-			.addTag('health', 'Health check endpoints')
-			.addApiKey(
-				{
-					type: 'apiKey',
-					name: 'x-api-key',
-					in: 'header',
-					description: 'API key for authentication (Discord bot or Claude Code)',
-				},
-				'api-key',
-			)
-			.addServer(startupConfig.baseUrl, 'API Server')
-			.build();
-
-		document = SwaggerModule.createDocument(app, swaggerConfig);
-
-		SwaggerModule.setup('api/docs/swagger', app, document, {
-			swaggerOptions: {
-				persistAuthorization: true,
-				tagsSorter: 'alpha',
-				operationsSorter: 'alpha',
-			},
-			customSiteTitle: 'Image Service API Documentation',
-		});
+		document = SwaggerService.setupSwagger(app, configService);
 	}
 
-	// Only setup Scalar API reference if enabled (development only)
+	// Only setup Scalar API reference if enabled
 	if (startupConfig.enableScalar && document) {
-		try {
-			// Dynamic import to avoid production dependency issues
-			const { apiReference } = await import('@scalar/nestjs-api-reference');
+		const scalarSetupSuccess = SwaggerService.setupScalar(app, document);
 
-			app.use(
-				'/api/docs/scalar',
-				apiReference({
-					content: document,
-					theme: 'deepSpace',
-				}),
-			);
-
+		if (scalarSetupSuccess) {
 			startupService.logScalarSetup();
-		} catch {
+		} else {
 			startupService.logScalarWarning();
 		}
 	}

@@ -26,7 +26,7 @@ export const createStartupConfig = (configService: ConfigService): StartupConfig
 
 	return {
 		enableSwagger: configService.get<string>('ENABLE_SWAGGER') === 'true' || isDevelopment,
-		enableScalar: isDevelopment, // Only enable Scalar in development
+		enableScalar: configService.get<string>('ENABLE_SCALAR') === 'true' || isDevelopment,
 		enableScheduler: configService.get<string>('ENABLE_SCHEDULER') !== 'false', // Default to true
 		enableMetrics: configService.get<string>('ENABLE_METRICS') === 'true' || isDevelopment,
 		gracefulShutdownTimeout: parseInt(configService.get<string>('GRACEFUL_SHUTDOWN_TIMEOUT', '10000'), 10),
