@@ -1,7 +1,7 @@
 import { Controller, Get, Delete, Param, Res, NotFoundException, HttpStatus, UseGuards, Post, BadRequestException } from '@nestjs/common';
 import type { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiSecurity } from '@nestjs/swagger';
-import { StorageService } from './storage.service';
+import { ImagesService } from './images.service';
 import { CleanupScheduler } from './schedulers/cleanup.scheduler';
 import { ApiKeyGuard } from '../../common/guards';
 import { DeleteImageResponseDto, ImageMetadataDto } from '../../common/dto';
@@ -11,9 +11,9 @@ import { IMAGE_CONSTANTS } from '../../common/constants';
 @Controller('images')
 @UseGuards(ApiKeyGuard)
 @ApiSecurity('api-key')
-export class StorageController {
+export class ImagesController {
 	constructor(
-		private readonly storageService: StorageService,
+		private readonly imagesService: ImagesService,
 		private readonly cleanupScheduler: CleanupScheduler,
 	) {}
 
@@ -50,7 +50,7 @@ export class StorageController {
 			throw new BadRequestException(IMAGE_CONSTANTS.ERRORS.INVALID_IMAGE_ID);
 		}
 
-		const storedImage = await this.storageService.get(id);
+		const storedImage = await this.imagesService.get(id);
 
 		if (!storedImage) {
 			throw new NotFoundException(IMAGE_CONSTANTS.ERRORS.IMAGE_NOT_FOUND);
@@ -106,7 +106,7 @@ export class StorageController {
 			throw new BadRequestException(IMAGE_CONSTANTS.ERRORS.INVALID_IMAGE_ID);
 		}
 
-		const metadata = await this.storageService.getMetadata(id);
+		const metadata = await this.imagesService.getMetadata(id);
 
 		if (!metadata) {
 			throw new NotFoundException(IMAGE_CONSTANTS.ERRORS.IMAGE_NOT_FOUND);
@@ -150,7 +150,7 @@ export class StorageController {
 			throw new BadRequestException(IMAGE_CONSTANTS.ERRORS.INVALID_IMAGE_ID);
 		}
 
-		const deleted = await this.storageService.delete(id);
+		const deleted = await this.imagesService.delete(id);
 
 		if (!deleted) {
 			throw new NotFoundException(IMAGE_CONSTANTS.ERRORS.IMAGE_NOT_FOUND);
@@ -194,7 +194,7 @@ export class StorageController {
 		newestImage: string | null;
 		averageSize: number;
 	}> {
-		const stats = await this.storageService.getStats();
+		const stats = await this.imagesService.getStats();
 
 		return {
 			totalImages: stats.totalImages,

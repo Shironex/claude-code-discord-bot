@@ -4,7 +4,7 @@ import { LoggerModule } from '@claude-code/shared';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { RedisModule } from './modules/redis/redis.module';
-import { StorageModule } from './modules/storage/storage.module';
+import { ImagesModule } from './modules/images/images.module';
 import { UploadModule } from './modules/upload/upload.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
@@ -25,7 +25,7 @@ import { validationSchema } from './config/validation.schema';
 		}),
 		LoggerModule, // Global logger configuration
 		RedisModule,
-		StorageModule,
+		ImagesModule,
 		UploadModule,
 		AuthModule,
 		HealthModule,

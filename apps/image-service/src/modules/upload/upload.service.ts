@@ -1,6 +1,6 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { StorageService } from '../storage/storage.service';
+import { ImagesService } from '../images/images.service';
 import { FileValidationUtil } from '../../common/utils';
 import { IMAGE_CONSTANTS } from '../../common/constants';
 import { ImageUploadResponseDto, BatchUploadResponseDto, BatchUploadOptionsDto } from '../../common/dto';
@@ -11,7 +11,7 @@ export class UploadService {
 	private readonly logger = new Logger(UploadService.name);
 
 	constructor(
-		private readonly storageService: StorageService,
+		private readonly imagesService: ImagesService,
 		private readonly configService: ConfigService,
 	) {}
 
@@ -34,7 +34,7 @@ export class UploadService {
 			}
 
 			// Generate unique ID and metadata
-			const id = this.storageService.generateId();
+			const id = this.imagesService.generateId();
 			const now = new Date();
 			const ttl = this.validateTtl(options?.ttl);
 			const expiresAt = new Date(now.getTime() + ttl * 1000);
@@ -50,7 +50,7 @@ export class UploadService {
 			};
 
 			// Store the image
-			await this.storageService.store(id, file.buffer, metadata, ttl);
+			await this.imagesService.store(id, file.buffer, metadata, ttl);
 
 			// Generate response
 			const response: ImageUploadResponseDto = {
@@ -191,7 +191,7 @@ export class UploadService {
 		};
 	}> {
 		// Get storage stats
-		const storageStats = await this.storageService.getStats();
+		const storageStats = await this.imagesService.getStats();
 
 		return {
 			totalUploads: storageStats.totalImages,

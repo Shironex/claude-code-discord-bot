@@ -1,13 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { RedisService } from '../redis/redis.service';
-import { IImageStorage, ImageMetadata, StoredImage, CleanupResult, StorageStats } from '../../common/interfaces';
+import { IImageService, ImageMetadata, StoredImage, CleanupResult, StorageStats } from '../../common/interfaces';
 import { IMAGE_CONSTANTS } from '../../common/constants';
 import { IdGeneratorUtil } from '../../common/utils';
 
 @Injectable()
-export class StorageService implements IImageStorage {
-	private readonly logger = new Logger(StorageService.name);
+export class ImagesService implements IImageService {
+	private readonly logger = new Logger(ImagesService.name);
 
 	constructor(
 		private readonly redisService: RedisService,

@@ -1,7 +1,7 @@
 /**
- * Interface for image storage operations
+ * Interface for image service operations
  */
-export interface IImageStorage {
+export interface IImageService {
 	/**
 	 * Store an image with TTL
 	 * @param id Unique image identifier

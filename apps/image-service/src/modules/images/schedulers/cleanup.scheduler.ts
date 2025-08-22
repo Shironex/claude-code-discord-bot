@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
-import { StorageService } from '../storage.service';
+import { ImagesService } from '../images.service';
 
 @Injectable()
 export class CleanupScheduler {
@@ -16,7 +16,7 @@ export class CleanupScheduler {
 	};
 
 	constructor(
-		private readonly storageService: StorageService,
+		private readonly imagesService: ImagesService,
 		private readonly configService: ConfigService,
 	) {}
 
@@ -41,7 +41,7 @@ export class CleanupScheduler {
 		try {
 			this.logger.log('Starting scheduled cleanup...');
 
-			const result = await this.storageService.performCleanup();
+			const result = await this.imagesService.performCleanup();
 
 			// Update statistics
 			this.cleanupStats.totalRuns++;
@@ -92,7 +92,7 @@ export class CleanupScheduler {
 
 		try {
 			// Get storage stats first
-			const stats = await this.storageService.getStats();
+			const stats = await this.imagesService.getStats();
 
 			this.logger.log(
 				`Storage stats before cleanup: ${stats.totalImages} images, ` +
@@ -105,7 +105,7 @@ export class CleanupScheduler {
 			}
 
 			// Log final stats
-			const finalStats = await this.storageService.getStats();
+			const finalStats = await this.imagesService.getStats();
 			this.logger.log(
 				`Storage stats after cleanup: ${finalStats.totalImages} images, ` + `${Math.round(finalStats.totalSize / 1024 / 1024)}MB`,
 			);
@@ -124,7 +124,7 @@ export class CleanupScheduler {
 		}
 
 		try {
-			const stats = await this.storageService.getStats();
+			const stats = await this.imagesService.getStats();
 			const maxImages = this.getMaxImages();
 			const maxSize = this.getMaxStorageSize();
 
@@ -178,7 +178,7 @@ export class CleanupScheduler {
 
 		try {
 			this.logger.log('Manual cleanup triggered');
-			const result = await this.storageService.performCleanup();
+			const result = await this.imagesService.performCleanup();
 
 			this.cleanupStats.totalRuns++;
 			this.cleanupStats.totalCleaned += result.cleanedCount;
