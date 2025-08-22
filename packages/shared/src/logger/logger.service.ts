@@ -11,7 +11,7 @@ import {
 } from './utils/security.utils';
 import { 
 	ILoggerService, 
-	CustomLoggerOptions, 
+	type CustomLoggerOptions, 
 	PerformanceMetadata, 
 	MemoryUsage 
 } from './interfaces/logger.interface';

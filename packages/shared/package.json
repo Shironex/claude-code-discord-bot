@@ -19,20 +19,35 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "clean": "rm -rf dist",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:coverage:html": "jest --coverage --coverageReporters=html",
+    "test:ci": "jest --ci --coverage --maxWorkers=50%",
+    "test:debug": "jest --detectOpenHandles --forceExit"
   },
   "dependencies": {
-    "winston": "^3.14.2",
-    "nest-winston": "^1.10.0",
-    "chalk": "^5.0.0",
     "@nestjs/common": "^11.0.0",
-    "@nestjs/config": "^4.0.0"
+    "@nestjs/config": "^4.0.0",
+    "chalk": "^5.0.0",
+    "nest-winston": "^1.10.0",
+    "winston": "^3.14.2"
   },
-  "peerDependencies": {},
   "peerDependenciesMeta": {},
   "devDependencies": {
+    "@nestjs/testing": "^11.1.6",
+    "@swc/core": "^1.13.4",
+    "@swc/jest": "^0.2.39",
+    "@types/jest": "^30.0.0",
     "@types/node": "^22.10.7",
-    "typescript": "^5.6.2",
-    "tsup": "^8.5.0"
+    "jest": "^30.0.5",
+    "jest-extended": "^6.0.0",
+    "jest-junit": "^16.0.0",
+    "jest-mock-extended": "^4.0.0",
+    "ts-jest": "^29.4.1",
+    "ts-node": "^10.9.2",
+    "tsup": "^8.5.0",
+    "typescript": "^5.6.2"
   }
 }

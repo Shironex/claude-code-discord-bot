@@ -14,7 +14,14 @@
       "Bash(pnpm lint:*)",
       "Bash(pnpm install:*)",
       "Bash(pnpm build:*)",
-      "Bash(pnpm typecheck:*)"
+      "Bash(pnpm typecheck:*)",
+      "Bash(npx jest:*)",
+      "Bash(pnpm test:*)",
+      "Bash(npx tsc:*)",
+      "Bash(grep:*)"
+    ],
+    "additionalDirectories": [
+      "P:\\mnt\\p\\claude-code-discord-bot\\packages"
     ]
   },
   "enableAllProjectMcpServers": true,
