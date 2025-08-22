@@ -255,31 +255,32 @@ importers:
         version: 8.40.0(eslint@9.32.0(jiti@2.5.1))(typescript@5.8.3)
 
   packages/shared:
-    devDependencies:
+    dependencies:
       '@nestjs/common':
-        specifier: ^11.1.6
+        specifier: ^11.0.0
         version: 11.1.6(class-transformer@0.5.1)(class-validator@0.14.2)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@nestjs/config':
-        specifier: ^4.0.2
+        specifier: ^4.0.0
         version: 4.0.2(@nestjs/common@11.1.6(class-transformer@0.5.1)(class-validator@0.14.2)(reflect-metadata@0.2.2)(rxjs@7.8.2))(rxjs@7.8.2)
+      chalk:
+        specifier: ^5.0.0
+        version: 5.6.0
+      nest-winston:
+        specifier: ^1.10.0
+        version: 1.10.2(@nestjs/common@11.1.6(class-transformer@0.5.1)(class-validator@0.14.2)(reflect-metadata@0.2.2)(rxjs@7.8.2))(winston@3.17.0)
+      winston:
+        specifier: ^3.14.2
+        version: 3.17.0
+    devDependencies:
       '@types/node':
         specifier: ^22.10.7
         version: 22.17.2
-      chalk:
-        specifier: ^5.6.0
-        version: 5.6.0
-      nest-winston:
-        specifier: ^1.10.2
-        version: 1.10.2(@nestjs/common@11.1.6(class-transformer@0.5.1)(class-validator@0.14.2)(reflect-metadata@0.2.2)(rxjs@7.8.2))(winston@3.17.0)
       tsup:
         specifier: ^8.5.0
         version: 8.5.0(jiti@2.5.1)(typescript@5.8.3)
       typescript:
         specifier: ^5.6.2
         version: 5.8.3
-      winston:
-        specifier: ^3.17.0
-        version: 3.17.0
 
 packages:
 
