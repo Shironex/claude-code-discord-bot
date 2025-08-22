@@ -4,7 +4,7 @@ import { IntentsBitField } from 'discord.js';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 // Logger
-import { LoggerModule } from './logger/logger.module';
+import { LoggerModule } from '@claude-code/shared';
 
 // Services
 import { GitHubService } from './services/github.service';

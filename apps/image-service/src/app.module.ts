@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { LoggerModule } from '@claude-code/shared';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { RedisModule } from './modules/redis/redis.module';
@@ -22,6 +23,7 @@ import { validationSchema } from './config/validation.schema';
 				abortEarly: false, // Show all validation errors, not just the first one
 			},
 		}),
+		LoggerModule, // Global logger configuration
 		RedisModule,
 		StorageModule,
 		UploadModule,

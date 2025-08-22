@@ -1,15 +1,8 @@
 import { LoggerOptions, transport } from 'winston';
-import { ConfigService } from '@nestjs/config';
 import { consoleTransport } from './transports/console.transport';
 import { errorFileTransport } from './transports/error-file.transport';
 import { combinedFileTransport } from './transports/combined-file.transport';
-
-export interface CustomLoggerOptions extends LoggerOptions {
-	serviceName?: string;
-	enableFileLogging?: boolean;
-	logLevel?: string;
-	configService?: ConfigService;
-}
+import { CustomLoggerOptions } from './interfaces/logger.interface';
 
 export const createLoggerConfig = (options: CustomLoggerOptions = {}): LoggerOptions => {
 	const configService = options.configService;
@@ -42,19 +35,3 @@ export const createLoggerConfig = (options: CustomLoggerOptions = {}): LoggerOpt
 		silent: process.env.NODE_ENV === 'test'
 	};
 };
-
-export const LOG_LEVELS = {
-	error: 0,
-	warn: 1,
-	info: 2,
-	debug: 3,
-	verbose: 4
-} as const;
-
-export const LOG_COLORS = {
-	error: 'red',
-	warn: 'yellow',
-	info: 'green',
-	debug: 'blue',
-	verbose: 'magenta'
-} as const;

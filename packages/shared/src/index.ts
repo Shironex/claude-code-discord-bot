@@ -4,6 +4,9 @@ export * from './api.types';
 export * from './health.types';
 export * from './constants';
 
+// Logger exports
+export * from './logger';
+
 // Type utilities
 export type RequiredKeys<T, K extends keyof T> = T & Required<Pick<T, K>>;
 export type OptionalKeys<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;

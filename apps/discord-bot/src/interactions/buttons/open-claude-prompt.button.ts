@@ -3,7 +3,7 @@ import { Context, Button, ButtonContext } from 'necord';
 import { CUSTOM_IDS } from '../../utils/discord.constants';
 import { SessionService } from '../../services/session.service';
 import { BaseService } from '../../services/base/base.service';
-import { LoggerFactory } from '../../logger/logger.factory';
+import { LoggerFactory } from '@claude-code/shared';
 import { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } from 'discord.js';
 
 @Injectable()

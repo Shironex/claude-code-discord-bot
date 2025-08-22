@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Context, SlashCommand, SlashCommandContext } from 'necord';
 import { EmbedBuilder, Colors } from 'discord.js';
 import { BaseService } from '../../services/base/base.service';
-import { LoggerFactory } from '../../logger/logger.factory';
+import { LoggerFactory } from '@claude-code/shared';
 import { ImageServiceClient } from '../../services/image-service/image-service.client';
 
 @Injectable()

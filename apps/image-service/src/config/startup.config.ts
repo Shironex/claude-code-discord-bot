@@ -1,5 +1,5 @@
-import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { LoggerService } from '@claude-code/shared';
 
 export interface StartupConfig {
 	enableSwagger: boolean;
@@ -44,12 +44,14 @@ export const createStartupConfig = (configService: ConfigService): StartupConfig
  * Startup service that handles application initialization logging
  */
 export class StartupService {
-	private readonly logger = new Logger('StartupService');
+	private readonly logger: LoggerService;
 
 	constructor(
 		private readonly configService: ConfigService,
 		private readonly startupConfig: StartupConfig,
-	) {}
+	) {
+		this.logger = new LoggerService('StartupService', {}, configService as any);
+	}
 
 	/**
 	 * Log application startup information

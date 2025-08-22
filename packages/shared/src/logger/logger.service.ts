@@ -1,12 +1,27 @@
 import { Injectable, LoggerService as NestLoggerService } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as winston from 'winston';
-import { createLoggerConfig, CustomLoggerOptions } from './logger.config';
+import { createLoggerConfig } from './logger.config';
 import { createServiceFileTransport } from './transports/service-file.transport';
-import { isValidLogLevel, validateLogMessage, validateContext, validateMetadata } from '../utils/security.utils';
+import { 
+	isValidLogLevel, 
+	validateLogMessage, 
+	validateContext, 
+	validateMetadata 
+} from './utils/security.utils';
+import { 
+	ILoggerService, 
+	CustomLoggerOptions, 
+	PerformanceMetadata, 
+	MemoryUsage 
+} from './interfaces/logger.interface';
+import { 
+	MEMORY_THRESHOLDS, 
+	PERFORMANCE_THRESHOLDS 
+} from './constants';
 
 @Injectable()
-export class LoggerService implements NestLoggerService {
+export class LoggerService implements NestLoggerService, ILoggerService {
 	private logger: winston.Logger;
 	private readonly serviceName: string;
 	private readonly serviceFileTransport: winston.transport | null = null;
@@ -38,7 +53,8 @@ export class LoggerService implements NestLoggerService {
 					this.logger.add(this.serviceFileTransport);
 				} catch (error) {
 					// Fallback to console when service file transport fails - logger not fully initialized yet
-					console.warn(`Failed to create service file transport for "${this.serviceName}": ${error.message}`);
+					const errorMessage = error instanceof Error ? error.message : String(error);
+					console.warn(`Failed to create service file transport for "${this.serviceName}": ${errorMessage}`);
 				}
 			}
 
@@ -53,7 +69,8 @@ export class LoggerService implements NestLoggerService {
 				});
 			} catch (error) {
 				// Fallback to console - colors are not critical, continue without them
-				console.warn('Failed to set Winston colors:', error.message);
+				const errorMessage = error instanceof Error ? error.message : String(error);
+				console.warn('Failed to set Winston colors:', errorMessage);
 			}
 
 			// Setup memory monitoring for main application logger
@@ -271,7 +288,9 @@ export class LoggerService implements NestLoggerService {
 	 * Log performance metrics with type-safe level determination
 	 */
 	performance(operation: string, duration: number, context?: string, metadata?: any): void {
-		const level = duration > 3000 ? 'warn' : duration > 1000 ? 'info' : 'debug';
+		const level = duration > PERFORMANCE_THRESHOLDS.VERY_SLOW_OPERATION ? 'error' :
+			duration > PERFORMANCE_THRESHOLDS.SLOW_OPERATION ? 'warn' : 
+			duration > 500 ? 'info' : 'debug';
 		const message = `Performance: ${operation} took ${duration}ms`;
 
 		const logMeta = {
@@ -282,7 +301,9 @@ export class LoggerService implements NestLoggerService {
 		};
 
 		// Type-safe logging method call
-		if (level === 'warn') {
+		if (level === 'error') {
+			this.logger.error(message, logMeta);
+		} else if (level === 'warn') {
 			this.logger.warn(message, logMeta);
 		} else if (level === 'info') {
 			this.logger.info(message, logMeta);
@@ -300,6 +321,7 @@ export class LoggerService implements NestLoggerService {
 		const childLoggerService = Object.create(LoggerService.prototype);
 		childLoggerService.serviceName = this.serviceName;
 		childLoggerService.serviceFileTransport = null; // Child loggers don't need separate file transports
+		childLoggerService.timers = new Map(); // Each child gets its own timer map
 
 		// Use Winston's built-in child logger functionality
 		childLoggerService.logger = this.logger.child(additionalContext);
@@ -324,7 +346,8 @@ export class LoggerService implements NestLoggerService {
 					resolve();
 				});
 			} catch (error) {
-				reject(new Error(`Failed to flush logger: ${error.message}`));
+				const errorMessage = error instanceof Error ? error.message : String(error);
+				reject(new Error(`Failed to flush logger: ${errorMessage}`));
 			}
 		});
 	}
@@ -332,14 +355,12 @@ export class LoggerService implements NestLoggerService {
 	/**
 	 * Safe flush that doesn't throw errors (for use in error handlers)
 	 */
-	safeFlush(): void {
+	async safeFlush(): Promise<void> {
 		try {
-			this.flush().catch(error => {
-				// Use console.error as fallback since logger might be in bad state
-				console.error('Failed to flush logger safely:', error);
-			});
+			await this.flush();
 		} catch (error) {
-			console.error('Failed to initiate logger flush:', error);
+			// Use console.error as fallback since logger might be in bad state
+			console.error('Failed to flush logger safely:', error);
 		}
 	}
 
@@ -349,25 +370,31 @@ export class LoggerService implements NestLoggerService {
 	private setupMemoryMonitoring(): void {
 		// Get configurable thresholds using ConfigService or fallback to environment variables
 		const warningThreshold = parseInt(
-			this.configService?.get<string>('MEMORY_WARNING_THRESHOLD') || process.env.MEMORY_WARNING_THRESHOLD || '90',
+			this.configService?.get<string>('MEMORY_WARNING_THRESHOLD') || 
+			process.env.MEMORY_WARNING_THRESHOLD || 
+			String(MEMORY_THRESHOLDS.WARNING),
 			10
 		);
 		const debugThreshold = parseInt(
-			this.configService?.get<string>('MEMORY_DEBUG_THRESHOLD') || process.env.MEMORY_DEBUG_THRESHOLD || '75',
+			this.configService?.get<string>('MEMORY_DEBUG_THRESHOLD') || 
+			process.env.MEMORY_DEBUG_THRESHOLD || 
+			String(MEMORY_THRESHOLDS.DEBUG),
 			10
 		);
 		const checkInterval = parseInt(
-			this.configService?.get<string>('MEMORY_CHECK_INTERVAL') || process.env.MEMORY_CHECK_INTERVAL || '30000',
+			this.configService?.get<string>('MEMORY_CHECK_INTERVAL') || 
+			process.env.MEMORY_CHECK_INTERVAL || 
+			String(MEMORY_THRESHOLDS.CHECK_INTERVAL),
 			10
 		);
 
 		// Validate thresholds
 		const finalWarningThreshold =
-			isNaN(warningThreshold) || warningThreshold < 0 || warningThreshold > 100 ? 90 : warningThreshold;
+			isNaN(warningThreshold) || warningThreshold < 0 || warningThreshold > 100 ? MEMORY_THRESHOLDS.WARNING : warningThreshold;
 		const finalDebugThreshold =
-			isNaN(debugThreshold) || debugThreshold < 0 || debugThreshold > 100 ? 75 : debugThreshold;
+			isNaN(debugThreshold) || debugThreshold < 0 || debugThreshold > 100 ? MEMORY_THRESHOLDS.DEBUG : debugThreshold;
 		const finalCheckInterval =
-			isNaN(checkInterval) || checkInterval < 5000 || checkInterval > 300000 ? 30000 : checkInterval; // Min 5s, Max 5min
+			isNaN(checkInterval) || checkInterval < 5000 || checkInterval > 300000 ? MEMORY_THRESHOLDS.CHECK_INTERVAL : checkInterval; // Min 5s, Max 5min
 
 		this.debug(
 			`Memory monitoring initialized - Warning: ${finalWarningThreshold}%, Debug: ${finalDebugThreshold}%, Interval: ${finalCheckInterval}ms`,
@@ -417,11 +444,17 @@ export class LoggerService implements NestLoggerService {
 	 * Check if an operation is slow and log accordingly
 	 */
 	checkSlowOperation(operation: string, duration: number, context?: string): void {
-		if (duration > 3000) {
+		if (duration > PERFORMANCE_THRESHOLDS.VERY_SLOW_OPERATION) {
+			this.error(`Very slow operation detected: ${operation} took ${duration}ms`, undefined, context || 'SlowOperationDetector', {
+				operation,
+				duration,
+				threshold: PERFORMANCE_THRESHOLDS.VERY_SLOW_OPERATION
+			});
+		} else if (duration > PERFORMANCE_THRESHOLDS.SLOW_OPERATION) {
 			this.warn(`Slow operation detected: ${operation} took ${duration}ms`, context || 'SlowOperationDetector', {
 				operation,
 				duration,
-				threshold: 3000
+				threshold: PERFORMANCE_THRESHOLDS.SLOW_OPERATION
 			});
 		}
 	}

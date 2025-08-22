@@ -1,12 +1,13 @@
 import { format, Logform } from 'winston';
 import chalk from 'chalk';
-import { filterSensitiveData } from '../../utils/security.utils';
+import { filterSensitiveData } from '../utils/security.utils';
+import { LOG_TIMESTAMP_FORMAT } from '../constants';
 
 const { combine, timestamp, printf, errors } = format;
 
 export const consoleFormatter = (serviceName: string): Logform.Format => {
 	return combine(
-		timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+		timestamp({ format: LOG_TIMESTAMP_FORMAT }),
 		errors({ stack: true }),
 		printf(({ level, message, timestamp, service, method, duration, stack, ...meta }) => {
 			// Color mapping for log levels

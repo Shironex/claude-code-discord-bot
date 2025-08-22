@@ -390,6 +390,17 @@ packages/shared/src/
 ├── constants.ts          # Shared constants across services
 ├── health.types.ts       # Health check type definitions
 ├── image.types.ts        # Image service specific types
+├── logger/               # Shared logging system
+│   ├── index.ts          # Logger exports
+│   ├── logger.service.ts # Core logger implementation
+│   ├── logger.factory.ts # Logger factory
+│   ├── logger.module.ts  # NestJS module
+│   ├── logger.config.ts  # Configuration
+│   ├── constants.ts      # Logger constants
+│   ├── interfaces/       # Type definitions
+│   ├── formatters/       # Log formatters
+│   ├── transports/       # Winston transports
+│   └── utils/            # Logger utilities
 └── index.ts             # Package exports
 ```
 
@@ -400,13 +411,50 @@ packages/shared/src/
 - **ApiResponse<T>** - Generic API response wrapper
 - **SHARED_IMAGE_CONSTANTS** - Image validation and processing constants
 
+### Shared Logger System
+The shared package includes a comprehensive Winston-based logging system with:
+- **Security**: Automatic sensitive data filtering
+- **Performance Monitoring**: Method timing and memory usage tracking
+- **Multiple Transports**: Console, file, and service-specific logging
+- **NestJS Integration**: Full compatibility with NestJS dependency injection
+- **Type Safety**: Complete TypeScript interfaces and type definitions
+
 ### Usage in Applications
 ```typescript
+// Import logger components
+import { 
+  LoggerService, 
+  LoggerFactory, 
+  LoggerModule,
+  CUSTOM_LOGGER 
+} from '@claude-code/shared';
+
 // In Discord Bot
 import { ImageUploadResponse, SHARED_IMAGE_CONSTANTS } from '@claude-code/shared';
 
 // In Image Service
 import { ApiResponse, HealthCheckResponse } from '@claude-code/shared';
+
+// Using the logger in services
+import { LoggerService, LoggerFactory } from '@claude-code/shared';
+
+export class MyService {
+  private readonly logger: LoggerService;
+
+  constructor(loggerFactory: LoggerFactory) {
+    this.logger = loggerFactory.createLogger('MyService');
+  }
+
+  async performOperation() {
+    this.logger.info('Starting operation');
+    this.logger.time('operation-timer');
+    
+    // ... operation code ...
+    
+    const duration = this.logger.timeEnd('operation-timer');
+    this.logger.performance('operation', duration);
+  }
+}
 ```
 
 ### Build Configuration

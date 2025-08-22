@@ -1,16 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { LoggerService } from './logger.service';
+import { ILoggerFactory } from './interfaces/logger.interface';
 
 /**
  * Factory service for creating logger instances
  * Allows for proper dependency injection while maintaining service-specific context
  */
 @Injectable()
-export class LoggerFactory {
+export class LoggerFactory implements ILoggerFactory {
 	private readonly loggers = new Map<string, LoggerService>();
 
-	constructor(private readonly configService: ConfigService) {}
+	constructor(private readonly configService?: ConfigService) {}
 
 	/**
 	 * Create or retrieve a logger for a specific service
@@ -48,7 +49,7 @@ export class LoggerFactory {
 	 */
 	async flushAll(): Promise<void> {
 		const flushPromises = this.getAllLoggers().map(logger =>
-			logger.flush().catch(error => {
+			logger.safeFlush().catch(error => {
 				// Fallback to console when individual logger flush fails
 				console.error(`Failed to flush logger:`, error);
 			})

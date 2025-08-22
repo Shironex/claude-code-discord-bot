@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { BaseService } from './base/base.service';
-import { LoggerFactory } from '../logger/logger.factory';
+import { LoggerFactory } from '@claude-code/shared';
 import { ImageServiceClient } from './image-service/image-service.client';
 
 @Injectable()
