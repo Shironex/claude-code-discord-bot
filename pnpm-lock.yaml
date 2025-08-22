@@ -44,18 +44,12 @@ importers:
       axios:
         specifier: ^1.7.9
         version: 1.11.0
-      chalk:
-        specifier: ^5.6.0
-        version: 5.6.0
       discord.js:
         specifier: 14.21.0
         version: 14.21.0
       necord:
         specifier: 6.9.1
         version: 6.9.1(@nestjs/common@11.1.6(class-transformer@0.5.1)(class-validator@0.14.2)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.6)(discord-api-types@0.38.20)(discord.js@14.21.0)(reflect-metadata@0.2.2)(rxjs@7.8.2)
-      nest-winston:
-        specifier: ^1.10.2
-        version: 1.10.2(@nestjs/common@11.1.6(class-transformer@0.5.1)(class-validator@0.14.2)(reflect-metadata@0.2.2)(rxjs@7.8.2))(winston@3.17.0)
       reflect-metadata:
         specifier: 0.2.2
         version: 0.2.2
@@ -65,9 +59,6 @@ importers:
       rxjs:
         specifier: 7.8.2
         version: 7.8.2
-      winston:
-        specifier: ^3.17.0
-        version: 3.17.0
       winston-daily-rotate-file:
         specifier: ^5.0.0
         version: 5.0.0(winston@3.17.0)
@@ -168,9 +159,6 @@ importers:
       nanoid:
         specifier: ^5.1.5
         version: 5.1.5
-      nest-winston:
-        specifier: ^1.10.2
-        version: 1.10.2(@nestjs/common@11.1.6(class-transformer@0.5.1)(class-validator@0.14.2)(reflect-metadata@0.2.2)(rxjs@7.8.2))(winston@3.17.0)
       redis:
         specifier: ^5.8.2
         version: 5.8.2
@@ -180,9 +168,6 @@ importers:
       rxjs:
         specifier: ^7.8.1
         version: 7.8.2
-      winston:
-        specifier: ^3.17.0
-        version: 3.17.0
     devDependencies:
       '@eslint/eslintrc':
         specifier: ^3.2.0
