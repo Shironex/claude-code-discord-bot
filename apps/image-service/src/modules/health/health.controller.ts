@@ -2,13 +2,7 @@ import { Controller, Get } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { HealthCheck, HealthCheckService, HttpHealthIndicator, MemoryHealthIndicator, HealthCheckResult } from '@nestjs/terminus';
 import { HealthService, HealthStatus } from './health.service';
-import {
-	ApiGetHealthStatus,
-	ApiGetLiveness,
-	ApiGetReadiness,
-	ApiTerminusHealthCheck,
-	ApiGetStartup
-} from './health.swagger';
+import { ApiGetHealthStatus, ApiGetLiveness, ApiGetReadiness, ApiTerminusHealthCheck, ApiGetStartup } from './health.swagger';
 
 @ApiTags('health')
 @Controller('health')

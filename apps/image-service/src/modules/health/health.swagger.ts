@@ -7,20 +7,20 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 export const ServiceHealthSchema = {
 	type: 'object',
 	properties: {
-		status: { 
-			type: 'string', 
+		status: {
+			type: 'string',
 			enum: ['healthy', 'unhealthy', 'degraded'],
-			description: 'Service component health status'
+			description: 'Service component health status',
 		},
-		responseTime: { 
+		responseTime: {
 			type: 'number',
 			example: 15,
-			description: 'Response time in milliseconds'
+			description: 'Response time in milliseconds',
 		},
-		lastCheck: { 
-			type: 'string', 
+		lastCheck: {
+			type: 'string',
 			format: 'date-time',
-			description: 'Timestamp of last health check'
+			description: 'Timestamp of last health check',
 		},
 		details: {
 			type: 'object',
@@ -42,7 +42,8 @@ export function ApiGetHealthStatus() {
 	return applyDecorators(
 		ApiOperation({
 			summary: 'Get comprehensive health status',
-			description: 'Returns detailed health information about all service components including Redis, storage, authentication, and system metrics. Use this endpoint for comprehensive monitoring and debugging.',
+			description:
+				'Returns detailed health information about all service components including Redis, storage, authentication, and system metrics. Use this endpoint for comprehensive monitoring and debugging.',
 		}),
 		ApiResponse({
 			status: 200,
@@ -50,56 +51,56 @@ export function ApiGetHealthStatus() {
 			schema: {
 				type: 'object',
 				properties: {
-					status: { 
-						type: 'string', 
+					status: {
+						type: 'string',
 						enum: ['ok', 'error', 'degraded'],
 						example: 'ok',
-						description: 'Overall service health status' 
+						description: 'Overall service health status',
 					},
-					timestamp: { 
-						type: 'string', 
+					timestamp: {
+						type: 'string',
 						format: 'date-time',
 						example: '2024-01-20T16:45:00.000Z',
-						description: 'When the health check was performed' 
+						description: 'When the health check was performed',
 					},
-					uptime: { 
-						type: 'number', 
+					uptime: {
+						type: 'number',
 						example: 123456,
-						description: 'Service uptime in milliseconds' 
+						description: 'Service uptime in milliseconds',
 					},
-					version: { 
-						type: 'string', 
+					version: {
+						type: 'string',
 						example: '1.0.0',
-						description: 'Service version' 
+						description: 'Service version',
 					},
-					environment: { 
-						type: 'string', 
+					environment: {
+						type: 'string',
 						example: 'development',
-						description: 'Deployment environment' 
+						description: 'Deployment environment',
 					},
 					services: {
 						type: 'object',
 						description: 'Health status of individual service components',
 						properties: {
-							redis: { 
+							redis: {
 								$ref: '#/components/schemas/ServiceHealth',
-								description: 'Redis connection and performance health' 
+								description: 'Redis connection and performance health',
 							},
-							storage: { 
+							storage: {
 								$ref: '#/components/schemas/ServiceHealth',
-								description: 'File storage system health' 
+								description: 'File storage system health',
 							},
-							auth: { 
+							auth: {
 								$ref: '#/components/schemas/ServiceHealth',
-								description: 'Authentication system health' 
+								description: 'Authentication system health',
 							},
-							upload: { 
+							upload: {
 								$ref: '#/components/schemas/ServiceHealth',
-								description: 'Upload service health and capacity' 
+								description: 'Upload service health and capacity',
 							},
 							cleanup: {
 								$ref: '#/components/schemas/ServiceHealth',
-								description: 'Cleanup scheduler health'
+								description: 'Cleanup scheduler health',
 							},
 						},
 					},
@@ -107,20 +108,20 @@ export function ApiGetHealthStatus() {
 						type: 'object',
 						description: 'Memory usage statistics',
 						properties: {
-							used: { 
-								type: 'number', 
+							used: {
+								type: 'number',
 								example: 45,
-								description: 'Used memory in MB' 
+								description: 'Used memory in MB',
 							},
-							total: { 
-								type: 'number', 
+							total: {
+								type: 'number',
 								example: 128,
-								description: 'Total available memory in MB' 
+								description: 'Total available memory in MB',
 							},
-							percentage: { 
-								type: 'number', 
+							percentage: {
+								type: 'number',
 								example: 35,
-								description: 'Memory usage percentage' 
+								description: 'Memory usage percentage',
 							},
 							heap: {
 								type: 'object',
@@ -136,20 +137,20 @@ export function ApiGetHealthStatus() {
 						type: 'object',
 						description: 'System information',
 						properties: {
-							nodeVersion: { 
-								type: 'string', 
+							nodeVersion: {
+								type: 'string',
 								example: 'v18.17.0',
-								description: 'Node.js version' 
+								description: 'Node.js version',
 							},
-							platform: { 
-								type: 'string', 
+							platform: {
+								type: 'string',
 								example: 'linux',
-								description: 'Operating system platform' 
+								description: 'Operating system platform',
 							},
-							arch: { 
-								type: 'string', 
+							arch: {
+								type: 'string',
 								example: 'x64',
-								description: 'CPU architecture' 
+								description: 'CPU architecture',
 							},
 							loadAverage: {
 								type: 'array',
@@ -202,7 +203,8 @@ export function ApiGetLiveness() {
 	return applyDecorators(
 		ApiOperation({
 			summary: 'Liveness probe',
-			description: 'Simple endpoint to check if the service process is alive and responding. Used by container orchestrators (Kubernetes, Docker Swarm) for liveness probes. Returns minimal data for fast response.',
+			description:
+				'Simple endpoint to check if the service process is alive and responding. Used by container orchestrators (Kubernetes, Docker Swarm) for liveness probes. Returns minimal data for fast response.',
 		}),
 		ApiResponse({
 			status: 200,
@@ -210,15 +212,15 @@ export function ApiGetLiveness() {
 			schema: {
 				type: 'object',
 				properties: {
-					status: { 
-						type: 'string', 
+					status: {
+						type: 'string',
 						example: 'ok',
-						description: 'Always "ok" if service responds' 
+						description: 'Always "ok" if service responds',
 					},
-					uptime: { 
-						type: 'number', 
+					uptime: {
+						type: 'number',
 						example: 123456,
-						description: 'Process uptime in milliseconds' 
+						description: 'Process uptime in milliseconds',
 					},
 					pid: {
 						type: 'number',
@@ -247,7 +249,8 @@ export function ApiGetReadiness() {
 	return applyDecorators(
 		ApiOperation({
 			summary: 'Readiness probe',
-			description: 'Checks if the service is ready to handle requests by validating that all critical dependencies (Redis, storage, auth) are available. Used by load balancers and container orchestrators for readiness probes.',
+			description:
+				'Checks if the service is ready to handle requests by validating that all critical dependencies (Redis, storage, auth) are available. Used by load balancers and container orchestrators for readiness probes.',
 		}),
 		ApiResponse({
 			status: 200,
@@ -255,10 +258,10 @@ export function ApiGetReadiness() {
 			schema: {
 				type: 'object',
 				properties: {
-					status: { 
-						type: 'string', 
+					status: {
+						type: 'string',
 						example: 'ready',
-						description: 'Service readiness status' 
+						description: 'Service readiness status',
 					},
 					services: {
 						type: 'array',
@@ -310,7 +313,8 @@ export function ApiTerminusHealthCheck() {
 	return applyDecorators(
 		ApiOperation({
 			summary: 'Advanced health check using NestJS Terminus',
-			description: 'Advanced health check using the @nestjs/terminus library with detailed component checks including memory limits, disk usage, and external service dependencies. Returns standardized health check format.',
+			description:
+				'Advanced health check using the @nestjs/terminus library with detailed component checks including memory limits, disk usage, and external service dependencies. Returns standardized health check format.',
 		}),
 		ApiResponse({
 			status: 200,
@@ -318,10 +322,10 @@ export function ApiTerminusHealthCheck() {
 			schema: {
 				type: 'object',
 				properties: {
-					status: { 
-						type: 'string', 
+					status: {
+						type: 'string',
 						example: 'ok',
-						description: 'Overall health status' 
+						description: 'Overall health status',
 					},
 					info: {
 						type: 'object',
@@ -405,7 +409,8 @@ export function ApiGetStartup() {
 	return applyDecorators(
 		ApiOperation({
 			summary: 'Startup probe',
-			description: 'Checks if the service has completed its startup sequence successfully. Used by container orchestrators to determine when the service is fully initialized and ready for liveness/readiness probes.',
+			description:
+				'Checks if the service has completed its startup sequence successfully. Used by container orchestrators to determine when the service is fully initialized and ready for liveness/readiness probes.',
 		}),
 		ApiResponse({
 			status: 200,
@@ -413,20 +418,20 @@ export function ApiGetStartup() {
 			schema: {
 				type: 'object',
 				properties: {
-					status: { 
-						type: 'string', 
+					status: {
+						type: 'string',
 						example: 'started',
-						description: 'Always "started" when service is fully initialized' 
+						description: 'Always "started" when service is fully initialized',
 					},
-					uptime: { 
-						type: 'number', 
+					uptime: {
+						type: 'number',
 						example: 123456,
-						description: 'Service uptime in milliseconds' 
+						description: 'Service uptime in milliseconds',
 					},
-					initializationTime: { 
-						type: 'number', 
+					initializationTime: {
+						type: 'number',
 						example: 5000,
-						description: 'Time taken to initialize in milliseconds' 
+						description: 'Time taken to initialize in milliseconds',
 					},
 					startedAt: {
 						type: 'string',
@@ -523,8 +528,5 @@ export const HealthSchemas = {
  * Complete Swagger documentation for health module
  */
 export function ApiHealthModule() {
-	return applyDecorators(
-		ApiTags('health'),
-		ApiHealthOverview(),
-	);
+	return applyDecorators(ApiTags('health'), ApiHealthOverview());
 }

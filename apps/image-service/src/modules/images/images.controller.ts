@@ -12,7 +12,7 @@ import {
 	ApiDeleteImage,
 	ApiGetStorageStats,
 	ApiTriggerCleanup,
-	ApiGetCleanupStats
+	ApiGetCleanupStats,
 } from './images.swagger';
 
 @ApiTags('images')

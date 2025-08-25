@@ -1,13 +1,5 @@
 import { applyDecorators } from '@nestjs/common';
-import { 
-	ApiConsumes, 
-	ApiBody, 
-	ApiResponse, 
-	ApiSecurity, 
-	ApiOperation,
-	ApiParam,
-	ApiQuery 
-} from '@nestjs/swagger';
+import { ApiConsumes, ApiBody, ApiResponse, ApiSecurity, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { ImageUploadResponseDto, BatchUploadResponseDto, ImageMetadataDto, DeleteImageResponseDto } from '../dto';
 import { IMAGE_CONSTANTS } from '../constants';
 
@@ -15,26 +7,17 @@ import { IMAGE_CONSTANTS } from '../constants';
  * Standard decorator for image upload endpoints
  * Includes multipart/form-data consumption and common responses
  */
-export function ApiImageUpload(options?: {
-	summary?: string;
-	description?: string;
-	multiple?: boolean;
-	includeOptions?: boolean;
-}) {
+export function ApiImageUpload(options?: { summary?: string; description?: string; multiple?: boolean; includeOptions?: boolean }) {
 	const {
 		summary = options?.multiple ? 'Upload multiple images' : 'Upload a single image',
-		description = options?.multiple 
-			? 'Upload multiple image files in a single request' 
+		description = options?.multiple
+			? 'Upload multiple image files in a single request'
 			: 'Upload a single image file with optional metadata',
 		multiple = false,
-		includeOptions = true
+		includeOptions = true,
 	} = options || {};
 
-	const decorators = [
-		ApiOperation({ summary, description }),
-		ApiConsumes('multipart/form-data'),
-		ApiSecurity('api-key'),
-	];
+	const decorators = [ApiOperation({ summary, description }), ApiConsumes('multipart/form-data'), ApiSecurity('api-key')];
 
 	// Add body schema
 	if (multiple) {
@@ -115,10 +98,7 @@ export function ApiImageUpload(options?: {
 /**
  * Standard decorator for image response documentation
  */
-export function ApiImageResponse(options?: {
-	multiple?: boolean;
-	includeMetadata?: boolean;
-}) {
+export function ApiImageResponse(options?: { multiple?: boolean; includeMetadata?: boolean }) {
 	const { multiple = false, includeMetadata = false } = options || {};
 
 	const decorators = [
@@ -151,12 +131,7 @@ export function ApiErrorResponses(options?: {
 	includeAuth?: boolean;
 	includeRateLimit?: boolean;
 }) {
-	const {
-		includeNotFound = false,
-		includeValidation = true,
-		includeAuth = true,
-		includeRateLimit = false,
-	} = options || {};
+	const { includeNotFound = false, includeValidation = true, includeAuth = true, includeRateLimit = false } = options || {};
 
 	const decorators: any[] = [];
 
@@ -169,11 +144,11 @@ export function ApiErrorResponses(options?: {
 					type: 'object',
 					properties: {
 						statusCode: { type: 'number', example: 400 },
-						message: { 
+						message: {
 							oneOf: [
 								{ type: 'string', example: 'Invalid file type' },
-								{ type: 'array', items: { type: 'string' }, example: ['File too large', 'Invalid MIME type'] }
-							]
+								{ type: 'array', items: { type: 'string' }, example: ['File too large', 'Invalid MIME type'] },
+							],
 						},
 						error: { type: 'string', example: 'Bad Request' },
 					},
@@ -267,20 +242,13 @@ export function ApiErrorResponses(options?: {
  * Authentication requirement decorator
  * Documents API key and optional HMAC authentication
  */
-export function ApiAuthRequired(options?: {
-	requireHmac?: boolean;
-	description?: string;
-}) {
+export function ApiAuthRequired(options?: { requireHmac?: boolean; description?: string }) {
 	const {
 		requireHmac = false,
-		description = requireHmac 
-			? 'Requires both API key and HMAC signature authentication'
-			: 'Requires API key authentication'
+		description = requireHmac ? 'Requires both API key and HMAC signature authentication' : 'Requires API key authentication',
 	} = options || {};
 
-	const decorators: any[] = [
-		ApiSecurity('api-key'),
-	];
+	const decorators: any[] = [ApiSecurity('api-key')];
 
 	if (requireHmac) {
 		decorators.push(ApiSecurity('hmac-signature'));
@@ -289,8 +257,8 @@ export function ApiAuthRequired(options?: {
 	// Add operation description if provided
 	if (description) {
 		decorators.push(
-			ApiOperation({ 
-				description: `${description}. Authentication headers: x-api-key${requireHmac ? ', x-signature' : ''}` 
+			ApiOperation({
+				description: `${description}. Authentication headers: x-api-key${requireHmac ? ', x-signature' : ''}`,
 			}),
 		);
 	}
@@ -301,21 +269,13 @@ export function ApiAuthRequired(options?: {
 /**
  * Standard decorator for image retrieval endpoints
  */
-export function ApiImageRetrieval(options?: {
-	includeMetadata?: boolean;
-	description?: string;
-}) {
-	const {
-		includeMetadata = false,
-		description = 'Retrieve image by ID'
-	} = options || {};
+export function ApiImageRetrieval(options?: { includeMetadata?: boolean; description?: string }) {
+	const { includeMetadata = false, description = 'Retrieve image by ID' } = options || {};
 
 	const decorators = [
 		ApiOperation({
 			summary: includeMetadata ? 'Get image metadata' : 'Retrieve image',
-			description: includeMetadata 
-				? 'Get image metadata without downloading the actual image data'
-				: description,
+			description: includeMetadata ? 'Get image metadata without downloading the actual image data' : description,
 		}),
 		ApiParam({
 			name: 'id',
@@ -367,7 +327,7 @@ export function ApiImageRetrieval(options?: {
 						description: 'Cache control header',
 						schema: { type: 'string', example: 'public, max-age=3600' },
 					},
-					'ETag': {
+					ETag: {
 						description: 'Entity tag for caching',
 						schema: { type: 'string', example: '"abc123def456"' },
 					},
@@ -386,12 +346,8 @@ export function ApiImageRetrieval(options?: {
 /**
  * Standard decorator for image deletion endpoints
  */
-export function ApiImageDeletion(options?: {
-	description?: string;
-}) {
-	const {
-		description = 'Permanently delete an image and its metadata'
-	} = options || {};
+export function ApiImageDeletion(options?: { description?: string }) {
+	const { description = 'Permanently delete an image and its metadata' } = options || {};
 
 	return applyDecorators(
 		ApiOperation({
@@ -415,14 +371,8 @@ export function ApiImageDeletion(options?: {
 /**
  * Administrative endpoint decorator
  */
-export function ApiAdminEndpoint(options?: {
-	summary?: string;
-	description?: string;
-}) {
-	const {
-		summary = 'Administrative endpoint',
-		description = 'Administrative endpoint with restricted access'
-	} = options || {};
+export function ApiAdminEndpoint(options?: { summary?: string; description?: string }) {
+	const { summary = 'Administrative endpoint', description = 'Administrative endpoint with restricted access' } = options || {};
 
 	return applyDecorators(
 		ApiOperation({

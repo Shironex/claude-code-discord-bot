@@ -19,13 +19,7 @@ import { FileValidator } from './validators/file.validator';
 import { ApiKeyGuard } from '../../common/guards';
 import { ImageUploadResponseDto, BatchUploadResponseDto, BatchUploadOptionsDto } from '../../common/dto';
 import { IMAGE_CONSTANTS } from '../../common/constants';
-import { 
-	ApiUploadSingle, 
-	ApiUploadBatch, 
-	ApiUploadStats, 
-	ApiUploadLimits, 
-	ApiValidateFile 
-} from './upload.swagger';
+import { ApiUploadSingle, ApiUploadBatch, ApiUploadStats, ApiUploadLimits, ApiValidateFile } from './upload.swagger';
 
 @ApiTags('upload')
 @Controller('upload')

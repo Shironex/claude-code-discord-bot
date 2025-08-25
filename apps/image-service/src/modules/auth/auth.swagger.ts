@@ -9,7 +9,8 @@ export function ApiGetAuthConfig() {
 	return applyDecorators(
 		ApiOperation({
 			summary: 'Get authentication configuration status',
-			description: 'Returns information about the current authentication setup, including which authentication methods are available and properly configured. Useful for debugging authentication issues.',
+			description:
+				'Returns information about the current authentication setup, including which authentication methods are available and properly configured. Useful for debugging authentication issues.',
 		}),
 		ApiAuthRequired({
 			description: 'This endpoint itself requires authentication to view auth status',
@@ -20,31 +21,31 @@ export function ApiGetAuthConfig() {
 			schema: {
 				type: 'object',
 				properties: {
-					hasDiscordBotKey: { 
-						type: 'boolean', 
+					hasDiscordBotKey: {
+						type: 'boolean',
 						example: true,
-						description: 'Whether Discord bot API key is configured' 
+						description: 'Whether Discord bot API key is configured',
 					},
-					hasClaudeCodeKey: { 
-						type: 'boolean', 
+					hasClaudeCodeKey: {
+						type: 'boolean',
 						example: true,
-						description: 'Whether Claude Code API key is configured' 
+						description: 'Whether Claude Code API key is configured',
 					},
-					hasHmacSecret: { 
-						type: 'boolean', 
+					hasHmacSecret: {
+						type: 'boolean',
 						example: false,
-						description: 'Whether HMAC signature validation is configured' 
+						description: 'Whether HMAC signature validation is configured',
 					},
-					requireHmac: { 
-						type: 'boolean', 
+					requireHmac: {
+						type: 'boolean',
 						example: false,
-						description: 'Whether HMAC signature validation is required' 
+						description: 'Whether HMAC signature validation is required',
 					},
 					authMethods: {
 						type: 'array',
-						items: { 
+						items: {
 							type: 'string',
-							enum: ['api-key', 'hmac-signature']
+							enum: ['api-key', 'hmac-signature'],
 						},
 						example: ['api-key'],
 						description: 'List of enabled authentication methods',
@@ -55,11 +56,11 @@ export function ApiGetAuthConfig() {
 						properties: {
 							keyFormat: { type: 'string', example: 'base64url', description: 'Expected key format' },
 							minLength: { type: 'number', example: 32, description: 'Minimum key length' },
-							sources: { 
-								type: 'array', 
+							sources: {
+								type: 'array',
 								items: { type: 'string' },
 								example: ['discord-bot', 'claude-code'],
-								description: 'Configured key sources'
+								description: 'Configured key sources',
 							},
 						},
 					},
@@ -77,7 +78,8 @@ export function ApiTestAuth() {
 	return applyDecorators(
 		ApiOperation({
 			summary: 'Test authentication',
-			description: 'Test endpoint to verify that API key authentication is working correctly. Returns authentication context and metadata about the authenticated request.',
+			description:
+				'Test endpoint to verify that API key authentication is working correctly. Returns authentication context and metadata about the authenticated request.',
 		}),
 		ApiAuthRequired({
 			description: 'Test your API key authentication with this endpoint',
@@ -106,28 +108,28 @@ export function ApiTestAuth() {
 			schema: {
 				type: 'object',
 				properties: {
-					authenticated: { 
-						type: 'boolean', 
+					authenticated: {
+						type: 'boolean',
 						example: true,
-						description: 'Confirmation that authentication succeeded' 
+						description: 'Confirmation that authentication succeeded',
 					},
-					source: { 
-						type: 'string', 
+					source: {
+						type: 'string',
 						enum: ['discord-bot', 'claude-code', 'unknown'],
 						example: 'discord-bot',
-						description: 'Which API key source was used' 
+						description: 'Which API key source was used',
 					},
-					userId: { 
-						type: 'string', 
+					userId: {
+						type: 'string',
 						nullable: true,
 						example: 'bot_123456',
-						description: 'User/bot identifier if available' 
+						description: 'User/bot identifier if available',
 					},
-					timestamp: { 
-						type: 'string', 
+					timestamp: {
+						type: 'string',
 						format: 'date-time',
 						example: '2024-01-20T16:45:00.000Z',
-						description: 'Server timestamp when auth was verified' 
+						description: 'Server timestamp when auth was verified',
 					},
 					authMethod: {
 						type: 'string',
@@ -160,22 +162,22 @@ export function ApiTestAuth() {
 				type: 'object',
 				properties: {
 					statusCode: { type: 'number', example: 401 },
-					message: { 
-						type: 'string', 
-						example: 'Invalid API key or missing authentication header' 
+					message: {
+						type: 'string',
+						example: 'Invalid API key or missing authentication header',
 					},
 					error: { type: 'string', example: 'Unauthorized' },
 					details: {
 						type: 'object',
 						properties: {
-							reason: { 
+							reason: {
 								type: 'string',
 								enum: ['missing-header', 'invalid-format', 'key-not-found', 'key-expired'],
-								example: 'invalid-format'
+								example: 'invalid-format',
 							},
-							hint: { 
+							hint: {
 								type: 'string',
-								example: 'API key should be in format: source_key_base64url'
+								example: 'API key should be in format: source_key_base64url',
 							},
 						},
 					},
@@ -194,10 +196,10 @@ export function ApiTestAuth() {
 					details: {
 						type: 'object',
 						properties: {
-							reason: { 
+							reason: {
 								type: 'string',
 								enum: ['missing-signature', 'invalid-signature', 'timestamp-mismatch', 'replay-attack'],
-								example: 'invalid-signature'
+								example: 'invalid-signature',
 							},
 							timestamp: { type: 'number', example: 1642694400 },
 						},
@@ -215,7 +217,8 @@ export function ApiHmacHelper() {
 	return applyDecorators(
 		ApiOperation({
 			summary: 'HMAC signature generation helper',
-			description: 'Helper endpoint that demonstrates how to generate HMAC signatures for authenticated requests. Only available in development mode.',
+			description:
+				'Helper endpoint that demonstrates how to generate HMAC signatures for authenticated requests. Only available in development mode.',
 		}),
 		ApiAuthRequired(),
 		ApiResponse({
@@ -242,7 +245,7 @@ export function ApiHmacHelper() {
 							'1. Concatenate: METHOD + PATH + BODY + TIMESTAMP',
 							'2. Generate HMAC-SHA256 with secret key',
 							'3. Include signature in x-signature header',
-							'4. Include timestamp in x-timestamp header'
+							'4. Include timestamp in x-timestamp header',
 						],
 					},
 				},
