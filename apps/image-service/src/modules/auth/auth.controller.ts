@@ -1,7 +1,8 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiSecurity } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { ApiKeyGuard } from '../../common/guards';
+import { ApiGetAuthConfig, ApiTestAuth } from './auth.swagger';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -13,24 +14,7 @@ export class AuthController {
 	 */
 	@Get('config')
 	@UseGuards(ApiKeyGuard)
-	@ApiSecurity('api-key')
-	@ApiOperation({
-		summary: 'Get auth configuration',
-		description: 'Returns the current authentication configuration status.',
-	})
-	@ApiResponse({
-		status: 200,
-		description: 'Auth configuration status',
-		schema: {
-			type: 'object',
-			properties: {
-				hasDiscordBotKey: { type: 'boolean', example: true },
-				hasClaudeCodeKey: { type: 'boolean', example: true },
-				hasHmacSecret: { type: 'boolean', example: false },
-				requireHmac: { type: 'boolean', example: false },
-			},
-		},
-	})
+	@ApiGetAuthConfig()
 	getAuthConfig(): {
 		hasDiscordBotKey: boolean;
 		hasClaudeCodeKey: boolean;
@@ -45,24 +29,7 @@ export class AuthController {
 	 */
 	@Get('test')
 	@UseGuards(ApiKeyGuard)
-	@ApiSecurity('api-key')
-	@ApiOperation({
-		summary: 'Test authentication',
-		description: 'Test endpoint to verify API key authentication is working.',
-	})
-	@ApiResponse({
-		status: 200,
-		description: 'Authentication test successful',
-		schema: {
-			type: 'object',
-			properties: {
-				authenticated: { type: 'boolean', example: true },
-				source: { type: 'string', enum: ['discord-bot', 'claude-code'] },
-				userId: { type: 'string', nullable: true },
-				timestamp: { type: 'string', format: 'date-time' },
-			},
-		},
-	})
+	@ApiTestAuth()
 	testAuth(): {
 		authenticated: boolean;
 		source: string;

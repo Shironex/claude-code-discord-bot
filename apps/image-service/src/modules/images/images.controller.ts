@@ -1,16 +1,23 @@
 import { Controller, Get, Delete, Param, Res, NotFoundException, HttpStatus, UseGuards, Post, BadRequestException } from '@nestjs/common';
 import type { Response } from 'express';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiSecurity } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 import { ImagesService } from './images.service';
 import { CleanupScheduler } from './schedulers/cleanup.scheduler';
 import { ApiKeyGuard } from '../../common/guards';
 import { DeleteImageResponseDto, ImageMetadataDto } from '../../common/dto';
 import { IMAGE_CONSTANTS } from '../../common/constants';
+import {
+	ApiGetImage,
+	ApiGetImageMetadata,
+	ApiDeleteImage,
+	ApiGetStorageStats,
+	ApiTriggerCleanup,
+	ApiGetCleanupStats
+} from './images.swagger';
 
 @ApiTags('images')
 @Controller('images')
 @UseGuards(ApiKeyGuard)
-@ApiSecurity('api-key')
 export class ImagesController {
 	constructor(
 		private readonly imagesService: ImagesService,
@@ -21,29 +28,7 @@ export class ImagesController {
 	 * Retrieve an image by ID
 	 */
 	@Get(':id')
-	@ApiOperation({
-		summary: 'Retrieve image by ID',
-		description: 'Get image data by its unique identifier. Returns 404 if image not found or expired.',
-	})
-	@ApiParam({
-		name: 'id',
-		description: 'Unique image identifier',
-		example: 'abc123def456',
-	})
-	@ApiResponse({
-		status: 200,
-		description: 'Image data',
-		content: {
-			'image/jpeg': { schema: { type: 'string', format: 'binary' } },
-			'image/png': { schema: { type: 'string', format: 'binary' } },
-			'image/gif': { schema: { type: 'string', format: 'binary' } },
-			'image/webp': { schema: { type: 'string', format: 'binary' } },
-		},
-	})
-	@ApiResponse({
-		status: 404,
-		description: 'Image not found or expired',
-	})
+	@ApiGetImage()
 	async getImage(@Param('id') id: string, @Res() res: Response): Promise<void> {
 		// Validate ID format
 		if (!this.isValidImageId(id)) {
@@ -82,24 +67,7 @@ export class ImagesController {
 	 * Get image metadata without downloading the image
 	 */
 	@Get(':id/metadata')
-	@ApiOperation({
-		summary: 'Get image metadata',
-		description: 'Retrieve image metadata including size, type, and expiration information without downloading the image data.',
-	})
-	@ApiParam({
-		name: 'id',
-		description: 'Unique image identifier',
-		example: 'abc123def456',
-	})
-	@ApiResponse({
-		status: 200,
-		description: 'Image metadata',
-		type: ImageMetadataDto,
-	})
-	@ApiResponse({
-		status: 404,
-		description: 'Image not found or expired',
-	})
+	@ApiGetImageMetadata()
 	async getImageMetadata(@Param('id') id: string): Promise<ImageMetadataDto> {
 		// Validate ID format
 		if (!this.isValidImageId(id)) {
@@ -126,24 +94,7 @@ export class ImagesController {
 	 * Delete an image by ID
 	 */
 	@Delete(':id')
-	@ApiOperation({
-		summary: 'Delete image by ID',
-		description: 'Permanently delete an image and its metadata. This action cannot be undone.',
-	})
-	@ApiParam({
-		name: 'id',
-		description: 'Unique image identifier',
-		example: 'abc123def456',
-	})
-	@ApiResponse({
-		status: 200,
-		description: 'Image deleted successfully',
-		type: DeleteImageResponseDto,
-	})
-	@ApiResponse({
-		status: 404,
-		description: 'Image not found',
-	})
+	@ApiDeleteImage()
 	async deleteImage(@Param('id') id: string): Promise<DeleteImageResponseDto> {
 		// Validate ID format
 		if (!this.isValidImageId(id)) {
@@ -167,25 +118,7 @@ export class ImagesController {
 	 * Get storage statistics (admin endpoint)
 	 */
 	@Get('_admin/stats')
-	@ApiOperation({
-		summary: 'Get storage statistics',
-		description: 'Administrative endpoint to retrieve storage usage statistics.',
-	})
-	@ApiResponse({
-		status: 200,
-		description: 'Storage statistics',
-		schema: {
-			type: 'object',
-			properties: {
-				totalImages: { type: 'number', example: 150 },
-				totalSize: { type: 'number', example: 52428800 },
-				expiredImages: { type: 'number', example: 5 },
-				oldestImage: { type: 'string', format: 'date-time', nullable: true },
-				newestImage: { type: 'string', format: 'date-time', nullable: true },
-				averageSize: { type: 'number', example: 349525 },
-			},
-		},
-	})
+	@ApiGetStorageStats()
 	async getStorageStats(): Promise<{
 		totalImages: number;
 		totalSize: number;
@@ -210,30 +143,7 @@ export class ImagesController {
 	 * Trigger manual cleanup (admin endpoint)
 	 */
 	@Post('_admin/cleanup')
-	@ApiOperation({
-		summary: 'Trigger manual cleanup',
-		description: 'Administrative endpoint to manually trigger cleanup of expired images.',
-	})
-	@ApiResponse({
-		status: 200,
-		description: 'Cleanup operation result',
-		schema: {
-			type: 'object',
-			properties: {
-				success: { type: 'boolean' },
-				result: {
-					type: 'object',
-					properties: {
-						cleanedCount: { type: 'number' },
-						totalSize: { type: 'number' },
-						duration: { type: 'number' },
-						errors: { type: 'array', items: { type: 'string' } },
-					},
-				},
-				error: { type: 'string', nullable: true },
-			},
-		},
-	})
+	@ApiTriggerCleanup()
 	async triggerCleanup(): Promise<{
 		success: boolean;
 		result?: any;
@@ -246,30 +156,7 @@ export class ImagesController {
 	 * Get cleanup statistics (admin endpoint)
 	 */
 	@Get('_admin/cleanup/stats')
-	@ApiOperation({
-		summary: 'Get cleanup statistics',
-		description: 'Administrative endpoint to retrieve cleanup operation statistics.',
-	})
-	@ApiResponse({
-		status: 200,
-		description: 'Cleanup statistics',
-		schema: {
-			type: 'object',
-			properties: {
-				isRunning: { type: 'boolean' },
-				lastCleanup: { type: 'string', format: 'date-time', nullable: true },
-				stats: {
-					type: 'object',
-					properties: {
-						totalRuns: { type: 'number' },
-						totalCleaned: { type: 'number' },
-						totalErrors: { type: 'number' },
-						averageDuration: { type: 'number' },
-					},
-				},
-			},
-		},
-	})
+	@ApiGetCleanupStats()
 	getCleanupStats(): {
 		isRunning: boolean;
 		lastCleanup: string | null;

@@ -12,18 +12,24 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
-import { ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiSecurity, ApiQuery, ApiBody } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 import type { Express } from 'express';
 import { UploadService } from './upload.service';
 import { FileValidator } from './validators/file.validator';
 import { ApiKeyGuard } from '../../common/guards';
 import { ImageUploadResponseDto, BatchUploadResponseDto, BatchUploadOptionsDto } from '../../common/dto';
 import { IMAGE_CONSTANTS } from '../../common/constants';
+import { 
+	ApiUploadSingle, 
+	ApiUploadBatch, 
+	ApiUploadStats, 
+	ApiUploadLimits, 
+	ApiValidateFile 
+} from './upload.swagger';
 
 @ApiTags('upload')
 @Controller('upload')
 @UseGuards(ApiKeyGuard)
-@ApiSecurity('api-key')
 export class UploadController {
 	constructor(
 		private readonly uploadService: UploadService,
@@ -36,48 +42,7 @@ export class UploadController {
 	 */
 	@Post()
 	@UseInterceptors(FileInterceptor('image'))
-	@ApiOperation({
-		summary: 'Upload a single image',
-		description: 'Upload a single image file. The image will be stored temporarily with configurable TTL.',
-	})
-	@ApiConsumes('multipart/form-data')
-	@ApiBody({
-		description: 'Image file to upload',
-		schema: {
-			type: 'object',
-			properties: {
-				image: {
-					type: 'string',
-					format: 'binary',
-					description: 'Image file (JPEG, PNG, GIF, WebP, BMP, TIFF)',
-				},
-			},
-			required: ['image'],
-		},
-	})
-	@ApiResponse({
-		status: 201,
-		description: 'Image uploaded successfully',
-		type: ImageUploadResponseDto,
-	})
-	@ApiResponse({
-		status: 400,
-		description: 'Invalid file or validation error',
-	})
-	@ApiQuery({
-		name: 'ttl',
-		required: false,
-		type: Number,
-		description: 'Time to live in seconds (default: 1800)',
-		example: 3600,
-	})
-	@ApiQuery({
-		name: 'userId',
-		required: false,
-		type: String,
-		description: 'User identifier for tracking',
-		example: 'user_123',
-	})
+	@ApiUploadSingle()
 	async uploadSingle(
 		@UploadedFile() file: Express.Multer.File,
 		@Query('ttl') ttl?: string,
@@ -118,47 +83,7 @@ export class UploadController {
 			IMAGE_CONSTANTS.MAX_FILES_PER_REQUEST, // Use config constant instead of hardcoded value
 		),
 	)
-	@ApiOperation({
-		summary: 'Upload multiple images',
-		description: 'Upload multiple image files in a single request. All images will have the same TTL.',
-	})
-	@ApiConsumes('multipart/form-data')
-	@ApiBody({
-		description: 'Multiple image files to upload',
-		schema: {
-			type: 'object',
-			properties: {
-				images: {
-					type: 'array',
-					items: {
-						type: 'string',
-						format: 'binary',
-					},
-					description: `Array of image files (max ${IMAGE_CONSTANTS.MAX_FILES_PER_REQUEST} files)`,
-				},
-				ttl: {
-					type: 'number',
-					description: 'Time to live in seconds for all images',
-					example: 3600,
-				},
-				userId: {
-					type: 'string',
-					description: 'User identifier for tracking',
-					example: 'user_123',
-				},
-			},
-			required: ['images'],
-		},
-	})
-	@ApiResponse({
-		status: 201,
-		description: 'Batch upload completed',
-		type: BatchUploadResponseDto,
-	})
-	@ApiResponse({
-		status: 400,
-		description: 'Invalid files or validation error',
-	})
+	@ApiUploadBatch()
 	async uploadBatch(
 		@UploadedFiles() files: Express.Multer.File[],
 		@Body() options?: BatchUploadOptionsDto,
@@ -184,36 +109,7 @@ export class UploadController {
 	 * Get upload statistics and limits
 	 */
 	@Get('stats')
-	@ApiOperation({
-		summary: 'Get upload statistics',
-		description: 'Retrieve upload statistics and current service limits.',
-	})
-	@ApiResponse({
-		status: 200,
-		description: 'Upload statistics',
-		schema: {
-			type: 'object',
-			properties: {
-				totalUploads: { type: 'number', example: 1234 },
-				totalSize: { type: 'number', example: 52428800 },
-				averageFileSize: { type: 'number', example: 349525 },
-				supportedFormats: {
-					type: 'array',
-					items: { type: 'string' },
-					example: ['image/jpeg', 'image/png', 'image/gif'],
-				},
-				limits: {
-					type: 'object',
-					properties: {
-						maxFileSize: { type: 'number', example: 10485760 },
-						maxFiles: { type: 'number', example: 10 },
-						maxTotalSize: { type: 'number', example: 52428800 },
-						maxFilesPerHour: { type: 'number', example: 50 },
-					},
-				},
-			},
-		},
-	})
+	@ApiUploadStats()
 	async getUploadStats(): Promise<{
 		totalUploads: number;
 		totalSize: number;
@@ -233,41 +129,7 @@ export class UploadController {
 	 * Get upload limits and configuration
 	 */
 	@Get('limits')
-	@ApiOperation({
-		summary: 'Get upload limits',
-		description: 'Get current upload limits and file size restrictions.',
-	})
-	@ApiResponse({
-		status: 200,
-		description: 'Upload limits',
-		schema: {
-			type: 'object',
-			properties: {
-				maxFileSize: { type: 'number', example: 10485760 },
-				maxFiles: { type: 'number', example: 10 },
-				maxTotalSize: { type: 'number', example: 52428800 },
-				maxFilesPerHour: { type: 'number', example: 50 },
-				supportedFormats: {
-					type: 'array',
-					items: { type: 'string' },
-					example: ['image/jpeg', 'image/png'],
-				},
-				supportedExtensions: {
-					type: 'array',
-					items: { type: 'string' },
-					example: ['.jpg', '.png'],
-				},
-				ttlLimits: {
-					type: 'object',
-					properties: {
-						default: { type: 'number', example: 1800 },
-						min: { type: 'number', example: 300 },
-						max: { type: 'number', example: 7200 },
-					},
-				},
-			},
-		},
-	})
+	@ApiUploadLimits()
 	getUploadLimits(): {
 		maxFileSize: number;
 		maxFiles: number;
@@ -307,31 +169,7 @@ export class UploadController {
 	 */
 	@Post('validate')
 	@UseInterceptors(FileInterceptor('image'))
-	@ApiOperation({
-		summary: 'Validate file without uploading',
-		description: 'Test endpoint to validate a file without actually uploading it.',
-	})
-	@ApiConsumes('multipart/form-data')
-	@ApiResponse({
-		status: 200,
-		description: 'File validation result',
-		schema: {
-			type: 'object',
-			properties: {
-				isValid: { type: 'boolean' },
-				warnings: { type: 'array', items: { type: 'string' } },
-				metadata: {
-					type: 'object',
-					properties: {
-						detectedType: { type: 'string', nullable: true },
-						declaredType: { type: 'string' },
-						size: { type: 'number' },
-						filename: { type: 'string' },
-					},
-				},
-			},
-		},
-	})
+	@ApiValidateFile()
 	validateFile(@UploadedFile() file: Express.Multer.File): {
 		isValid: boolean;
 		warnings: string[];

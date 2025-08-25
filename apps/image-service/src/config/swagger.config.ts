@@ -2,6 +2,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { apiReference } from '@scalar/nestjs-api-reference';
+import { ServiceHealthSchema } from '../modules/health/health.swagger';
 
 /**
  * Creates Swagger document configuration based on environment variables
@@ -63,6 +64,15 @@ export class SwaggerService {
 	static setupSwagger(app: INestApplication, configService: ConfigService): any {
 		const config = createSwaggerConfig(configService);
 		const document = SwaggerModule.createDocument(app, config);
+
+		// Add custom schemas to the document
+		document.components = {
+			...document.components,
+			schemas: {
+				...document.components?.schemas,
+				ServiceHealth: ServiceHealthSchema,
+			},
+		};
 
 		SwaggerModule.setup('api/docs/swagger', app, document, getSwaggerSetupOptions());
 
