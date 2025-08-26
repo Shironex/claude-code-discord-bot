@@ -22,12 +22,14 @@ import {
 describe('UploadController', () => {
   let controller: UploadController;
   let uploadService: jest.Mocked<UploadService>;
+  let configService: jest.Mocked<ConfigService>;
 
   beforeEach(async () => {
     const mockUploadService = {
       uploadSingle: jest.fn(),
       uploadBatch: jest.fn(),
-      checkUploadLimits: jest.fn().mockReturnValue({ allowed: true })
+      checkUploadLimits: jest.fn().mockReturnValue({ allowed: true }),
+      getUploadStats: jest.fn()
     };
 
     const mockFileValidator = {
@@ -60,6 +62,7 @@ describe('UploadController', () => {
 
     controller = module.get<UploadController>(UploadController);
     uploadService = module.get(UploadService) as jest.Mocked<UploadService>;
+    configService = module.get(ConfigService) as jest.Mocked<ConfigService>;
 
     jest.clearAllMocks();
   });
@@ -252,6 +255,158 @@ describe('UploadController', () => {
       } catch (error: any) {
         expect(error.message).toBe(errorMessage);
       }
+    });
+  });
+
+  describe('GET /upload/stats', () => {
+    it('should return upload statistics', async () => {
+      // Arrange
+      const mockStats = {
+        totalUploads: 100,
+        totalSize: 50 * 1024 * 1024,
+        averageFileSize: 512 * 1024,
+        supportedFormats: ['image/jpeg', 'image/png'],
+        limits: {
+          maxFileSize: 10 * 1024 * 1024,
+          maxFiles: 10,
+          maxTotalSize: 50 * 1024 * 1024,
+          maxFilesPerHour: 100
+        }
+      };
+      uploadService.getUploadStats.mockResolvedValue(mockStats);
+
+      // Act
+      const result = await controller.getUploadStats();
+
+      // Assert
+      expect(result).toEqual(mockStats);
+      expect(uploadService.getUploadStats).toHaveBeenCalledWith();
+    });
+
+    it('should handle service errors', async () => {
+      // Arrange
+      uploadService.getUploadStats.mockRejectedValue(new Error('Database error'));
+
+      // Act & Assert
+      await expect(controller.getUploadStats()).rejects.toThrow('Database error');
+    });
+  });
+
+  describe('GET /upload/limits', () => {
+    it('should return upload limits and configuration', () => {
+      // Act
+      const result = controller.getUploadLimits();
+
+      // Assert
+      expect(result).toBeDefined();
+      expect(result.maxFileSize).toBe(10 * 1024 * 1024);
+      expect(result.maxFiles).toBe(10);
+      expect(result.maxTotalSize).toBe(50 * 1024 * 1024);
+      expect(result.maxFilesPerHour).toBe(50); // From IMAGE_CONSTANTS
+      expect(result.supportedFormats).toEqual(['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/tiff']);
+      expect(result.supportedExtensions).toEqual(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff']);
+      expect(result.ttlLimits).toEqual({
+        default: 1800,
+        min: 300,
+        max: 7200
+      });
+    });
+
+    it('should use config service values', () => {
+      // Arrange
+      configService.get.mockImplementation((key: string, defaultValue?: any) => {
+        const customConfig: Record<string, any> = {
+          'imageService.upload.maxFileSize': 20 * 1024 * 1024,
+          'imageService.upload.maxFiles': 20,
+          'imageService.rateLimit.maxTotalSizePerRequest': 100 * 1024 * 1024,
+          'imageService.rateLimit.maxFilesPerHour': 200,
+          'imageService.upload.defaultTtl': 3600,
+          'imageService.upload.minTtl': 600,
+          'imageService.upload.maxTtl': 14400
+        };
+        return customConfig[key] ?? defaultValue;
+      });
+
+      // Act
+      const result = controller.getUploadLimits();
+
+      // Assert
+      expect(result.maxFileSize).toBe(20 * 1024 * 1024);
+      expect(result.maxFiles).toBe(20);
+      expect(result.maxTotalSize).toBe(100 * 1024 * 1024);
+      expect(result.maxFilesPerHour).toBe(200);
+      expect(result.ttlLimits.default).toBe(3600);
+      expect(result.ttlLimits.min).toBe(600);
+      expect(result.ttlLimits.max).toBe(14400);
+    });
+  });
+
+  describe('TTL Parameter Handling', () => {
+    it('should parse valid TTL string', async () => {
+      // Arrange
+      const mockFile = createMockFile();
+      uploadService.checkUploadLimits.mockReturnValue({
+        allowed: true,
+        limits: { maxFiles: 10, maxSize: 10 * 1024 * 1024, maxFilesPerHour: 100 }
+      });
+      uploadService.uploadSingle.mockResolvedValue({
+        id: 'test-id',
+        url: 'http://example.com/test-id', 
+        expires: new Date().toISOString(),
+        size: 100000,
+        mimeType: 'image/jpeg'
+      });
+
+      // Act
+      await controller.uploadSingle(mockFile, '7200', 'user123');
+
+      // Assert
+      expect(uploadService.uploadSingle).toHaveBeenCalledWith(
+        mockFile,
+        { ttl: 7200, userId: 'user123' }
+      );
+    });
+
+    it('should throw error for invalid TTL string', async () => {
+      // Arrange
+      const mockFile = createMockFile();
+
+      // Act & Assert
+      await expect(controller.uploadSingle(
+        mockFile,
+        'invalid-ttl',
+        'user123'
+      )).rejects.toThrow(BadRequestException);
+      await expect(controller.uploadSingle(
+        mockFile,
+        'invalid-ttl',
+        'user123'
+      )).rejects.toThrow('Invalid TTL value');
+    });
+
+    it('should handle undefined TTL', async () => {
+      // Arrange
+      const mockFile = createMockFile();
+      uploadService.checkUploadLimits.mockReturnValue({
+        allowed: true,
+        limits: { maxFiles: 10, maxSize: 10 * 1024 * 1024, maxFilesPerHour: 100 }
+      });
+      uploadService.uploadSingle.mockResolvedValue({
+        id: 'test-id',
+        url: 'http://example.com/test-id',
+        expires: new Date().toISOString(),
+        size: 100000,
+        mimeType: 'image/jpeg'
+      });
+
+      // Act
+      await controller.uploadSingle(mockFile, undefined, 'user123');
+
+      // Assert
+      expect(uploadService.uploadSingle).toHaveBeenCalledWith(
+        mockFile,
+        { ttl: undefined, userId: 'user123' }
+      );
     });
   });
 });
