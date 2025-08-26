@@ -211,6 +211,15 @@ importers:
       jest:
         specifier: ^30.0.0
         version: 30.0.5(@types/node@22.17.2)(ts-node@10.9.2(@swc/core@1.13.4)(@types/node@22.17.2)(typescript@5.8.3))
+      jest-extended:
+        specifier: ^6.0.0
+        version: 6.0.0(jest@30.0.5(@types/node@22.17.2)(ts-node@10.9.2(@swc/core@1.13.4)(@types/node@22.17.2)(typescript@5.8.3)))(typescript@5.8.3)
+      jest-junit:
+        specifier: ^16.0.0
+        version: 16.0.0
+      jest-mock-extended:
+        specifier: ^4.0.0
+        version: 4.0.0(@jest/globals@30.0.5)(jest@30.0.5(@types/node@22.17.2)(ts-node@10.9.2(@swc/core@1.13.4)(@types/node@22.17.2)(typescript@5.8.3)))(typescript@5.8.3)
       prettier:
         specifier: ^3.4.2
         version: 3.6.2
