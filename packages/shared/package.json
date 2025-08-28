@@ -1,6 +1,6 @@
 {
   "name": "@claude-code/shared",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Shared TypeScript types and interfaces for Claude Code Discord Bot and Image Service",
   "type": "module",
   "main": "dist/index.js",
