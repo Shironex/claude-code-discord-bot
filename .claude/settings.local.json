@@ -19,7 +19,8 @@
       "Bash(pnpm test:*)",
       "Bash(npx tsc:*)",
       "Bash(grep:*)",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "Bash(gh issue view:*)"
     ],
     "additionalDirectories": [
       "P:\\mnt\\p\\claude-code-discord-bot\\packages"
