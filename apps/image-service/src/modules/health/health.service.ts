@@ -102,8 +102,13 @@ export class HealthService {
 
 		// Check Redis
 		try {
-			await this.checkRedisHealth();
-			criticalServices.push('redis');
+			const redisHealth = await this.checkRedisHealth();
+			if (redisHealth.status === 'healthy') {
+				criticalServices.push('redis');
+			} else {
+				this.logger.error(`Redis health check failed: ${redisHealth.error || 'Redis is unhealthy'}`);
+				failedServices.push('redis');
+			}
 		} catch (error) {
 			this.logger.error(`Redis health check failed: ${error.message}`);
 			failedServices.push('redis');
@@ -111,8 +116,13 @@ export class HealthService {
 
 		// Check auth configuration
 		try {
-			this.checkAuthHealth();
-			criticalServices.push('auth');
+			const authHealth = this.checkAuthHealth();
+			if (authHealth.status === 'healthy') {
+				criticalServices.push('auth');
+			} else {
+				this.logger.error(`Auth health check failed: ${authHealth.error || 'Auth configuration is unhealthy'}`);
+				failedServices.push('auth');
+			}
 		} catch (error) {
 			this.logger.error(`Auth health check failed: ${error.message}`);
 			failedServices.push('auth');
