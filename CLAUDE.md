@@ -1,685 +1,197 @@
-# CLAUDE.md
+# CLAUDE.md - Claude Code Assistant Guide
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## Project Context
+- **Type**: Discord bot + Image service monorepo 
+- **Stack**: NestJS, Necord, TypeScript, Turborepo, pnpm
+- **Architecture**: Service-based with dependency injection
+- **Key Pattern**: All services extend BaseService for consistent logging
 
-## Project Overview
+## Quick Reference
 
-This is a Discord bot built with NestJS and Necord that integrates with GitHub to browse repositories and trigger Claude Code analysis workflows. The bot provides an interactive Discord interface for repository management and automated code analysis through GitHub Actions workflows.
-
-## Architecture
-
-### Framework & Core Technologies
-- **Framework**: NestJS with Necord for Discord integration
-- **Discord Library**: Discord.js v14 with full TypeScript support
-- **GitHub Integration**: Octokit REST API client
-- **Package Manager**: pnpm
-- **Build System**: NestJS CLI with TypeScript compilation
-- **Monorepo**: Turborepo for build orchestration
-
-### Monorepo Structure
-
-```
-claude-code-discord-bot/
-├── apps/
-│   └── discord-bot/            # Discord bot application
-│       ├── src/                # Application source code
-│       ├── .env                # Bot environment variables
-│       ├── .env.example        # Environment template
-│       ├── package.json        # Bot dependencies
-│       └── dist/               # Build output
-├── packages/                   # Shared packages (future)
-├── .github/                    # GitHub Actions workflows
-├── .claude/                    # Claude Code configuration
-├── turbo.json                  # Turborepo configuration
-├── package.json                # Root workspace configuration
-├── pnpm-workspace.yaml         # PNPM workspace settings
-└── CLAUDE.md                   # This file
+### Most Used Commands
+```bash
+pnpm dev             # Start development
+pnpm build           # Build all packages
+pnpm lint            # Run linting (auto-fix)
+pnpm typecheck       # TypeScript validation
+pnpm changeset       # Create release changeset
 ```
 
-### Discord Bot Architecture
-
-The Discord bot follows a clean, modular architecture with separation of concerns:
-
+### Project Structure
 ```
-apps/discord-bot/src/
-├── services/              # Business logic and external integrations
-│   ├── base/
-│   │   └── base.service.ts         # Base service with common logging
-│   ├── github.service.ts           # GitHub API client with search support
-│   ├── session.service.ts          # User session management with cleanup
-│   ├── embed.service.ts            # Discord embed creation utilities
-│   ├── workflow.service.ts         # GitHub Actions workflow management
-│   └── workflow-monitor.service.ts # Real-time workflow status monitoring
-├── commands/              # Discord slash command handlers
-│   └── repository/
-│       └── claude.command.ts       # /claude command - unified workflow entry
-├── interactions/          # Discord interaction handlers
-│   ├── buttons/
-│   │   ├── cancel.button.ts               # Cancel operation button
-│   │   └── workflow-status.button.ts      # Check workflow status
-│   ├── modals/
-│   │   ├── claude-prompt.modal.ts         # Final prompt input modal
-│   │   └── claude-repo-search.modal.ts    # Repository search modal
-│   └── selects/
-│       └── repository.select.ts           # Repository selection handler
-├── logger/                # Custom Winston-based logging system
-│   ├── formatters/        # Log formatting utilities
-│   │   ├── console.formatter.ts    # Colored console output formatter
-│   │   └── file.formatter.ts       # JSON file output formatter
-│   ├── transports/        # Winston transport configurations
-│   │   ├── console.transport.ts    # Console logging transport
-│   │   ├── error-file.transport.ts # Error-specific file logging
-│   │   ├── combined-file.transport.ts # Combined logs file transport
-│   │   └── service-file.transport.ts  # Service-specific file logging
-│   ├── logger.service.ts          # Main logger service implementation
-│   ├── logger.factory.ts          # Logger factory for service instances
-│   ├── logger.config.ts           # Winston configuration builder
-│   └── logger.module.ts           # NestJS logger module
-├── utils/                 # Shared utilities and helpers
-│   ├── discord.constants.ts    # Discord-specific constants
-│   ├── github.constants.ts     # GitHub-specific constants
-│   ├── messages.constants.ts   # User-facing messages
-│   ├── workflow.utils.ts       # Workflow status utilities
-│   ├── discord.utils.ts        # Discord UI component builders
-│   └── security.utils.ts       # Security utilities for logging
-├── interfaces/            # TypeScript type definitions (organized by domain)
-│   ├── services/          # Service interfaces
-│   │   ├── github.interface.ts     # GitHub service contract
-│   │   ├── workflow.interface.ts   # Workflow service contract
-│   │   ├── embed.interface.ts      # Embed service contract
-│   │   └── session.interface.ts    # Session service contract
-│   ├── models/            # Data models
-│   │   ├── repository.interface.ts # Repository data types
-│   │   ├── session.interface.ts    # Session data types
-│   │   └── workflow.interface.ts   # Workflow data types
-│   └── discord/           # Discord-specific types
-│       └── discord.interface.ts    # Discord component types
-├── app.module.ts          # Root module with dependency injection
-└── main.ts               # Application entry point
+apps/discord-bot/    # Main Discord bot application
+apps/image-service/  # Image storage API service  
+packages/shared/     # Shared types and utilities
+docs/               # Detailed documentation (see below)
 ```
 
-### Key Services
+## Documentation Map
 
-#### GitHubService (`apps/discord-bot/src/services/github.service.ts`)
-- **Purpose**: GitHub API integration with repository management
-- **Features**: 
-  - Repository search across user's repositories
-  - Repository details fetching with stats
-  - Direct repository access validation
-  - Error handling and rate limiting
-- **Methods**:
-  - `searchRepositories()` - Search user's repositories with text matching
-  - `getRepository()` - Get single repository details and validation
-  - `getUserRepositories()` - Fetch user's repositories
+For detailed information, refer to specific documentation:
 
-#### SessionService (`apps/discord-bot/src/services/session.service.ts`)
-- **Purpose**: Manage user sessions across Discord interactions
-- **Features**:
-  - Session creation and lifecycle management
-  - Automatic session cleanup and expiration
-  - Type-safe session data storage
-- **Methods**:
-  - `createSession()`, `getSession()`, `updateSession()`
-  - `cleanupExpiredSessions()` - Automatic cleanup
+- **🏗️ [Architecture](docs/architecture/)** - System design and component structure
+- **🔧 [Services](docs/services/)** - Service-specific implementation details
+- **💻 [Development](docs/development/)** - Setup, patterns, and guidelines
+- **✨ [Features](docs/features/)** - Feature documentation and usage
+- **🚀 [Deployment](docs/deployment/)** - Docker, production, and runner setup
+- **🔄 [Workflows](docs/workflows/)** - Git workflows and release management
+- **⚙️ [Configuration](docs/configuration/)** - Environment variables and setup
 
-#### EmbedService (`apps/discord-bot/src/services/embed.service.ts`)
-- **Purpose**: Centralized Discord embed creation
-- **Features**:
-  - Consistent styling and branding
-  - Error, success, and loading state embeds
-  - Repository information display
-  - Workflow status and dispatch embeds
-- **Methods**:
-  - `createRepositorySelectionMessage()` - Main selection interface
-  - `createErrorEmbed()`, `createSuccessEmbed()` - Status messages
-  - `createWorkflowDispatchedEmbed()` - Workflow launch confirmation
-  - `createWorkflowNotFoundEmbed()` - Missing workflow templates
+## CRITICAL: Documentation Maintenance Rules
 
-#### WorkflowService (`apps/discord-bot/src/services/workflow.service.ts`)
-- **Purpose**: GitHub Actions workflow management and execution
-- **Features**:
-  - Workflow file existence validation
-  - Workflow dispatch with custom inputs
-  - Workflow run status monitoring
-  - Real-time status updates
-- **Methods**:
-  - `checkWorkflowExists()` - Verify claude.yml workflow exists
-  - `dispatchWorkflow()` - Trigger workflow with prompt inputs
-  - `getWorkflowRuns()`, `getLatestWorkflowRun()` - Status tracking
+### When Adding New Features
+**ALWAYS update relevant documentation when making changes:**
 
-#### WorkflowMonitorService (`apps/discord-bot/src/services/workflow-monitor.service.ts`)
-- **Purpose**: Real-time monitoring of workflow execution status
-- **Features**:
-  - Automatic status updates for running workflows
-  - Discord message updates with progress
-  - Background polling and notification system
+1. **Service Changes**: Update `docs/services/[service-name].md`
+2. **New Commands**: Update `docs/features/discord-commands.md`
+3. **Architecture Changes**: Update relevant files in `docs/architecture/`
+4. **New Patterns**: Add to `docs/development/patterns.md`
+5. **Environment Changes**: Update `docs/configuration/environment-vars.md`
 
-### Custom Logging System
+### When Modifying Existing Code
+**Follow this checklist for documentation updates:**
 
-The application implements a comprehensive Winston-based logging system with enhanced security, performance monitoring, and flexible configuration.
+- [ ] Check if documentation exists: `grep -r "ClassName\|MethodName" docs/`
+- [ ] Update ALL related documentation files
+- [ ] Update code examples if behavior changes
+- [ ] Add deprecation notices if removing features
+- [ ] Update troubleshooting if fixing common issues
 
-#### LoggerService (`apps/discord-bot/src/logger/logger.service.ts`)
-- **Purpose**: Custom Winston logger implementation with NestJS integration
-- **Features**:
-  - **Multi-Transport Logging**: Console, error files, combined files, and service-specific files
-  - **Security**: Automatic sensitive data filtering (passwords, tokens, keys)
-  - **Performance Monitoring**: Method timing, memory usage tracking, slow operation detection  
-  - **Error Handling**: Graceful fallbacks, safe flush operations, comprehensive validation
-  - **NestJS Integration**: Full compatibility with NestJS LoggerService interface
-- **Methods**:
-  - `log()`, `error()`, `warn()`, `debug()`, `verbose()` - Standard logging methods
-  - `time()`, `timeEnd()` - Performance timing using performance.now()
-  - `methodEntry()`, `methodExit()` - Method lifecycle logging
-  - `performance()` - Performance metrics with automatic level determination
-  - `child()` - Create child loggers with additional context
-  - `flush()`, `safeFlush()` - Graceful shutdown support
+### Documentation Update Mapping
 
-#### Memory Monitoring
-The logger includes intelligent memory monitoring for production environments:
-- **Configurable Thresholds**: Warning and debug levels via environment variables
-- **Automatic Alerts**: Log warnings when memory usage exceeds thresholds
-- **Performance Tracking**: Real-time heap usage monitoring with percentage calculations
-- **Environment Variables**:
-  ```bash
-  MEMORY_WARNING_THRESHOLD=90    # Warning at 90% heap usage (default)
-  MEMORY_DEBUG_THRESHOLD=75      # Debug logging at 75% heap usage (default)
-  MEMORY_CHECK_INTERVAL=30000    # Check every 30 seconds (default)
-  ```
+**Service modifications** → Update:
+- `docs/services/[service-name].md` (method signatures, features)
+- `docs/development/patterns.md` (if patterns change)
+- `docs/architecture/discord-bot.md` (if architecture changes)
 
-#### File Logging Structure
-```
-logs/
-├── error.log                    # Error-level logs only
-├── combined.log                 # All log levels combined
-└── services/
-    ├── GitHubService.log        # Service-specific logs
-    ├── SessionService.log       # Service-specific logs
-    └── [ServiceName].log        # Dynamic service-specific logs
-```
+**Discord command changes** → Update:
+- `docs/features/discord-commands.md` (command usage)
+- `docs/development/patterns.md` (if interaction patterns change)
 
-#### Log Formats
-- **Console**: Colorized output with timestamps, service context, and readable formatting
-- **Files**: JSON format with structured metadata for parsing and analysis
-- **Security**: Automatic masking of sensitive data (tokens, passwords, API keys)
+**Environment/Config changes** → Update:
+- `docs/configuration/environment-vars.md` (new variables)
+- `docs/deployment/` (if deployment changes)
+- `docs/development/getting-started.md` (if setup changes)
 
-#### Usage Patterns
+**New dependencies/tools** → Update:
+- `docs/development/commands.md` (new commands)
+- `docs/architecture/overview.md` (if tech stack changes)
+
+### Documentation Standards
+- **Use relative links**: `[Services](docs/services/README.md)`
+- **Include code examples**: Show usage with file paths
+- **Mark requirements**: Clearly indicate required vs optional
+- **Add timestamps**: For time-sensitive information
+- **Cross-reference**: Link related documentation sections
+
+## Essential Patterns
+
+### Service Development
 ```typescript
-// Basic service logging
+// Always extend BaseService
 export class MyService extends BaseService {
   constructor(loggerFactory: LoggerFactory) {
     super('MyService', loggerFactory);
   }
-
-  async performOperation() {
-    this.logger.info('Starting operation', 'performOperation');
-    
-    // Performance timing
-    this.logger.time('database-query');
-    const result = await this.queryDatabase();
-    const duration = this.logger.timeEnd('database-query');
-    
-    // Automatic slow operation detection
-    this.logger.checkSlowOperation('database-query', duration, 'performOperation');
-    
-    return result;
-  }
-}
-
-// Method lifecycle logging
-this.logger.methodEntry('processRepository', { repoId: repo.id });
-const result = await this.processRepository(repo);
-this.logger.methodExit('processRepository', result);
-```
-
-#### Configuration Options
-All logging behavior is configurable via environment variables:
-```bash
-# Core logging configuration
-LOG_LEVEL=debug                  # Logging level (error, warn, info, debug, verbose)
-ENABLE_FILE_LOGS=true           # Enable file logging (default: true)
-NODE_ENV=development            # Environment mode affects default log level
-
-# Memory monitoring
-MEMORY_WARNING_THRESHOLD=90      # Memory warning threshold percentage
-MEMORY_DEBUG_THRESHOLD=75        # Memory debug threshold percentage  
-MEMORY_CHECK_INTERVAL=30000      # Memory check interval in milliseconds
-```
-
-## Environment Setup
-
-### Required Environment Variables
-
-Environment variables are stored in `apps/discord-bot/.env`:
-
-```bash
-# Discord Configuration
-DISCORD_TOKEN="your_discord_bot_token"
-DEV_GUILD="your_development_guild_id"
-
-# GitHub Integration
-GITHUB_TOKEN="your_github_personal_access_token"
-```
-
-Copy `apps/discord-bot/.env.example` to `apps/discord-bot/.env` and fill in your values.
-
-### GitHub Token Permissions
-The GitHub token requires these scopes:
-- `repo` - Full repository access (for private repos)
-- `public_repo` - Public repository access
-- `actions:write` - Required for dispatching workflows
-
-## Common Commands
-
-### Development (from root directory)
-```bash
-pnpm install         # Install all workspace dependencies
-pnpm dev             # Start Discord bot in watch mode
-pnpm build           # Build all packages
-pnpm lint            # Run ESLint on all packages
-pnpm format          # Format code with Prettier
-pnpm typecheck       # Run TypeScript type checking
-```
-
-### Development (Discord bot specific)
-```bash
-pnpm dev --filter=@claude-code/discord-bot      # Start only Discord bot
-pnpm build --filter=@claude-code/discord-bot    # Build only Discord bot
-pnpm lint --filter=@claude-code/discord-bot     # Lint only Discord bot
-```
-
-### Quality Assurance
-```bash
-pnpm lint            # Check and fix linting issues for all packages
-pnpm typecheck       # Verify TypeScript types for all packages
-pnpm format          # Format all TypeScript files with Prettier
-```
-
-## Development Patterns
-
-### Adding New Commands
-1. Create command file in `apps/discord-bot/src/commands/[category]/` directory
-2. Implement command class with `@Injectable()` decorator
-3. Use `@SlashCommand()` decorator with name and description
-4. Inject required services via constructor
-5. Add to `apps/discord-bot/src/app.module.ts` providers array
-
-Example:
-```typescript
-@Injectable()
-export class NewCommand {
-  constructor(
-    private readonly githubService: GitHubService,
-    private readonly sessionService: SessionService,
-    private readonly embedService: EmbedService
-  ) {}
-
-  @SlashCommand({ name: 'example', description: 'Example command' })
-  public async onExample(@Context() [interaction]: SlashCommandContext) {
-    // Implementation
-  }
 }
 ```
-
-### Adding Interaction Handlers
-1. Create handler file in `apps/discord-bot/src/interactions/[type]/` directory
-2. Use appropriate decorator (`@Button()`, `@StringSelect()`, `@Modal()`, etc.)
-3. Handle interaction validation and error cases
-4. Update session state through SessionService
-5. Add to module providers
-
-Example Button Handler:
-```typescript
-@Injectable()
-export class CustomButtonHandler {
-  constructor(private readonly sessionService: SessionService) {}
-
-  @Button('custom_button_id')
-  public async onCustomButton(@Context() [interaction]: ButtonContext) {
-    // Handle button interaction
-  }
-}
-```
-
-### Working with Sessions
-- All user state is managed through SessionService
-- Sessions automatically expire after 30 minutes
-- Use TypeScript interfaces for type safety
-- Always check session existence before operations
-
-### Discord UI Components
-- Use DiscordUtils for consistent component creation
-- Follow established patterns for pagination
-- Maintain consistent styling through constants
-- Handle edge cases (empty results, errors)
-
-## Code Quality & Standards
-
-### TypeScript Configuration
-- Strict type checking enabled
-- ESLint with TypeScript parser
-- Prettier for consistent formatting
-- Path mapping for clean imports
-
-### Testing Strategy
-- Unit tests for services and utilities
-- Integration tests for command handlers
-- Mock GitHub API responses
-- Docker environment testing
 
 ### Error Handling
-- Centralized error handling through EmbedService
+```typescript
+try {
+  const result = await operation();
+  return result;
+} catch (error) {
+  this.logger.error('Operation failed', error, 'methodName');
+  throw new UserFriendlyError('User message');
+}
+```
+
+### Session Management
+```typescript
+// Always check session existence
+const session = await this.sessionService.getSession(userId);
+if (!session) {
+  await interaction.reply({ content: 'Session expired. Use /claude to start over.' });
+  return;
+}
+```
+
+## Critical Workflow Rules
+
+### Commit Format (ENFORCED)
+```bash
+type(scope): description
+# Examples:
+feat(discord-bot): add repository search modal
+fix(image-service): resolve upload timeout issue
+docs(shared): update logger documentation
+```
+
+### Release Process
+1. **Make changes** following patterns above
+2. **Update documentation** per maintenance rules above
+3. **Create changeset**: `pnpm changeset` (if user-facing changes)
+4. **Commit**: Follow conventional format (enforced by hooks)
+5. **PR**: Automated release when merged to master
+
+## Key Architecture Points
+
+### Dependency Injection
+- Services injected via NestJS container
+- Logger injected through LoggerFactory
+- Configuration via environment variables
+
+### Session-Based Workflows
+- All multi-step interactions use SessionService
+- 30-minute automatic expiration
+- Type-safe session data storage
+
+### Error Handling Strategy
+- EmbedService for consistent user-facing errors
+- Comprehensive logging for debugging
 - Graceful degradation for API failures
-- User-friendly error messages
-- Proper logging for debugging
 
-## Adding New Packages
+## File Locations to Remember
 
-When you add new applications or packages to the monorepo (docs, web UI, mobile app, etc.), follow the comprehensive guide at [Adding New Packages](./.github/docs/ADDING_NEW_PACKAGES.md). This ensures proper integration with:
+**Key Configuration Files**:
+- `apps/discord-bot/src/app.module.ts` - DI setup
+- `packages/shared/src/` - Shared types
+- `commitlint.config.js` - Commit validation
+- `turbo.json` - Build pipeline
 
-- Automated versioning and release management
-- CI/CD pipeline and quality checks  
-- Conventional commit scopes and validation
-- Package-specific tagging and changelog generation
+**Entry Points**:
+- `apps/discord-bot/src/main.ts` - Bot entry
+- `apps/image-service/src/main.ts` - API entry
+- `packages/shared/src/index.ts` - Shared exports
 
-The release system is designed to scale automatically as you add more workspace packages.
+## Common Tasks Quick Guide
 
-## Deployment
+### Adding a New Service
+1. Create service in `apps/discord-bot/src/services/`
+2. Extend BaseService with proper logging
+3. Add to `app.module.ts` providers
+4. Update `docs/services/[service-name].md`
+5. Add usage examples to `docs/development/patterns.md`
 
-### Production Deployment
+### Adding a Discord Command
+1. Create in `apps/discord-bot/src/commands/[category]/`
+2. Use `@SlashCommand()` decorator
+3. Add to module providers
+4. Update `docs/features/discord-commands.md`
 
-The Discord bot includes production-ready Docker configuration optimized for deployment platforms like Coolify:
+### Adding Environment Variables
+1. Add to `.env.example` files
+2. Add validation in startup
+3. Update `docs/configuration/environment-vars.md`
+4. Update deployment documentation if needed
 
-#### Docker Configuration
-- **Production Dockerfile**: Multi-stage build with optimized layers (`apps/discord-bot/Dockerfile`)
-- **Docker Compose**: Coolify-specific configuration (`docker-compose.coolify.yml`)
-- **Security**: Non-root user, health checks, and resource limits
-- **Optimization**: Minimal production image with only runtime dependencies
+## Final Reminder
 
-#### Quick Deployment Commands
-```bash
-# Local Docker testing
-cd apps/discord-bot
-docker build -t claude-discord-bot .
-docker run -d -e DISCORD_TOKEN="token" -e GITHUB_TOKEN="token" claude-discord-bot
+**Documentation is not optional** - it's a critical part of the codebase that enables:
+- Future Claude sessions to work efficiently
+- New developers to onboard quickly  
+- Complex systems to remain maintainable
+- Knowledge to persist beyond individual contributors
 
-# Coolify deployment - use docker-compose.coolify.yml
-```
-
-### GitHub Self-Hosted Runners
-
-For executing Claude workflows on your own infrastructure:
-
-#### Runner Configuration
-- **Runner Dockerfile**: Ubuntu-based with Node.js, pnpm, and GitHub CLI (`runners/github-actions/Dockerfile`)
-- **Auto-Registration**: Automatic runner registration with GitHub (`runners/github-actions/entrypoint.sh`)
-- **Docker Compose**: Complete runner setup (`runners/github-actions/docker-compose.yml`)
-- **Template Support**: Compatible with Claude workflow templates in `apps/discord-bot/templates/`
-
-#### Quick Runner Setup
-```bash
-# Configure environment
-cd runners/github-actions
-cp .env.example .env  # Edit with your tokens and repository
-
-# Deploy runner
-docker-compose up -d
-
-# Verify registration in GitHub repository settings
-```
-
-### Deployment Documentation
-
-Comprehensive deployment guide available at [`.github/docs/DEPLOYMENT.md`](./.github/docs/DEPLOYMENT.md) covering:
-- Coolify platform deployment
-- Environment variable configuration
-- GitHub self-hosted runner setup
-- Security considerations
-- Monitoring and troubleshooting
-- Performance optimization
-
-## Current Features
-
-This Discord bot provides streamlined GitHub integration with Claude Code workflow automation through a unified command interface:
-
-### Streamlined Workflow
-- **Single Command**: `/claude` handles the entire workflow
-- **Modal-Based UX**: Interactive text input for repository search and prompts  
-- **Smart Validation**: Only shows repositories with `claude.yml` workflow
-- **Direct Integration**: Repository selection immediately leads to prompt input
-- **Real-time Monitoring**: Automatic status updates and workflow tracking
-
-### Core Repository Management
-- Repository search through text input modal
-- Intelligent repository matching (exact names and fuzzy search)
-- Repository validation with Claude Code workflow detection
-- Session management for multi-step user interactions
-
-### Claude Code Integration
-- Unified workflow triggering via single `/claude` command
-- Real-time workflow status monitoring with Discord message updates
-- Custom prompt input through dedicated modal interface
-- Automatic workflow file detection and validation (`claude.yml`)
-- Background monitoring with status updates and completion notifications
-
-### Discord Command
-
-#### `/claude`
-**Complete Claude Code workflow in one command**
-1. **Repository Search**: Opens modal to search your repositories
-   - Text input for repository name or search term
-   - Supports exact matches (`owner/repo`) and fuzzy search
-   - Example searches: `"discord-bot"`, `"microsoft/vscode"`
-
-2. **Repository Selection**: Shows validated repositories with Claude Code support
-   - Only displays repositories containing `claude.yml` workflow
-   - Clear indication of repositories without Claude Code setup
-   - Direct selection leads to prompt input
-
-3. **Prompt Input**: Modal for analysis details
-   - Custom analysis prompt (required)
-   - Optional branch specification (defaults to 'main')
-   - Example prompts: "Review code for security vulnerabilities", "Optimize performance"
-
-4. **Workflow Execution**: Automatic dispatch and monitoring
-   - Real-time status updates in Discord
-   - Workflow progress tracking with status buttons
-   - Completion notifications with results
-
-### Workflow Requirements
-For repositories to support Claude Code analysis, they must contain:
-- `.github/workflows/claude.yml` - GitHub Actions workflow file
-- Proper workflow inputs configuration for prompt handling
-- Repository access permissions for the bot's GitHub token
-
-### Benefits of New Design
-- **Simplified UX**: One command instead of three (`/run`, `/search`, `/claude`)
-- **Better Validation**: Pre-validates Claude Code support before prompting
-- **Faster Workflow**: Fewer steps from search to execution
-- **Error Prevention**: Only shows compatible repositories
-- **Cleaner Interface**: No pagination complexity or analyze buttons
-
-## Commit and Release Workflow (CRITICAL - READ FIRST)
-
-**ALWAYS follow these steps when making changes to this repository:**
-
-### 1. Before Making Changes
-- Check current branch: `git branch`  
-- Create feature branch if needed: `git checkout -b feat/your-feature-name`
-- Ensure dependencies are up to date: `pnpm install`
-
-### 2. Making Code Changes
-- Follow existing code patterns and architecture outlined above
-- Run quality checks as you develop: `pnpm lint`, `pnpm typecheck`
-- Test your changes: `pnpm build`
-
-### 3. Commit Message Requirements (ENFORCED BY HOOKS)
-**This project uses Conventional Commits with strict validation via Commitlint.**
-
-Format: `type(scope): description`
-
-**Required Types:**
-- `feat` - New feature
-- `fix` - Bug fix  
-- `docs` - Documentation changes
-- `style` - Code style changes (formatting, etc.)
-- `refactor` - Code refactoring
-- `perf` - Performance improvements
-- `test` - Test changes
-- `build` - Build system changes
-- `ci` - CI/CD changes
-- `chore` - Other changes
-- `revert` - Revert previous commit
-
-**Required Scopes:**
-- `discord-bot` - Discord bot application changes
-- `root` - Root workspace changes
-- `ci` - CI/CD changes
-- `docs` - Documentation
-- `deps` - Dependencies
-- `release` - Release-related
-- `config` - Configuration
-
-**Examples:**
-```bash
-git commit -m "feat(discord-bot): add repository search modal"
-git commit -m "fix(discord-bot): resolve session timeout issue"  
-git commit -m "docs(root): update contributing guidelines"
-git commit -m "ci(root): add release automation workflow"
-```
-
-### 4. Changeset Management (REQUIRED FOR RELEASES)
-**If your changes should trigger a release, ALWAYS create a changeset:**
-
-```bash
-# Create a changeset
-pnpm changeset
-
-# Follow the prompts:
-# 1. Select packages to bump (usually @claude-code/discord-bot)
-# 2. Choose bump type:
-#    - patch: Bug fixes, small improvements
-#    - minor: New features, backward compatible
-#    - major: Breaking changes
-# 3. Write a clear summary for the changelog
-```
-
-**Changeset Examples:**
-- Patch: "Fix session cleanup memory leak"
-- Minor: "Add support for repository file selection"
-- Major: "Redesign command interface (breaking changes)"
-
-**When NOT to create changeset:**
-- Documentation-only changes (`docs` scope)
-- Test changes that don't affect functionality
-- CI/CD changes (`ci` scope)
-- Development dependencies updates
-
-### 5. Pre-Commit Hooks (AUTOMATIC)
-Git hooks will AUTOMATICALLY run and may block commits if:
-- Commit message doesn't follow conventional format
-- Code doesn't pass linting (`pnpm lint`)
-- TypeScript compilation fails (`pnpm typecheck`)  
-- Code formatting is incorrect (`pnpm format`)
-
-**If blocked:** Fix issues and try committing again.
-
-### 6. Creating Pull Requests
-**When pushing a PR:**
-
-```bash
-# Push your branch
-git push origin feat/your-feature-name
-
-# Create PR through GitHub UI or CLI
-# The following will happen automatically:
-# - Commit message validation on all PR commits
-# - Changeset detection and preview
-# - Code quality checks (lint, type, build)
-# - Automated PR comments about changesets
-```
-
-**PR Requirements:**
-- All commits must follow conventional commit format
-- Include changeset if changes should trigger release
-- Pass all CI checks (enforced)
-- Provide clear PR description
-
-### 7. Available Scripts for Development
-```bash
-# Core development
-pnpm dev                     # Start Discord bot in watch mode
-pnpm build                   # Build all packages
-pnpm lint                    # Run linting (auto-fix)
-pnpm typecheck              # TypeScript validation
-pnpm format                 # Format code with Prettier
-
-# Release management
-pnpm changeset              # Create new changeset
-pnpm changeset:status       # Check changeset status  
-pnpm version               # Version packages (CI only)
-pnpm release               # Publish packages (CI only)
-
-# Validation helpers
-pnpm lint:commit           # Test commit message format
-pnpm ci:version-check      # Check version status
-```
-
-### 8. Release Process (AUTOMATED)
-**Releases happen automatically when PR with changesets is merged to master:**
-1. GitHub Actions detects changesets
-2. Versions are bumped automatically
-3. Changelogs are generated
-4. GitHub release is created
-5. Git tags are created
-
-**Manual release check:**
-```bash
-pnpm changeset:status  # See what will be released
-```
-
-### 9. Emergency Fixes
-For critical hotfixes to master:
-```bash
-git checkout master
-git pull origin master
-# Make minimal fix
-git commit -m "fix(discord-bot): critical security patch"
-# Create patch changeset
-pnpm changeset  # Select patch, describe fix
-git push origin master  # Triggers automated release
-```
-
-### 10. Common Issues & Solutions
-
-**Commit rejected by commitlint?**
-- Check message format: `type(scope): description`
-- Use valid type and scope from lists above
-- Use lowercase for description
-- Example: `feat(discord-bot): add new feature`
-
-**Pre-commit hooks failing?**
-```bash
-pnpm lint     # Fix linting issues
-pnpm format   # Fix formatting  
-pnpm build    # Ensure it builds cleanly
-```
-
-**Changeset confusion?**
-- If unsure about need for changeset, create one anyway - better safe than sorry
-- Use patch for most bug fixes and small improvements
-- Use minor for new features that don't break existing functionality
-- Use major only for breaking changes that require user action
-
-**Build or type errors?**
-```bash
-pnpm typecheck  # Check TypeScript errors
-pnpm lint       # Check and fix code style
-pnpm build      # Verify successful compilation
-```
-
-**IMPORTANT REMINDERS:**
-- All quality checks are enforced automatically via Git hooks and CI
-- Focus on writing good code and following commit format
-- The automated tools will guide you through the rest
-- When in doubt, create a changeset - releases can be managed later
-- Follow conventional commits exactly - the format is strictly enforced
+Always update documentation when making changes. Your future self (and future Claude sessions) will thank you!

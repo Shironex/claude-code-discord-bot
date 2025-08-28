@@ -1,11 +1,9 @@
-import { ConfigService } from '@nestjs/config';
-import { LoggerService } from '../../logger/logger.service';
-import { LoggerFactory } from '../../logger/logger.factory';
+import { LoggerService, LoggerFactory } from '@claude-code/shared';
 
 export abstract class BaseService {
 	protected readonly logger: LoggerService;
 
-	constructor(serviceName: string, loggerFactory?: LoggerFactory, configService?: ConfigService) {
+	constructor(serviceName: string, loggerFactory?: LoggerFactory, configService?: any) {
 		// Use dependency injection if LoggerFactory is provided, otherwise fallback to direct instantiation
 		if (loggerFactory) {
 			this.logger = loggerFactory.createLogger(serviceName);

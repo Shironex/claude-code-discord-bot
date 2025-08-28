@@ -1,16 +1,27 @@
 name: Claude Code (Self-Hosted)
 
+# SETUP REQUIREMENTS:
+# 1. Add CLAUDE_CODE_API_KEY to repository secrets
+#    - This key must match the one configured in your image service
+#    - The image service validates this key for 'claude-code' source authentication
+#    - Used for fetching images uploaded via Discord
+# 2. Ensure self-hosted runner has curl installed
+# 3. Image URLs will be embedded in the prompt automatically
+
 on:
   workflow_dispatch:
     inputs:
       prompt:
-        description: 'Prompt for Claude'
+        description: 'Prompt for Claude (may include image URLs for analysis)'
         required: true
         type: string
       tracking_id:
         description: 'Unique tracking ID for this workflow run'
         required: true
         type: string
+
+env:
+  CLAUDE_CODE_API_KEY: ${{ secrets.CLAUDE_CODE_API_KEY }}
 
 jobs:
   claude:
@@ -34,13 +45,89 @@ jobs:
           mode: agent
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           direct_prompt: ${{ github.event.inputs.prompt }}
-          allowed_tools: "Bash,Write,Read,Edit,MultiEdit,Glob,Grep"
+          allowed_tools: "Bash,Write,Read,Edit,MultiEdit,Glob,Grep,WebFetch"
           custom_instructions: |
             You are running in automation mode triggered by Discord.
             Workflow Tracking ID: ${{ github.event.inputs.tracking_id }}
-            Focus on completing the requested task thoroughly.
-            Do NOT create branches, commits, or pull requests in this step.
-            Just implement the requested changes.
+            
+            ## Image Context Detection & Processing
+            
+            IMPORTANT: Check if the prompt contains image URLs (format: http(s)://*/api/v1/images/*)
+            
+            If image URLs are present:
+            1. Extract all image URLs from the prompt
+            2. For each image URL, fetch the image using curl with authentication:
+               ```bash
+               IMAGE_ID=$(basename "[image_url]")
+               
+               # Get content type to determine correct file extension
+               CONTENT_TYPE=$(curl -H "x-api-key: $CLAUDE_CODE_API_KEY" -s -I "[image_url]" | grep -i "content-type:" | cut -d: -f2 | tr -d ' \r')
+               
+               # Determine file extension based on content type
+               case "$CONTENT_TYPE" in
+                 "image/jpeg") EXT="jpg" ;;
+                 "image/png") EXT="png" ;;
+                 "image/gif") EXT="gif" ;;
+                 "image/webp") EXT="webp" ;;
+                 *) EXT="jpg" ;;  # Default fallback
+               esac
+               
+               # Download with correct extension
+               curl -H "x-api-key: $CLAUDE_CODE_API_KEY" -o "image_${IMAGE_ID}.${EXT}" "[image_url]"
+               ```
+            3. The images are stored temporarily and expire after 2 hours
+            4. Analyze the images to understand:
+               - UI/UX mockups for implementation guidance
+               - Error screenshots for debugging context
+               - Architecture diagrams for system design
+               - Visual references for feature requirements
+               - Code snippets or documentation screenshots
+            
+            5. If unable to fetch images (401/404 errors):
+               - Note which images couldn't be accessed in your response
+               - Continue with text context only
+               - Mention what visual context was missing
+            
+            Example image fetching:
+            ```bash
+            # Extract image ID from URL for filename
+            IMAGE_URL="https://your-domain.com/api/v1/images/abc123"
+            IMAGE_ID=$(basename "$IMAGE_URL")
+            
+            # Get content type to determine correct file extension
+            CONTENT_TYPE=$(curl -H "x-api-key: $CLAUDE_CODE_API_KEY" -s -I "$IMAGE_URL" | grep -i "content-type:" | cut -d: -f2 | tr -d ' \r')
+            
+            # Determine file extension based on content type
+            case "$CONTENT_TYPE" in
+              "image/jpeg") EXT="jpg" ;;
+              "image/png") EXT="png" ;;
+              "image/gif") EXT="gif" ;;
+              "image/webp") EXT="webp" ;;
+              *) EXT="jpg" ;;  # Default fallback
+            esac
+            
+            # Download with correct extension
+            curl -H "x-api-key: $CLAUDE_CODE_API_KEY" -o "context_image_${IMAGE_ID}.${EXT}" "$IMAGE_URL"
+            
+            # Check if download was successful
+            if [ -f "context_image_${IMAGE_ID}.${EXT}" ] && [ -s "context_image_${IMAGE_ID}.${EXT}" ]; then
+              echo "Successfully downloaded image: $IMAGE_ID as ${EXT} ($(stat -c%s "context_image_${IMAGE_ID}.${EXT}") bytes)"
+              # You can now analyze this image as context
+            else
+              echo "Failed to download image: $IMAGE_ID"
+              # Check HTTP status for debugging
+              curl -H "x-api-key: $CLAUDE_CODE_API_KEY" -w "HTTP Status: %{http_code}\n" -o /dev/null -s "$IMAGE_URL"
+            fi
+            ```
+            
+            ## Task Execution
+            
+            After processing any images, focus on completing the requested task:
+            - Implement the requested changes thoroughly
+            - Consider visual context from images in your implementation
+            - Reference specific elements seen in images when relevant
+            - Do NOT create branches, commits, or pull requests in this step
+            - Just implement the requested changes
 
       - name: Step 2 - Create Pull Request
         id: create_pr

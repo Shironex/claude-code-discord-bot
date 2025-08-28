@@ -28,21 +28,26 @@ export class SkipFileSelectionButtonHandler extends BaseService {
 		try {
 			this.logger.log(`User ${interaction.user.tag} (${userId}) skipped file selection`);
 
-			// Clear any previously selected file paths
+			// Clear any previously selected file paths and move to image upload step
 			this.sessionService.updateSession(userId, {
 				selectedFilePaths: [],
-				action: 'claude_prompt_input'
+				action: 'claude_image_selection'
 			});
 
-			// Create and show the prompt modal without pre-selected files
-			const modal = this.createPromptModal(session.repository.name);
-			await interaction.showModal(modal);
+			// Import EmbedService and DiscordUtils dynamically to avoid circular dependencies
+			const { EmbedService } = await import('../../services/embed.service');
+			const { createImageUploadPrompt } = await import('../../utils/discord.utils');
 
-			this.logger.log(`Prompt modal displayed (no file context) for ${session.repository.fullName}`);
+			// Create embed and components for image upload step
+			const { embed, components } = createImageUploadPrompt(session.repository.name);
+
+			await interaction.update({ embeds: [embed], components });
+
+			this.logger.log(`Image upload prompt displayed for ${session.repository.fullName}`);
 		} catch (error) {
 			this.logger.error(`Failed to handle skip file selection: ${error.message}`, error);
 			return interaction.reply({
-				content: 'Failed to open prompt modal. Please try again.',
+				content: 'Failed to show image upload step. Please try again.',
 				flags: [MessageFlags.Ephemeral]
 			});
 		}

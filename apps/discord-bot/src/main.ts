@@ -1,36 +1,36 @@
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
-import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { AppModule } from './app.module';
-import { LoggerService } from './logger/logger.service';
+import { LoggerService, LoggerFactory } from '@claude-code/shared';
 
 async function bootstrap() {
-	// Create application context with Winston logger
+	// Create application context for Discord bot (not HTTP server)
 	const app = await NestFactory.createApplicationContext(AppModule, {
 		bufferLogs: true
 	});
 
-	// Use Winston logger as the application logger
-	const logger = app.get(WINSTON_MODULE_NEST_PROVIDER);
-	app.useLogger(logger);
+	// Use our custom logger as the application logger
+	const loggerFactory = app.get(LoggerFactory);
+	const nestLogger = loggerFactory.createLogger('NestJS');
+	app.useLogger(nestLogger);
 
 	// Create application logger with ConfigService
 	const configService = app.get<ConfigService>(ConfigService);
-	const appLogger = new LoggerService('Application', {}, configService);
+	const logger = new LoggerService('Application', {}, configService as any);
 
 	// Log application startup
-	appLogger.info('Discord bot application starting...');
+	logger.info('Discord bot application starting...');
 
 	// Handle graceful shutdown
 	process.on('SIGINT', async () => {
-		appLogger.info('Received SIGINT, shutting down gracefully...');
+		logger.info('Received SIGINT, shutting down gracefully...');
 		try {
-			await appLogger.flush();
+			await logger.flush();
 			await app.close();
 			process.exit(0);
 		} catch (error) {
 			try {
-				appLogger.error('Error during graceful shutdown (SIGINT):', error);
+				logger.error('Error during graceful shutdown (SIGINT):', error);
 			} catch {
 				// Fallback to console if logger fails
 				console.error('Error during graceful shutdown (SIGINT):', error);
@@ -40,14 +40,14 @@ async function bootstrap() {
 	});
 
 	process.on('SIGTERM', async () => {
-		appLogger.info('Received SIGTERM, shutting down gracefully...');
+		logger.info('Received SIGTERM, shutting down gracefully...');
 		try {
-			await appLogger.flush();
+			await logger.flush();
 			await app.close();
 			process.exit(0);
 		} catch (error) {
 			try {
-				appLogger.error('Error during graceful shutdown (SIGTERM):', error);
+				logger.error('Error during graceful shutdown (SIGTERM):', error);
 			} catch {
 				// Fallback to console if logger fails
 				console.error('Error during graceful shutdown (SIGTERM):', error);
@@ -58,19 +58,19 @@ async function bootstrap() {
 
 	// Handle uncaught exceptions
 	process.on('uncaughtException', error => {
-		appLogger.error('Uncaught Exception:', error.stack, 'Application');
-		appLogger.safeFlush(); // Use safe flush to prevent hanging
+		logger.error('Uncaught Exception:', error.stack, 'Application');
+		logger.safeFlush(); // Use safe flush to prevent hanging
 		setTimeout(() => process.exit(1), 1000); // Give flush time to complete
 	});
 
 	// Handle unhandled promise rejections
 	process.on('unhandledRejection', (reason, promise) => {
-		appLogger.error('Unhandled Rejection at:', promise.toString(), 'Application', { reason });
-		appLogger.safeFlush(); // Use safe flush to prevent hanging
+		logger.error('Unhandled Rejection at:', promise.toString(), 'Application', { reason });
+		logger.safeFlush(); // Use safe flush to prevent hanging
 		setTimeout(() => process.exit(1), 1000); // Give flush time to complete
 	});
 
-	appLogger.info('Discord bot application started successfully');
+	logger.info('Discord bot application started successfully');
 }
 
 bootstrap().catch(error => {

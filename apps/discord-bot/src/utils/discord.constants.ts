@@ -16,11 +16,16 @@ export const CUSTOM_IDS = {
 	// File selection
 	FILE_PATH_SELECT: 'file-path-select',
 	SKIP_FILE_SELECTION: 'skip-file-selection',
+	// Image upload
+	ADD_IMAGES: 'add-images',
+	SKIP_IMAGES: 'skip-images',
+	OPEN_CLAUDE_PROMPT: 'open-claude-prompt',
 	// Modal IDs
 	CLAUDE_REPO_SEARCH_MODAL: 'claude-repo-search-modal',
 	CLAUDE_PROMPT_MODAL: 'claude-prompt-modal',
 	CLAUDE_REPO_SEARCH_INPUT: 'claude-repo-search-input',
 	CLAUDE_PROMPT_INPUT: 'claude-prompt-input',
 	CLAUDE_BRANCH_INPUT: 'claude-branch-input',
-	CLAUDE_FILE_CONTEXT_INPUT: 'claude-file-context-input'
+	CLAUDE_FILE_CONTEXT_INPUT: 'claude-file-context-input',
+	CLAUDE_IMAGE_URLS_INPUT: 'claude-image-urls-input'
 } as const;

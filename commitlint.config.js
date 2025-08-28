@@ -1,5 +1,5 @@
 /** @type {import('@commitlint/types').UserConfig} */
-export default {
+module.exports = {
   extends: ['@commitlint/config-conventional'],
   rules: {
     // Custom scope enum for monorepo structure
@@ -8,6 +8,7 @@ export default {
       'always',
       [
         'discord-bot',      // Main Discord bot application
+        'image-service',    // Image service API application
         'root',             // Root workspace changes
         'ci',              // CI/CD changes
         'docs',            // Documentation
@@ -15,16 +16,29 @@ export default {
         'release',         // Release-related changes
         'config',          // Configuration changes
         'template',        // Template changes
+        'shared',          // Shared package
+        'packages',        // Packages directory
+        'scripts',         // Scripts directory
+        'docker',          // Docker changes
+        'docker-compose',  // Docker compose changes
+        'dockerfile',      // Dockerfile changes,
+        'commitlint',      // Commitlint changes
+        'husky',           // Husky changes
+        'turbo',           // Turbo changes
+        'claude',          // Claude changes (workflows, commands, config, docs, etc.),
+        'dependencies',    // Dependencies changes
       ],
     ],
     // Allow empty scopes for general changes
     'scope-empty': [1, 'never'],
     // Allow sentence case (first letter capitalized) and pascal case (PascalCase)
-    'subject-case': [2, 'always', ['sentence-case', 'pascal-case', 'lower-case']],
+    'subject-case': [1, 'always', ['sentence-case', 'pascal-case', 'lower-case']],
     // Limit subject length
     'subject-max-length': [2, 'always', 100],
     // Ensure subject is not empty
     'subject-empty': [2, 'never'],
+    // Limit body length
+    'body-max-line-length': [1, 'always', 100],
     // Ensure type is present
     'type-empty': [2, 'never'],
     // Custom type enum to include common monorepo types
