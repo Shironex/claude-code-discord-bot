@@ -133,3 +133,61 @@ jobs:
           lcov-file: packages/shared/coverage/lcov.info
           github-token: ${{ secrets.GITHUB_TOKEN }}
           title: "Shared Package Coverage Report"
+
+  test-image-service:
+    name: Test Image Service
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js and pnpm
+        uses: ./.github/actions/setup-node-pnpm
+
+      - name: Run image service tests with coverage
+        run: pnpm --filter=@claude-code/image-service test:ci --passWithNoTests=false
+        env:
+          NODE_ENV: test
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: image-service-test-results
+          path: apps/image-service/coverage/junit.xml
+          retention-days: 30
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: image-service-coverage-reports
+          path: |
+            apps/image-service/coverage/lcov.info
+            apps/image-service/coverage/coverage-final.json
+            apps/image-service/coverage/html/
+          retention-days: 30
+
+      - name: Comment coverage on PR
+        uses: romeovs/lcov-reporter-action@v0.3.1
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        with:
+          lcov-file: apps/image-service/coverage/lcov.info
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          title: "Image Service Coverage Report"

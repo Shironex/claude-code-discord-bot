@@ -45,5 +45,40 @@ module.exports = {
   testTimeout: 10000,
 
   collectCoverage: false,
-  coverageDirectory: 'coverage'
+  coverageDirectory: 'coverage',
+  collectCoverageFrom: [
+    'src/**/*.{ts,js}',
+    '!src/**/*.d.ts',
+    '!src/**/index.ts',
+    '!src/main.ts',
+    '!**/node_modules/**',
+    '!**/dist/**'
+  ],
+  coverageReporters: [
+    'text',
+    'lcov',
+    'html',
+    'json'
+  ],
+  coverageThreshold: {
+    global: {
+      branches: 80,
+      functions: 80,
+      lines: 85,
+      statements: 85
+    }
+  },
+  
+  // JUnit reporting for CI
+  reporters: [
+    'default',
+    ['jest-junit', {
+      outputDirectory: 'coverage',
+      outputName: 'junit.xml',
+      uniqueOutputName: false,
+      ancestorSeparator: ' › ',
+      testCaseClassnameTemplate: '{classname}',
+      titleTemplate: '{title}'
+    }]
+  ]
 };
