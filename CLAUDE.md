@@ -762,6 +762,12 @@ For repositories to support Claude Code analysis, they must contain:
 
 Format: `type(scope): description`
 
+**Formatting Requirements:**
+- Subject must be lowercase (e.g., "add new feature" not "Add new feature")
+- Subject max length: 100 characters
+- Body lines must be max 100 characters each
+- Scope cannot be empty
+
 **Required Types:**
 - `feat` - New feature
 - `fix` - Bug fix  
