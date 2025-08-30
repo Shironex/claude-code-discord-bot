@@ -2,6 +2,10 @@
 
 Detailed documentation for each service in the Discord bot application.
 
+## Base Architecture
+
+- **[Base Service](./base-service.md)** - Abstract base class providing logging and GitHub integration
+
 ## Core Services
 
 - **[GitHub Service](./github-service.md)** - GitHub API integration with repository management
@@ -14,7 +18,7 @@ Detailed documentation for each service in the Discord bot application.
 ## Service Architecture
 
 All services follow these patterns:
-- Extend `BaseService` for consistent logging
+- Extend `BaseService` for consistent logging and GitHub integration
 - Use dependency injection through NestJS
 - Implement proper error handling and validation
 - Follow separation of concerns principles

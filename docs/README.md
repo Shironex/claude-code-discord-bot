@@ -14,6 +14,7 @@ System design, monorepo structure, and component architecture
 
 ### 🔧 [Services](./services/)
 Service-specific documentation and API references
+- [Base Service](./services/base-service.md) - Abstract base class for all services
 - [GitHub Service](./services/github-service.md) - GitHub integration service
 - [Session Service](./services/session-service.md) - Session management service
 - [Embed Service](./services/embed-service.md) - Discord embed service

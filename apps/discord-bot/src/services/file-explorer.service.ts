@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Octokit } from '@octokit/rest';
 import { BaseService } from './base/base.service';
+import { LoggerFactory } from '@claude-code/shared';
 
 export interface FileTreeItem {
 	readonly path: string;
@@ -19,7 +19,6 @@ export interface FileTreeResponse {
 
 @Injectable()
 export class FileExplorerService extends BaseService {
-	private octokit: Octokit | null = null;
 	private readonly fileTreeCache = new Map<string, { data: FileTreeResponse; timestamp: number }>();
 	private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 	private readonly MAX_ITEMS = 100; // Limit items to avoid overwhelming the select menu
@@ -48,18 +47,8 @@ export class FileExplorerService extends BaseService {
 		'.env.example'
 	];
 
-	constructor(private configService: ConfigService) {
-		super(FileExplorerService.name);
-		const token = this.configService.get<string>('GITHUB_TOKEN');
-
-		if (token) {
-			this.octokit = new Octokit({
-				auth: token
-			});
-			this.logger.log('File explorer service initialized with GitHub token');
-		} else {
-			this.logger.warn('GitHub token not found - file explorer functionality will be disabled');
-		}
+	constructor(configService: ConfigService, loggerFactory: LoggerFactory) {
+		super(FileExplorerService.name, loggerFactory, configService, true);
 	}
 
 	async getFileTree(owner: string, repo: string, ref = 'main'): Promise<FileTreeResponse> {
@@ -72,9 +61,7 @@ export class FileExplorerService extends BaseService {
 		}
 
 		try {
-			if (!this.octokit) {
-				throw new Error('GitHub token not configured');
-			}
+			this.validateGitHubAccess();
 
 			this.logger.log(`Fetching file tree for ${owner}/${repo} (${ref})`);
 

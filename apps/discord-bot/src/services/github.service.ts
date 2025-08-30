@@ -1,32 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Octokit } from '@octokit/rest';
 import { BaseService } from './base/base.service';
 import { IGitHubService } from '../interfaces/services/github.interface';
 import { Repository, PaginatedRepositories } from '../interfaces/models/repository.interface';
+import { LoggerFactory } from '@claude-code/shared';
 
 @Injectable()
 export class GitHubService extends BaseService implements IGitHubService {
-	private octokit: Octokit | null = null;
-
-	constructor(private configService: ConfigService) {
-		super(GitHubService.name);
-		const token = this.configService.get<string>('GITHUB_TOKEN');
-
-		if (token) {
-			this.octokit = new Octokit({
-				auth: token
-			});
-			this.logger.log('GitHub service initialized with token');
-		} else {
-			this.logger.warn('GitHub token not found - GitHub functionality will be disabled');
-		}
+	constructor(configService: ConfigService, loggerFactory: LoggerFactory) {
+		super(GitHubService.name, loggerFactory, configService, true);
 	}
 
 	async getUserRepositories(limit: number = 25): Promise<Repository[]> {
-		if (!this.octokit) {
-			throw new Error('GitHub token not configured');
-		}
+		this.validateGitHubAccess();
 
 		try {
 			this.logger.log(`Fetching user repositories (limit: ${limit})`);
@@ -60,9 +46,7 @@ export class GitHubService extends BaseService implements IGitHubService {
 	}
 
 	async getUserRepositoriesPaginated(page: number = 1, perPage: number = 25): Promise<PaginatedRepositories> {
-		if (!this.octokit) {
-			throw new Error('GitHub token not configured');
-		}
+		this.validateGitHubAccess();
 
 		try {
 			this.logger.log(`Fetching user repositories (page: ${page}, per_page: ${perPage})`);
@@ -115,9 +99,7 @@ export class GitHubService extends BaseService implements IGitHubService {
 	}
 
 	async searchRepositories(query: string, page: number = 1, perPage: number = 25): Promise<PaginatedRepositories> {
-		if (!this.octokit) {
-			throw new Error('GitHub token not configured');
-		}
+		this.validateGitHubAccess();
 
 		try {
 			this.logger.log(`Searching repositories: "${query}" (page: ${page}, per_page: ${perPage})`);
@@ -166,9 +148,7 @@ export class GitHubService extends BaseService implements IGitHubService {
 	}
 
 	private async getAuthenticatedUsername(): Promise<string> {
-		if (!this.octokit) {
-			throw new Error('GitHub token not configured');
-		}
+		this.validateGitHubAccess();
 
 		try {
 			const { data } = await this.octokit.rest.users.getAuthenticated();
@@ -180,9 +160,7 @@ export class GitHubService extends BaseService implements IGitHubService {
 	}
 
 	async getRepository(owner: string, repo: string): Promise<Repository> {
-		if (!this.octokit) {
-			throw new Error('GitHub token not configured');
-		}
+		this.validateGitHubAccess();
 
 		try {
 			this.logger.log(`Fetching repository: ${owner}/${repo}`);
@@ -211,6 +189,6 @@ export class GitHubService extends BaseService implements IGitHubService {
 	}
 
 	isConfigured(): boolean {
-		return this.octokit !== null;
+		return this.hasGitHubAccess;
 	}
 }

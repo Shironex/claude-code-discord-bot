@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Octokit } from '@octokit/rest';
 import { BaseService } from './base/base.service';
 import { IWorkflowService } from '../interfaces/services/workflow.interface';
 import {
@@ -9,12 +8,10 @@ import {
 	WorkflowRunsResponse,
 	WorkflowFile
 } from '../interfaces/models/workflow.interface';
-import { TrackingUtils } from '../utils/tracking.utils';
+import { LoggerFactory } from '@claude-code/shared';
 
 @Injectable()
 export class WorkflowService extends BaseService implements IWorkflowService {
-	private octokit: Octokit | null = null;
-
 	// Polling configuration constants
 	private static readonly POLLING_CONFIG = {
 		INITIAL_DELAY: 2000,
@@ -24,24 +21,12 @@ export class WorkflowService extends BaseService implements IWorkflowService {
 		MATCH_WINDOW: 30000
 	} as const;
 
-	constructor(private configService: ConfigService) {
-		super(WorkflowService.name);
-		const token = this.configService.get<string>('GITHUB_TOKEN');
-
-		if (token) {
-			this.octokit = new Octokit({
-				auth: token
-			});
-			this.logger.log('Workflow service initialized with GitHub token');
-		} else {
-			this.logger.warn('GitHub token not found - workflow functionality will be disabled');
-		}
+	constructor(configService: ConfigService, loggerFactory: LoggerFactory) {
+		super(WorkflowService.name, loggerFactory, configService, true);
 	}
 
 	async checkWorkflowExists(owner: string, repo: string, workflowFile: string = 'claude.yml'): Promise<boolean> {
-		if (!this.octokit) {
-			throw new Error('GitHub token not configured');
-		}
+		this.validateGitHubAccess();
 
 		try {
 			this.logger.log(`Checking for workflow file: ${owner}/${repo}/.github/workflows/${workflowFile}`);
@@ -65,9 +50,7 @@ export class WorkflowService extends BaseService implements IWorkflowService {
 	}
 
 	async dispatchWorkflow(request: WorkflowDispatchRequest): Promise<void> {
-		if (!this.octokit) {
-			throw new Error('GitHub token not configured');
-		}
+		this.validateGitHubAccess();
 
 		try {
 			this.logger.log(`Dispatching workflow: ${request.workflowId} for ${request.owner}/${request.repo}`);
@@ -92,9 +75,7 @@ export class WorkflowService extends BaseService implements IWorkflowService {
 	}
 
 	async getWorkflowRuns(owner: string, repo: string, workflowId: string, limit: number = 5): Promise<WorkflowRun[]> {
-		if (!this.octokit) {
-			throw new Error('GitHub token not configured');
-		}
+		this.validateGitHubAccess();
 
 		try {
 			this.logger.log(`Fetching workflow runs for: ${owner}/${repo} workflow: ${workflowId}`);
@@ -115,9 +96,7 @@ export class WorkflowService extends BaseService implements IWorkflowService {
 	}
 
 	async getWorkflowRunStatus(owner: string, repo: string, runId: number): Promise<WorkflowRun> {
-		if (!this.octokit) {
-			throw new Error('GitHub token not configured');
-		}
+		this.validateGitHubAccess();
 
 		try {
 			this.logger.log(`Fetching workflow run status: ${owner}/${repo} run: ${runId}`);
@@ -146,9 +125,7 @@ export class WorkflowService extends BaseService implements IWorkflowService {
 	}
 
 	async listWorkflows(owner: string, repo: string): Promise<WorkflowFile[]> {
-		if (!this.octokit) {
-			throw new Error('GitHub token not configured');
-		}
+		this.validateGitHubAccess();
 
 		try {
 			this.logger.log(`Listing workflows for: ${owner}/${repo}`);
@@ -173,9 +150,7 @@ export class WorkflowService extends BaseService implements IWorkflowService {
 		dispatchTime: number,
 		maxAttempts: number = 10
 	): Promise<WorkflowRun | null> {
-		if (!this.octokit) {
-			throw new Error('GitHub token not configured');
-		}
+		this.validateGitHubAccess();
 
 		this.logger.log(`Searching for workflow run with tracking ID: ${trackingId}`);
 		const startTime = Date.now();
@@ -283,11 +258,27 @@ export class WorkflowService extends BaseService implements IWorkflowService {
 		return null;
 	}
 
-	getOctokit(): Octokit | null {
-		return this.octokit;
+	async getRecentPullRequests(owner: string, repo: string, limit: number = 5): Promise<any[]> {
+		this.validateGitHubAccess();
+
+		try {
+			const { data: prs } = await this.octokit.rest.pulls.list({
+				owner,
+				repo,
+				state: 'open',
+				sort: 'created',
+				direction: 'desc',
+				per_page: limit
+			});
+
+			return prs;
+		} catch (error) {
+			this.logger.error(`Failed to fetch pull requests: ${error.message}`, error);
+			throw new Error(`Failed to fetch pull requests: ${error.message}`);
+		}
 	}
 
 	isConfigured(): boolean {
-		return this.octokit !== null;
+		return this.hasGitHubAccess;
 	}
 }
