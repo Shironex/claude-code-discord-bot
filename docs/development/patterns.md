@@ -5,8 +5,9 @@ Common patterns and examples for developing with this codebase.
 ## Service Development Patterns
 
 ### Base Service Pattern
-All services extend `BaseService` for consistent logging:
+All services extend `BaseService` for consistent logging and GitHub integration:
 
+#### Basic Service (No GitHub Required)
 ```typescript
 import { BaseService } from '../base/base.service';
 import { LoggerFactory } from '@claude-code/shared';
@@ -34,6 +35,49 @@ export class MyService extends BaseService {
       this.logger.error('Operation failed', error);
       throw error;
     }
+  }
+}
+```
+
+#### GitHub-Enabled Service
+```typescript
+import { BaseService } from '../base/base.service';
+import { LoggerFactory } from '@claude-code/shared';
+import { ConfigService } from '@nestjs/config';
+
+@Injectable()
+export class GitHubEnabledService extends BaseService {
+  constructor(
+    configService: ConfigService,
+    loggerFactory: LoggerFactory
+  ) {
+    super('GitHubEnabledService', loggerFactory, configService, true);
+  }
+
+  async fetchFromGitHub(): Promise<any> {
+    this.validateGitHubAccess(); // Throws if no GitHub token
+    
+    try {
+      const { data } = await this.octokit.rest.repos.get({
+        owner: 'user',
+        repo: 'repository'
+      });
+      
+      this.logger.log('Successfully fetched from GitHub');
+      return data;
+    } catch (error) {
+      this.logger.error('GitHub API call failed', error);
+      throw new Error('Failed to fetch repository data');
+    }
+  }
+
+  async fetchOptional(): Promise<any> {
+    if (!this.hasGitHubAccess) {
+      this.logger.warn('GitHub not configured, using fallback');
+      return this.getFallbackData();
+    }
+    
+    return await this.fetchFromGitHub();
   }
 }
 ```
