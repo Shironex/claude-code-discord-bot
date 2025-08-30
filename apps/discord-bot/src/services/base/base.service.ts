@@ -8,8 +8,8 @@ export abstract class BaseService {
 	protected hasGitHubAccess: boolean = false;
 
 	constructor(
-		serviceName: string, 
-		loggerFactory?: LoggerFactory, 
+		serviceName: string,
+		loggerFactory?: LoggerFactory,
 		configService?: ConfigService,
 		requireGitHub: boolean = false
 	) {
@@ -27,13 +27,9 @@ export abstract class BaseService {
 		}
 	}
 
-	private initializeGitHubClient(
-		configService: ConfigService, 
-		serviceName: string, 
-		requireGitHub: boolean
-	): void {
+	private initializeGitHubClient(configService: ConfigService, serviceName: string, requireGitHub: boolean): void {
 		const token = configService.get<string>('GITHUB_TOKEN');
-		
+
 		if (token) {
 			this.octokit = new Octokit({ auth: token });
 			this.hasGitHubAccess = true;

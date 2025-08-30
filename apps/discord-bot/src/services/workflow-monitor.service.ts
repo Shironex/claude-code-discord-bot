@@ -206,17 +206,9 @@ export class WorkflowMonitorService extends BaseService implements OnModuleInit,
 
 			// Try to find recent PRs that might be from this workflow
 			// This is a best-effort attempt since we don't have direct PR link from workflow
-			const octokit = this.workflowService.getOctokit();
-			if (!octokit) return null;
+			if (!this.workflowService.isConfigured()) return null;
 
-			const { data: prs } = await octokit.rest.pulls.list({
-				owner,
-				repo,
-				state: 'open',
-				sort: 'created',
-				direction: 'desc',
-				per_page: 5
-			});
+			const prs = await this.workflowService.getRecentPullRequests(owner, repo, 5);
 
 			// Look for PRs created around the workflow time
 			const workflowTime = new Date(workflowRun.created_at);
