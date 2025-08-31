@@ -10,38 +10,86 @@ const compat = new FlatCompat({
     allConfig: js.configs.all
 });
 
-module.exports = [...compat.extends(
-    "plugin:@typescript-eslint/eslint-recommended",
-    "plugin:@typescript-eslint/recommended",
-    "prettier",
-), {
-    
-    plugins: {
-        "@typescript-eslint": typescriptEslintEslintPlugin,
-    },
-
-    languageOptions: {
-        globals: {
-            ...globals.node,
+module.exports = [
+    // Configuration for source files
+    ...compat.extends(
+        "plugin:@typescript-eslint/eslint-recommended",
+        "plugin:@typescript-eslint/recommended",
+        "prettier",
+    ).map(config => ({
+        ...config,
+        files: ["src/**/*.ts"]
+    })),
+    {
+        files: ["src/**/*.ts"],
+        plugins: {
+            "@typescript-eslint": typescriptEslintEslintPlugin,
         },
 
-        parser: tsParser,
-        ecmaVersion: 5,
-        sourceType: "module",
+        languageOptions: {
+            globals: {
+                ...globals.node,
+            },
 
-        parserOptions: {
-            project: "tsconfig.json",
+            parser: tsParser,
+            ecmaVersion: 5,
+            sourceType: "module",
+
+            parserOptions: {
+                project: "./tsconfig.json",
+            },
+        },
+
+        rules: {
+            "@typescript-eslint/interface-name-prefix": "off",
+            "@typescript-eslint/explicit-function-return-type": "off",
+            "@typescript-eslint/no-explicit-any": "off",
+            "@typescript-eslint/explicit-module-boundary-types": "off",
+            "@typescript-eslint/no-unused-vars": "off",
+            "@typescript-eslint/ban-types": "off",
         },
     },
+    // Configuration for test files
+    ...compat.extends(
+        "plugin:@typescript-eslint/eslint-recommended",
+        "plugin:@typescript-eslint/recommended",
+        "prettier",
+    ).map(config => ({
+        ...config,
+        files: ["tests/**/*.ts", "jest.setup.ts"]
+    })),
+    {
+        files: ["tests/**/*.ts", "jest.setup.ts"],
+        plugins: {
+            "@typescript-eslint": typescriptEslintEslintPlugin,
+        },
 
-    rules: {
-        "@typescript-eslint/interface-name-prefix": "off",
-        "@typescript-eslint/explicit-function-return-type": "off",
-        "@typescript-eslint/no-explicit-any": "off",
-        "@typescript-eslint/explicit-module-boundary-types": "off",
-        "@typescript-eslint/no-unused-vars": "off",
-        "@typescript-eslint/ban-types": "off",
+        languageOptions: {
+            globals: {
+                ...globals.node,
+                ...globals.jest,
+            },
+
+            parser: tsParser,
+            ecmaVersion: 5,
+            sourceType: "module",
+
+            parserOptions: {
+                project: "./tsconfig.json",
+            },
+        },
+
+        rules: {
+            "@typescript-eslint/interface-name-prefix": "off",
+            "@typescript-eslint/explicit-function-return-type": "off",
+            "@typescript-eslint/no-explicit-any": "off",
+            "@typescript-eslint/explicit-module-boundary-types": "off",
+            "@typescript-eslint/no-unused-vars": "off",
+            "@typescript-eslint/ban-types": "off",
+            "@typescript-eslint/no-empty-function": "off",
+        },
     },
-
-    ignores: ["*.config.js"]
-}];
+    {
+        ignores: ["*.config.js", "dist/**", "coverage/**", "node_modules/**"]
+    }
+];
