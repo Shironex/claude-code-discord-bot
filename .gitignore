@@ -58,4 +58,7 @@ apps/**/.env.production
 .changeset/pre.json
 
 # CI/CD temporary files
-changeset-status.jsonnode-compile-cache/
+changeset-status.json
+
+# Node compile cache
+node-compile-cache/
