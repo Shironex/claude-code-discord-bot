@@ -209,6 +209,180 @@ Use this command when:
 - Service connectivity issues
 - Performance problems detected
 
+## `/doctor` Command
+
+**Comprehensive health check for all bot components**
+
+Real-time monitoring and diagnostics command that checks the operational status of the bot, GitHub integration, sessions, and image service.
+
+### Usage
+```
+/doctor
+```
+
+### Features
+- **Real-time Status**: Instant health check across all components
+- **Color-coded Indicators**: Visual status representation (🟢🟡🔴⚪)
+- **Response Time Metrics**: Performance monitoring for each component
+- **Intelligent Caching**: 5-minute cache to reduce load
+- **Manual Refresh**: Force fresh checks with refresh button
+
+### Monitored Components
+
+#### 1. Bot Runtime 🤖
+- Process uptime
+- Memory usage (used/total/percentage)
+- Response time
+
+**Status Levels:**
+- 🟢 Operational: Memory < 75%
+- 🟡 Degraded: Memory 75-90%
+- 🔴 Critical: Memory > 90%
+
+#### 2. GitHub Integration 🐙
+- Token validity and authentication
+- API rate limit status
+- API connectivity
+
+**Status Levels:**
+- 🟢 Operational: Rate limit > 100 calls
+- 🟡 Degraded: Rate limit < 100 calls
+- 🔴 Critical: Rate limit exhausted or API errors
+- ⚪ Unavailable: No token configured
+
+#### 3. Session Health 💾
+- Active user sessions count
+- Session memory usage
+
+**Status Levels:**
+- 🟢 Operational: < 50 active sessions
+- 🟡 Degraded: 50-100 active sessions
+- 🔴 Critical: > 100 active sessions
+
+#### 4. Image Service 🖼️
+- Service connectivity
+- Health endpoint status
+- Service version and uptime
+
+**Status Levels:**
+- 🟢 Operational: Connected, response < 2s
+- 🟡 Degraded: Connected, response > 2s
+- 🔴 Critical: Connection failed
+- ⚪ Unavailable: Not configured
+
+### Response Example
+
+```
+🏥 Bot Health Check
+✅ All systems operational
+
+🟢 Bot Runtime
+Status: Bot runtime is healthy
+Response: 12ms
+Memory: 145MB / 200MB (72%)
+Uptime: 5h 32m
+
+🟢 GitHub Integration
+Status: GitHub integration is healthy
+Response: 234ms
+Rate Limit: 4891/5000
+
+🟢 Session Health
+Status: Session health is good
+Response: 5ms
+Sessions: 12
+
+🟢 Image Service
+Status: Image service is healthy
+Response: 156ms
+Version: 1.0.0
+
+[🔄 Refresh]
+
+Last checked (Fresh check) • Refreshes every 5 minutes
+```
+
+### Use Cases
+
+**Regular Monitoring**
+```
+Use /doctor periodically to:
+• Verify bot operational status
+• Monitor resource usage
+• Check GitHub rate limits
+• Ensure service availability
+```
+
+**Troubleshooting**
+```
+Run /doctor when experiencing:
+• Command failures or timeouts
+• Workflow dispatch issues
+• Image upload problems
+• Unexpected bot behavior
+```
+
+**Post-Deployment**
+```
+After configuration changes:
+• Verify new settings took effect
+• Confirm service connectivity
+• Check resource allocation
+• Validate integrations
+```
+
+### Refresh Button
+
+Click **🔄 Refresh** to:
+- Bypass 5-minute cache
+- Get real-time metrics
+- Verify issue resolution
+- Update rate limit status
+
+### Performance
+
+- **Cached Response**: < 100ms
+- **Fresh Check**: 1-2 seconds
+- **Timeout Protection**: 3 seconds per component
+- **Cache Duration**: 5 minutes
+
+### Privacy
+
+Health check responses are **ephemeral** (only visible to you). This ensures:
+- Private token status not exposed
+- Server metrics stay confidential
+- User privacy maintained
+
+### Troubleshooting
+
+**"GitHub integration not configured"**
+- Add `GITHUB_TOKEN` to environment variables
+- Restart bot
+- Run `/doctor` to verify
+
+**"Image service not configured"**
+- Configure `DISCORD_BOT_API_KEY` and `IMAGE_SERVICE_BASE_URL`
+- Ensure image service is running
+- Restart bot
+
+**"Rate limit exceeded"**
+- Wait for rate limit reset (time shown in details)
+- Reduce GitHub API usage
+- Consider GitHub Apps for higher limits
+
+**High memory usage**
+- Check active sessions count
+- Restart bot if memory > 90%
+- Monitor for memory leaks
+- Implement session cleanup
+
+### Related Documentation
+
+For detailed information, see:
+- [Health Check System](./health-check.md) - Complete feature documentation
+- [Services Overview](../services/README.md) - Service architecture
+- [Troubleshooting](../development/troubleshooting.md) - Common issues
+
 ## Command Permissions
 
 ### Required Bot Permissions

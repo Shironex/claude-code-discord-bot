@@ -93,6 +93,14 @@ export class DiscordUtils {
 			.setEmoji('❌');
 	}
 
+	static createRefreshHealthButton(): ButtonBuilder {
+		return new ButtonBuilder()
+			.setCustomId(CUSTOM_IDS.REFRESH_HEALTH)
+			.setLabel('Refresh')
+			.setStyle(ButtonStyle.Secondary)
+			.setEmoji('🔄');
+	}
+
 	static createFileSelectMenu(fileItems: ReadonlyArray<FileTreeItem>): StringSelectMenuBuilder {
 		// Sort items for better display
 		const sortedItems = FileTreeUtils.sortItemsForDisplay(fileItems);

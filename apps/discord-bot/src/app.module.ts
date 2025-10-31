@@ -14,11 +14,13 @@ import { WorkflowService } from './services/workflow.service';
 import { WorkflowMonitorService } from './services/workflow-monitor.service';
 import { FileExplorerService } from './services/file-explorer.service';
 import { StartupService } from './services/startup.service';
+import { HealthCheckService } from './services/health-check.service';
 import { ImageServiceModule } from './services/image-service/image-service.module';
 
 // Commands
 import { ClaudeCommand } from './commands/repository/claude.command';
 import { ImageServiceCommand } from './commands/debug/image-service.command';
+import { DoctorCommand } from './commands/health/doctor.command';
 
 // Interaction Handlers
 import { RepositorySelectHandler } from './interactions/selects/repository.select';
@@ -30,6 +32,7 @@ import { ClaudePromptTriggerButtonHandler } from './interactions/buttons/claude-
 import { AddImagesButtonHandler } from './interactions/buttons/add-images.button';
 import { SkipImagesButtonHandler } from './interactions/buttons/skip-images.button';
 import { OpenClaudePromptButtonHandler } from './interactions/buttons/open-claude-prompt.button';
+import { RefreshHealthButtonHandler } from './interactions/buttons/refresh-health.button';
 import { ClaudePromptModalHandler } from './interactions/modals/claude-prompt.modal';
 import { ClaudeRepoSearchModalHandler } from './interactions/modals/claude-repo-search.modal';
 import { ImageUploadListener } from './interactions/listeners/image-upload.listener';
@@ -64,9 +67,11 @@ import { ImageUploadListener } from './interactions/listeners/image-upload.liste
 		WorkflowService,
 		WorkflowMonitorService,
 		FileExplorerService,
+		HealthCheckService,
 		// Commands
 		ClaudeCommand,
 		ImageServiceCommand,
+		DoctorCommand,
 		// Interaction Handlers
 		RepositorySelectHandler,
 		FilePathSelectHandler,
@@ -77,6 +82,7 @@ import { ImageUploadListener } from './interactions/listeners/image-upload.liste
 		AddImagesButtonHandler,
 		SkipImagesButtonHandler,
 		OpenClaudePromptButtonHandler,
+		RefreshHealthButtonHandler,
 		ClaudePromptModalHandler,
 		ClaudeRepoSearchModalHandler,
 		// Listeners

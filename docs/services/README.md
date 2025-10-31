@@ -14,6 +14,7 @@ Detailed documentation for each service in the Discord bot application.
 - **[Workflow Service](./workflow-service.md)** - GitHub Actions workflow management and execution
 - **[File Explorer Service](./file-explorer-service.md)** - Repository file tree exploration and selection
 - **[Image Upload Service](./image-upload-service.md)** - Discord attachment processing and image service integration
+- **[Health Check Service](./health-check-service.md)** - Comprehensive health monitoring for all bot components
 
 ## Service Architecture
 

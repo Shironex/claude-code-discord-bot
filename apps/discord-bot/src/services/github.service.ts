@@ -191,4 +191,30 @@ export class GitHubService extends BaseService implements IGitHubService {
 	isConfigured(): boolean {
 		return this.hasGitHubAccess;
 	}
+
+	/**
+	 * Get GitHub API rate limit information
+	 * @returns Rate limit data including remaining calls and reset time
+	 */
+	async getRateLimitInfo(): Promise<{
+		remaining: number;
+		limit: number;
+		reset: Date;
+	}> {
+		this.validateGitHubAccess();
+
+		try {
+			const rateLimit = await this.octokit.rest.rateLimit.get();
+			const core = rateLimit.data.resources.core;
+
+			return {
+				remaining: core.remaining,
+				limit: core.limit,
+				reset: new Date(core.reset * 1000)
+			};
+		} catch (error) {
+			this.logger.error('Failed to fetch rate limit information', error, 'getRateLimitInfo');
+			throw new Error('Failed to fetch GitHub API rate limit information');
+		}
+	}
 }

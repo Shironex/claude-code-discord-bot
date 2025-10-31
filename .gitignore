@@ -59,3 +59,6 @@ apps/**/.env.production
 
 # CI/CD temporary files
 changeset-status.json
+
+# Node compile cache
+node-compile-cache/
