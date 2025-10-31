@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder } from 'discord.js';
+import { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, Colors } from 'discord.js';
 import { BaseService } from './base/base.service';
 import { IEmbedService } from '../interfaces/services/embed.interface';
 import { Repository, PaginatedRepositories } from '../interfaces/models/repository.interface';
@@ -9,6 +9,7 @@ import { DISCORD_COLORS } from '../utils/discord.constants';
 import { MESSAGES } from '../utils/messages.constants';
 import { DiscordUtils } from '../utils/discord.utils';
 import { WorkflowUtils } from '../utils/workflow.utils';
+import { BotHealthStatus, ComponentHealth, HealthStatus } from '../interfaces/models/health.interface';
 
 @Injectable()
 export class EmbedService extends BaseService implements IEmbedService {
@@ -337,5 +338,166 @@ export class EmbedService extends BaseService implements IEmbedService {
 			.setColor(DISCORD_COLORS.SUCCESS);
 
 		return embed;
+	}
+
+	/**
+	 * Create health check embed with component status
+	 */
+	createHealthCheckEmbed(healthStatus: BotHealthStatus): EmbedBuilder {
+		// Determine overall color based on worst status
+		const color = this.getHealthColor(healthStatus.overallStatus);
+
+		const embed = new EmbedBuilder()
+			.setTitle('🏥 Bot Health Check')
+			.setDescription(this.getOverallStatusMessage(healthStatus.overallStatus))
+			.setColor(color)
+			.setTimestamp();
+
+		// Add fields for each component
+		embed.addFields([
+			{
+				name: this.formatComponentStatus('Bot Runtime', healthStatus.runtime),
+				value: this.formatComponentDetails(healthStatus.runtime),
+				inline: true
+			},
+			{
+				name: this.formatComponentStatus('GitHub Integration', healthStatus.github),
+				value: this.formatComponentDetails(healthStatus.github),
+				inline: true
+			},
+			{
+				name: this.formatComponentStatus('Session Health', healthStatus.sessions),
+				value: this.formatComponentDetails(healthStatus.sessions),
+				inline: true
+			},
+			{
+				name: this.formatComponentStatus('Image Service', healthStatus.imageService),
+				value: this.formatComponentDetails(healthStatus.imageService),
+				inline: true
+			}
+		]);
+
+		const cacheStatus = healthStatus.cached ? '(Cached)' : '(Fresh check)';
+		embed.setFooter({
+			text: `Last checked ${cacheStatus} • Refreshes every 5 minutes`
+		});
+
+		return embed;
+	}
+
+	/**
+	 * Get the color for a health status
+	 */
+	private getHealthColor(status: HealthStatus): number {
+		switch (status) {
+			case 'operational':
+				return Colors.Green;
+			case 'degraded':
+				return Colors.Yellow;
+			case 'critical':
+				return Colors.Red;
+			case 'unavailable':
+				return Colors.Grey;
+			default:
+				return Colors.Grey;
+		}
+	}
+
+	/**
+	 * Get the overall status message
+	 */
+	private getOverallStatusMessage(status: HealthStatus): string {
+		switch (status) {
+			case 'operational':
+				return '✅ All systems operational';
+			case 'degraded':
+				return '⚠️ Some systems are experiencing issues';
+			case 'critical':
+				return '🔴 Critical issues detected';
+			case 'unavailable':
+				return '⚪ Systems unavailable';
+			default:
+				return '❓ Status unknown';
+		}
+	}
+
+	/**
+	 * Format component status with icon
+	 */
+	private formatComponentStatus(name: string, component: ComponentHealth): string {
+		const icon = this.getStatusIcon(component.status);
+		return `${icon} ${name}`;
+	}
+
+	/**
+	 * Get status icon
+	 */
+	private getStatusIcon(status: HealthStatus): string {
+		switch (status) {
+			case 'operational':
+				return '🟢';
+			case 'degraded':
+				return '🟡';
+			case 'critical':
+				return '🔴';
+			case 'unavailable':
+				return '⚪';
+			default:
+				return '⚪';
+		}
+	}
+
+	/**
+	 * Format component details
+	 */
+	private formatComponentDetails(component: ComponentHealth): string {
+		const lines: string[] = [];
+
+		// Add main message
+		lines.push(`**Status:** ${component.message}`);
+
+		// Add response time if available
+		if (component.responseTime !== undefined) {
+			lines.push(`**Response:** ${component.responseTime}ms`);
+		}
+
+		// Add specific details based on what's available
+		if (component.details) {
+			const details = component.details;
+
+			// Memory info
+			if (details.memory) {
+				lines.push(`**Memory:** ${details.memory.used}MB / ${details.memory.total}MB (${details.memory.percentage}%)`);
+			}
+
+			// Uptime
+			if (details.uptime !== undefined) {
+				const hours = Math.floor(details.uptime / 3600);
+				const minutes = Math.floor((details.uptime % 3600) / 60);
+				lines.push(`**Uptime:** ${hours}h ${minutes}m`);
+			}
+
+			// Rate limit
+			if (details.rateLimit) {
+				lines.push(`**Rate Limit:** ${details.rateLimit.remaining}/${details.rateLimit.limit}`);
+			}
+
+			// Active sessions
+			if (details.activeSessions !== undefined) {
+				lines.push(`**Sessions:** ${details.activeSessions}`);
+			}
+
+			// Version
+			if (details.version) {
+				lines.push(`**Version:** ${details.version}`);
+			}
+		}
+
+		// Add error if present
+		if (component.error) {
+			lines.push(`**Error:** ${component.error}`);
+		}
+
+		return lines.join('\n');
 	}
 }

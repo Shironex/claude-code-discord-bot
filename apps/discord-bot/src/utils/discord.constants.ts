@@ -20,6 +20,8 @@ export const CUSTOM_IDS = {
 	ADD_IMAGES: 'add-images',
 	SKIP_IMAGES: 'skip-images',
 	OPEN_CLAUDE_PROMPT: 'open-claude-prompt',
+	// Health check
+	REFRESH_HEALTH: 'refresh-health',
 	// Modal IDs
 	CLAUDE_REPO_SEARCH_MODAL: 'claude-repo-search-modal',
 	CLAUDE_PROMPT_MODAL: 'claude-prompt-modal',

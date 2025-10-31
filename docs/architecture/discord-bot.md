@@ -15,6 +15,7 @@ apps/discord-bot/src/
 │   ├── workflow.service.ts         # GitHub Actions workflow management
 │   ├── workflow-monitor.service.ts # Real-time workflow status monitoring
 │   ├── file-explorer.service.ts    # Repository file tree exploration
+│   ├── health-check.service.ts     # Bot health monitoring and diagnostics
 │   ├── startup.service.ts          # Application startup and configuration
 │   └── image-service/              # Image handling integration
 │       ├── image-service.client.ts # Image service API client
@@ -23,6 +24,8 @@ apps/discord-bot/src/
 ├── commands/              # Discord slash command handlers
 │   ├── debug/
 │   │   └── image-service.command.ts # /image-service debug command
+│   ├── health/
+│   │   └── doctor.command.ts       # /doctor command - health check
 │   └── repository/
 │       └── claude.command.ts       # /claude command - unified workflow entry
 ├── interactions/          # Discord interaction handlers
@@ -31,6 +34,7 @@ apps/discord-bot/src/
 │   │   ├── cancel.button.ts               # Cancel operation button
 │   │   ├── claude-prompt-trigger.button.ts # Trigger Claude prompt modal
 │   │   ├── open-claude-prompt.button.ts   # Open Claude prompt interface
+│   │   ├── refresh-health.button.ts       # Refresh health status check
 │   │   ├── skip-file-selection.button.ts  # Skip file selection step
 │   │   ├── skip-images.button.ts          # Skip image attachment step
 │   │   └── workflow-status.button.ts      # Check workflow status
@@ -75,7 +79,8 @@ apps/discord-bot/src/
 │   ├── models/            # Data models
 │   │   ├── repository.interface.ts # Repository data types
 │   │   ├── session.interface.ts    # Session data types
-│   │   └── workflow.interface.ts   # Workflow data types
+│   │   ├── workflow.interface.ts   # Workflow data types
+│   │   └── health.interface.ts     # Health check data types
 │   └── discord/           # Discord-specific types
 │       └── discord.interface.ts    # Discord component types
 ├── app.module.ts          # Root module with dependency injection
@@ -95,6 +100,7 @@ apps/discord-bot/src/
 - **Workflow Service**: GitHub Actions workflow automation
 - **File Explorer Service**: Repository file tree exploration
 - **Image Upload Service**: Discord attachment processing
+- **Health Check Service**: Component health monitoring and diagnostics
 
 #### Service Patterns:
 - All services extend `BaseService` for consistent logging
@@ -242,6 +248,97 @@ export class AppModule {}
 - Non-blocking workflow monitoring
 - Background session cleanup
 - Parallel API calls where possible
+
+## Health Monitoring Architecture
+
+### Overview
+The health monitoring system provides real-time diagnostics across all bot components through the `/doctor` command. It implements intelligent caching, parallel execution, and timeout protection to ensure efficient monitoring without impacting bot performance.
+
+### Components Monitored
+
+#### 1. Bot Runtime
+- Process uptime tracking
+- Memory usage monitoring (heap used/total)
+- Memory pressure thresholds (operational < 75%, degraded 75-90%, critical > 90%)
+- Response time metrics
+
+#### 2. GitHub Integration
+- Token validity verification
+- API rate limit monitoring (5000 requests/hour)
+- API connectivity checks
+- Status thresholds based on remaining rate limit calls
+
+#### 3. Session Management
+- Active session count tracking
+- Session memory estimation
+- Load thresholds (operational < 50, degraded 50-100, critical > 100 sessions)
+
+#### 4. Image Service
+- Service connectivity testing
+- Health endpoint verification
+- Response time monitoring
+- Service availability status
+
+### Architecture Pattern
+
+```
+/doctor command
+    ↓
+DoctorCommand (command handler)
+    ↓
+HealthCheckService (health checks coordination)
+    ↓
+[Parallel Execution with 3s timeout per check]
+    ├─ checkBotRuntime() → process.memoryUsage(), uptime
+    ├─ checkGitHubIntegration() → octokit.rest.rateLimit.get()
+    ├─ checkSessionHealth() → sessionService.sessions.size
+    └─ checkImageService() → imageServiceClient.testConnection()
+    ↓
+determineOverallStatus() → aggregate results
+    ↓
+EmbedService.createHealthCheckEmbed()
+    ↓
+Discord embed with refresh button
+```
+
+### Caching Strategy
+- **Cache Duration**: 5 minutes (300,000ms)
+- **Cache Invalidation**: Time-based expiration or manual refresh via button
+- **Benefits**:
+  - Reduces GitHub API calls (rate limit protection)
+  - Improves response time (< 100ms for cached checks)
+  - Minimizes system load for frequent checks
+
+### Timeout Protection
+- Each component check has a **3-second timeout**
+- Timeouts return critical status (don't crash entire check)
+- Allows partial status information even with failures
+- Comprehensive error logging for debugging
+
+### Status Determination
+Overall status is determined by worst component status:
+1. If any component is critical → overall is critical
+2. If any component is degraded → overall is degraded
+3. If all are unavailable → overall is unavailable
+4. Otherwise → overall is operational
+
+### Performance Characteristics
+- **Cached response**: < 100ms
+- **Fresh check**: 500-1000ms (all healthy)
+- **Maximum time**: 3000ms (timeout protection)
+- **Parallel execution**: Total time = slowest check
+
+### User Interface
+- **Color-coded indicators**: 🟢 (operational), 🟡 (degraded), 🔴 (critical), ⚪ (unavailable)
+- **Detailed metrics**: Response time, memory usage, rate limits, session counts
+- **Interactive refresh**: Manual refresh button to bypass cache
+- **Ephemeral responses**: Private status information
+
+### Error Handling
+- **Component isolation**: One failing check doesn't crash entire health check
+- **Graceful degradation**: Failed checks return critical status
+- **Detailed logging**: All errors logged with context
+- **User-friendly messages**: Clear error descriptions in Discord
 
 ## Related Documentation
 
