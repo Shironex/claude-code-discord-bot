@@ -162,11 +162,29 @@ Discord Embed with Refresh Button
 
 ### Timeout Protection
 
-Each component check has a **3-second timeout**. If a check exceeds this:
+Each component check has a **3-second timeout** (configurable). If a check exceeds this:
 1. The check is aborted
 2. Component status is marked as **critical**
 3. Error is logged for debugging
 4. Other checks continue unaffected
+
+### Configuration
+
+The health check system supports optional environment variables for customization:
+
+**`HEALTH_CHECK_CACHE_TTL_MS`** (optional)
+- Default: `300000` (5 minutes)
+- Description: How long to cache health check results (in milliseconds)
+- Example: `HEALTH_CHECK_CACHE_TTL_MS=600000` (10 minutes)
+- Use case: Increase for less frequent health checks, decrease for more real-time monitoring
+
+**`HEALTH_CHECK_TIMEOUT_MS`** (optional)
+- Default: `3000` (3 seconds)
+- Description: Maximum time allowed for each component check (in milliseconds)
+- Example: `HEALTH_CHECK_TIMEOUT_MS=5000` (5 seconds)
+- Use case: Increase for slower networks or environments, decrease for faster failure detection
+
+**Note:** All health check thresholds (memory %, session counts, rate limits) are defined as constants in the service and can be customized by modifying the `HEALTH_CHECK_THRESHOLDS` object in the source code.
 
 ### Performance
 

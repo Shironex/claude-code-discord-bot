@@ -13,14 +13,42 @@ import {
 } from '../interfaces/models/health.interface';
 
 /**
+ * Health check thresholds and configuration constants
+ */
+const HEALTH_CHECK_THRESHOLDS = {
+	// Memory thresholds
+	MEMORY_DEGRADED_PERCENT: 75,
+	MEMORY_CRITICAL_PERCENT: 90,
+
+	// Session thresholds
+	SESSIONS_DEGRADED_COUNT: 50,
+	SESSIONS_CRITICAL_COUNT: 100,
+
+	// GitHub rate limit thresholds
+	RATE_LIMIT_DEGRADED_COUNT: 100,
+	RATE_LIMIT_CRITICAL_COUNT: 0,
+
+	// Image service response time thresholds (ms)
+	IMAGE_SERVICE_DEGRADED_MS: 2000
+} as const;
+
+/**
+ * Default health check configuration
+ */
+const HEALTH_CHECK_CONFIG = {
+	CACHE_TTL_MS: 5 * 60 * 1000, // 5 minutes
+	DEFAULT_TIMEOUT_MS: 3000 // 3 seconds
+} as const;
+
+/**
  * Service for checking the health status of all bot components
  * Implements caching to avoid excessive health checks
  */
 @Injectable()
 export class HealthCheckService extends BaseService {
 	private cachedResult: CachedHealthResult | null = null;
-	private readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-	private readonly CHECK_TIMEOUT_MS = 3000; // 3 second timeout per check
+	private readonly cacheTtlMs: number;
+	private readonly checkTimeoutMs: number;
 	private readonly startTime: number;
 
 	constructor(
@@ -32,7 +60,16 @@ export class HealthCheckService extends BaseService {
 	) {
 		super(HealthCheckService.name, loggerFactory);
 		this.startTime = Date.now();
-		this.logger.log('HealthCheckService initialized');
+
+		// Allow configurable timeout and cache TTL from environment
+		this.cacheTtlMs =
+			this.configService.get<number>('HEALTH_CHECK_CACHE_TTL_MS') ?? HEALTH_CHECK_CONFIG.CACHE_TTL_MS;
+		this.checkTimeoutMs =
+			this.configService.get<number>('HEALTH_CHECK_TIMEOUT_MS') ?? HEALTH_CHECK_CONFIG.DEFAULT_TIMEOUT_MS;
+
+		this.logger.log(
+			`HealthCheckService initialized (cache: ${this.cacheTtlMs}ms, timeout: ${this.checkTimeoutMs}ms)`
+		);
 	}
 
 	/**
@@ -44,19 +81,21 @@ export class HealthCheckService extends BaseService {
 		const now = Date.now();
 
 		// Return cached result if valid and not forcing refresh
-		if (!forceRefresh && this.cachedResult && now - this.cachedResult.timestamp < this.CACHE_TTL_MS) {
+		if (!forceRefresh && this.cachedResult && now - this.cachedResult.timestamp < this.cacheTtlMs) {
 			this.logger.log('Returning cached health status');
-			return { ...this.cachedResult.result, cached: true };
+			// Mark as cached but return the cached result directly (no unnecessary spreading)
+			this.cachedResult.result.cached = true;
+			return this.cachedResult.result;
 		}
 
 		this.logger.log('Performing fresh health checks');
 
 		// Run all health checks in parallel with timeout protection
 		const [runtime, github, sessions, imageService] = await Promise.all([
-			this.withTimeout(this.checkBotRuntime(), this.CHECK_TIMEOUT_MS, 'runtime'),
-			this.withTimeout(this.checkGitHubIntegration(), this.CHECK_TIMEOUT_MS, 'github'),
-			this.withTimeout(this.checkSessionHealth(), this.CHECK_TIMEOUT_MS, 'sessions'),
-			this.withTimeout(this.checkImageService(), this.CHECK_TIMEOUT_MS, 'imageService')
+			this.withTimeout(this.checkBotRuntime(), this.checkTimeoutMs, 'runtime'),
+			this.withTimeout(this.checkGitHubIntegration(), this.checkTimeoutMs, 'github'),
+			this.withTimeout(this.checkSessionHealth(), this.checkTimeoutMs, 'sessions'),
+			this.withTimeout(this.checkImageService(), this.checkTimeoutMs, 'imageService')
 		]);
 
 		// Determine overall status based on component statuses
@@ -95,16 +134,16 @@ export class HealthCheckService extends BaseService {
 			const memTotalMB = Math.round(memUsage.heapTotal / 1024 / 1024);
 			const memPercentage = Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100);
 
-			// Determine status based on memory usage
+			// Determine status based on memory usage thresholds
 			let status: HealthStatus = 'operational';
 			let message = 'Bot runtime is healthy';
 
-			if (memPercentage > 90) {
+			if (memPercentage > HEALTH_CHECK_THRESHOLDS.MEMORY_CRITICAL_PERCENT) {
 				status = 'critical';
-				message = 'Critical: Memory usage above 90%';
-			} else if (memPercentage > 75) {
+				message = `Critical: Memory usage above ${HEALTH_CHECK_THRESHOLDS.MEMORY_CRITICAL_PERCENT}%`;
+			} else if (memPercentage > HEALTH_CHECK_THRESHOLDS.MEMORY_DEGRADED_PERCENT) {
 				status = 'degraded';
-				message = 'Warning: Memory usage above 75%';
+				message = `Warning: Memory usage above ${HEALTH_CHECK_THRESHOLDS.MEMORY_DEGRADED_PERCENT}%`;
 			}
 
 			const responseTime = Date.now() - startTime;
@@ -128,7 +167,7 @@ export class HealthCheckService extends BaseService {
 			return {
 				status: 'critical',
 				message: 'Failed to check runtime status',
-				error: error.message,
+				error: this.sanitizeErrorMessage(error),
 				lastCheck: new Date()
 			};
 		}
@@ -146,27 +185,24 @@ export class HealthCheckService extends BaseService {
 				return {
 					status: 'unavailable',
 					message: 'GitHub integration not configured',
+					responseTime: Date.now() - startTime,
 					lastCheck: new Date()
 				};
 			}
 
-			// Try to get rate limit information
-			const rateLimit = await this.githubService['octokit'].rest.rateLimit.get();
-			const core = rateLimit.data.resources.core;
-			const remaining = core.remaining;
-			const limit = core.limit;
-			const resetDate = new Date(core.reset * 1000);
+			// Use public method to get rate limit information
+			const rateLimitInfo = await this.githubService.getRateLimitInfo();
 
-			// Determine status based on rate limit
+			// Determine status based on rate limit thresholds
 			let status: HealthStatus = 'operational';
 			let message = 'GitHub integration is healthy';
 
-			if (remaining === 0) {
+			if (rateLimitInfo.remaining === HEALTH_CHECK_THRESHOLDS.RATE_LIMIT_CRITICAL_COUNT) {
 				status = 'critical';
 				message = 'Rate limit exceeded';
-			} else if (remaining < 100) {
+			} else if (rateLimitInfo.remaining < HEALTH_CHECK_THRESHOLDS.RATE_LIMIT_DEGRADED_COUNT) {
 				status = 'degraded';
-				message = `Low rate limit: ${remaining} calls remaining`;
+				message = `Low rate limit: ${rateLimitInfo.remaining} calls remaining`;
 			}
 
 			const responseTime = Date.now() - startTime;
@@ -177,9 +213,9 @@ export class HealthCheckService extends BaseService {
 				responseTime,
 				details: {
 					rateLimit: {
-						remaining,
-						limit,
-						reset: resetDate
+						remaining: rateLimitInfo.remaining,
+						limit: rateLimitInfo.limit,
+						reset: rateLimitInfo.reset
 					}
 				},
 				lastCheck: new Date()
@@ -189,7 +225,8 @@ export class HealthCheckService extends BaseService {
 			return {
 				status: 'critical',
 				message: 'GitHub API check failed',
-				error: error.message,
+				error: this.sanitizeErrorMessage(error),
+				responseTime: Date.now() - startTime,
 				lastCheck: new Date()
 			};
 		}
@@ -202,16 +239,17 @@ export class HealthCheckService extends BaseService {
 		const startTime = Date.now();
 
 		try {
-			const activeSessions = this.sessionService['sessions'].size;
+			// Use public method to get session count
+			const activeSessions = this.sessionService.getSessionCount();
 
-			// Determine status based on active sessions
+			// Determine status based on active session thresholds
 			let status: HealthStatus = 'operational';
 			let message = 'Session health is good';
 
-			if (activeSessions > 100) {
+			if (activeSessions > HEALTH_CHECK_THRESHOLDS.SESSIONS_CRITICAL_COUNT) {
 				status = 'critical';
 				message = `Critical: ${activeSessions} active sessions`;
-			} else if (activeSessions > 50) {
+			} else if (activeSessions > HEALTH_CHECK_THRESHOLDS.SESSIONS_DEGRADED_COUNT) {
 				status = 'degraded';
 				message = `Warning: ${activeSessions} active sessions`;
 			}
@@ -232,7 +270,8 @@ export class HealthCheckService extends BaseService {
 			return {
 				status: 'critical',
 				message: 'Failed to check session health',
-				error: error.message,
+				error: this.sanitizeErrorMessage(error),
+				responseTime: Date.now() - startTime,
 				lastCheck: new Date()
 			};
 		}
@@ -250,6 +289,7 @@ export class HealthCheckService extends BaseService {
 				return {
 					status: 'unavailable',
 					message: 'Image service not configured',
+					responseTime: Date.now() - startTime,
 					lastCheck: new Date()
 				};
 			}
@@ -270,11 +310,11 @@ export class HealthCheckService extends BaseService {
 			// Get health information
 			const health = await this.imageServiceClient.getHealth();
 
-			// Determine status based on response time
+			// Determine status based on response time threshold
 			let status: HealthStatus = 'operational';
 			let message = 'Image service is healthy';
 
-			if (responseTime > 2000) {
+			if (responseTime > HEALTH_CHECK_THRESHOLDS.IMAGE_SERVICE_DEGRADED_MS) {
 				status = 'degraded';
 				message = `Slow response time: ${responseTime}ms`;
 			}
@@ -294,7 +334,8 @@ export class HealthCheckService extends BaseService {
 			return {
 				status: 'critical',
 				message: 'Image service check failed',
-				error: error.message,
+				error: this.sanitizeErrorMessage(error),
+				responseTime: Date.now() - startTime,
 				lastCheck: new Date()
 			};
 		}
@@ -330,18 +371,32 @@ export class HealthCheckService extends BaseService {
 		return Promise.race([
 			promise,
 			new Promise<T>((_, reject) =>
-				setTimeout(() => reject(new Error(`${componentName} check timed out after ${timeoutMs}ms`)), timeoutMs)
+				setTimeout(() => reject(new Error(`Health check timed out after ${timeoutMs}ms`)), timeoutMs)
 			)
 		]).catch(error => {
-			this.logger.error(`Health check timed out for ${componentName}`, error, 'withTimeout');
+			this.logger.error(`Health check failed for ${componentName}`, error, 'withTimeout');
 			// Return a failed health status on timeout
 			return {
 				status: 'critical',
-				message: `Health check timed out`,
-				error: error.message,
+				message: 'Health check timed out',
+				error: this.sanitizeErrorMessage(error),
+				responseTime: timeoutMs,
 				lastCheck: new Date()
 			} as T;
 		});
+	}
+
+	/**
+	 * Sanitize error messages to avoid exposing internal system details
+	 * @param error - The error to sanitize
+	 * @returns A safe error message string
+	 */
+	private sanitizeErrorMessage(error: unknown): string {
+		if (error instanceof Error) {
+			// Only return generic error type, not the full message which might contain sensitive info
+			return error.name || 'Unknown error';
+		}
+		return 'Unknown error';
 	}
 
 	/**
