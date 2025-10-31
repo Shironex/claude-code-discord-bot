@@ -1,0 +1,727 @@
+import { EmbedService } from '@/services/embed.service';
+import { Repository, PaginatedRepositories } from '@/interfaces/models/repository.interface';
+import { WorkflowRun } from '@/interfaces/models/workflow.interface';
+import { DISCORD_COLORS } from '@/utils/discord.constants';
+import { MESSAGES } from '@/utils/messages.constants';
+import { DiscordUtils } from '@/utils/discord.utils';
+import { WorkflowUtils } from '@/utils/workflow.utils';
+
+// Mock the utility classes
+jest.mock('@/utils/discord.utils');
+jest.mock('@/utils/workflow.utils');
+
+describe('EmbedService', () => {
+  let embedService: EmbedService;
+  let mockLogger: any;
+
+  const mockRepository: Repository = {
+    id: 123456,
+    name: 'test-repo',
+    fullName: 'testuser/test-repo',
+    description: 'A test repository for testing',
+    language: 'TypeScript',
+    private: false,
+    stargazersCount: 42,
+    forksCount: 5,
+    updatedAt: new Date('2023-06-01').toISOString(),
+    htmlUrl: 'https://github.com/testuser/test-repo',
+  };
+
+  const mockWorkflowRun: WorkflowRun = {
+    id: 123456789,
+    status: 'in_progress',
+    conclusion: null,
+    html_url: 'https://github.com/testuser/test-repo/actions/runs/123456789',
+    created_at: '2023-06-15T10:00:00Z',
+    updated_at: '2023-06-15T10:05:00Z',
+    run_number: 42,
+    head_branch: 'main',
+  };
+
+  beforeEach(() => {
+    embedService = new EmbedService();
+    
+    // Mock the logger
+    mockLogger = {
+      log: jest.fn(),
+      debug: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+    };
+    (embedService as any).logger = mockLogger;
+
+    // Setup DiscordUtils mocks
+    (DiscordUtils.createRepositoryFieldsForEmbed as jest.Mock) = jest.fn().mockReturnValue([
+      { name: 'Language', value: 'TypeScript', inline: true },
+      { name: 'Stars', value: '42', inline: true },
+    ]);
+
+    (DiscordUtils.createSelectMenuRow as jest.Mock) = jest.fn().mockReturnValue({
+      addComponents: jest.fn().mockReturnThis(),
+      setComponents: jest.fn().mockReturnThis(),
+      toJSON: jest.fn().mockReturnValue({}),
+    });
+
+    // Setup WorkflowUtils mocks
+    (WorkflowUtils.getWorkflowStatusText as jest.Mock) = jest.fn().mockReturnValue('In Progress');
+    (WorkflowUtils.getWorkflowStatusEmoji as jest.Mock) = jest.fn().mockReturnValue('🔄');
+  });
+
+  describe('Constructor', () => {
+    it('should initialize as BaseService with correct service name', () => {
+      expect(embedService).toBeInstanceOf(EmbedService);
+    });
+  });
+
+  describe('createLoadingEmbed', () => {
+    it('should create loading embed with correct properties', () => {
+      const message = 'Loading repositories';
+      
+      const embed = embedService.createLoadingEmbed(message);
+      
+      const embedData = embed.toJSON();
+      expect(embedData.title).toBe('🤖 Claude Code Bot');
+      expect(embedData.description).toBe('🔄 Loading repositories');
+      expect(embedData.color).toBe(DISCORD_COLORS.INFO);
+    });
+
+    it('should handle empty message', () => {
+      const embed = embedService.createLoadingEmbed('');
+      
+      const embedData = embed.toJSON();
+      expect(embedData.description).toBe('🔄 ');
+    });
+  });
+
+  describe('createErrorEmbed', () => {
+    it('should create error embed with correct properties', () => {
+      const title = 'Test Error';
+      const description = 'Something went wrong';
+      
+      const embed = embedService.createErrorEmbed(title, description);
+      
+      const embedData = embed.toJSON();
+      expect(embedData.title).toBe('❌ Test Error');
+      const embedData = embed.toJSON();
+      expect(embedData.description).toBe('Something went wrong');
+      const embedData = embed.toJSON();
+      expect(embedData.color).toBe(DISCORD_COLORS.ERROR);
+    });
+
+    it('should handle empty title and description', () => {
+      const embed = embedService.createErrorEmbed('', '');
+      
+      const embedData = embed.toJSON();
+      expect(embedData.title).toBe('❌ ');
+      const embedData = embed.toJSON();
+      expect(embedData.description).toBe('');
+    });
+  });
+
+  describe('createSuccessEmbed', () => {
+    it('should create success embed with correct properties', () => {
+      const title = 'Success';
+      const description = 'Operation completed';
+      
+      const embed = embedService.createSuccessEmbed(title, description);
+      
+      const embedData = embed.toJSON();
+      expect(embedData.title).toBe('✅ Success');
+      const embedData = embed.toJSON();
+      expect(embedData.description).toBe('Operation completed');
+      const embedData = embed.toJSON();
+      expect(embedData.color).toBe(DISCORD_COLORS.SUCCESS);
+    });
+  });
+
+  describe('createWarningEmbed', () => {
+    it('should create warning embed with correct properties', () => {
+      const title = 'Warning';
+      const description = 'Something needs attention';
+      
+      const embed = embedService.createWarningEmbed(title, description);
+      
+      const embedData = embed.toJSON();
+      expect(embedData.title).toBe('⚠️ Warning');
+      const embedData = embed.toJSON();
+      expect(embedData.description).toBe('Something needs attention');
+      const embedData = embed.toJSON();
+      expect(embedData.color).toBe(DISCORD_COLORS.WARNING);
+    });
+  });
+
+  describe('createGitHubNotConfiguredEmbed', () => {
+    it('should create GitHub not configured embed', () => {
+      const embed = embedService.createGitHubNotConfiguredEmbed();
+      
+      const embedData = embed.toJSON();
+      expect(embedData.title).toBe('❌ GitHub Not Configured');
+      const embedData = embed.toJSON();
+      expect(embedData.description).toBe(MESSAGES.GITHUB_NOT_CONFIGURED);
+      const embedData = embed.toJSON();
+      expect(embedData.color).toBe(DISCORD_COLORS.ERROR);
+    });
+  });
+
+  describe('createNoRepositoriesEmbed', () => {
+    it('should create no repositories embed', () => {
+      const embed = embedService.createNoRepositoriesEmbed();
+      
+      const embedData = embed.toJSON();
+      expect(embedData.title).toBe('⚠️ No Repositories Found');
+      const embedData = embed.toJSON();
+      expect(embedData.description).toBe('No repositories found in your GitHub account.');
+      const embedData = embed.toJSON();
+      expect(embedData.color).toBe(DISCORD_COLORS.WARNING);
+    });
+  });
+
+  describe('createNoSearchResultsEmbed', () => {
+    it('should create no search results embed', () => {
+      const query = 'nonexistent';
+      
+      const embed = embedService.createNoSearchResultsEmbed(query);
+      
+      const embedData = embed.toJSON();
+      expect(embedData.title).toBe('⚠️ No Results Found');
+      const embedData = embed.toJSON();
+      expect(embedData.description).toBe('No repositories found matching "nonexistent".');
+      const embedData = embed.toJSON();
+      expect(embedData.color).toBe(DISCORD_COLORS.WARNING);
+    });
+
+    it('should handle empty query', () => {
+      const embed = embedService.createNoSearchResultsEmbed('');
+      
+      const embedData = embed.toJSON();
+      expect(embedData.description).toBe('No repositories found matching "".');
+    });
+  });
+
+  describe('createRepositorySelectionEmbed', () => {
+    const mockPaginatedRepos: PaginatedRepositories = {
+      repositories: [mockRepository],
+      currentPage: 1,
+      totalPages: 3,
+      totalCount: 25,
+      hasNextPage: true,
+      hasPreviousPage: false,
+    };
+
+    it('should create repository selection embed without search query', () => {
+      const embed = embedService.createRepositorySelectionEmbed(mockPaginatedRepos, null);
+      
+      const embedData = embed.toJSON();
+      expect(embedData.title).toBe('🤖 Claude Code Bot');
+      const embedData = embed.toJSON();
+      expect(embedData.description).toBe('Found 25 repositories. Select one to analyze:');
+      const embedData = embed.toJSON();
+      expect(embedData.color).toBe(DISCORD_COLORS.PRIMARY);
+      const embedData = embed.toJSON();
+      expect(embedData.footer?.text).toBe('Page 1 of 3 • Step 1 of 2');
+    });
+
+    it('should create repository selection embed with search query', () => {
+      const searchQuery = 'react';
+      
+      const embed = embedService.createRepositorySelectionEmbed(mockPaginatedRepos, searchQuery);
+      
+      const embedData = embed.toJSON();
+      expect(embedData.title).toBe('🔍 Search Results for "react"');
+      const embedData = embed.toJSON();
+      expect(embedData.description).toBe('Found 25 repositories matching "react". Select one to analyze:');
+      const embedData = embed.toJSON();
+      expect(embedData.color).toBe(DISCORD_COLORS.PRIMARY);
+      const embedData = embed.toJSON();
+      expect(embedData.footer?.text).toBe('Page 1 of 3 • Step 1 of 2');
+    });
+  });
+
+  describe('createRepositorySelectedEmbed', () => {
+    it('should create repository selected embed without workflow status', () => {
+      const embed = embedService.createRepositorySelectedEmbed(mockRepository);
+      
+      const embedData = embed.toJSON();
+      expect(embedData.title).toBe('✅ Repository Selected');
+      const embedData = embed.toJSON();
+      expect(embedData.description).toBe('**test-repo**\n`testuser/test-repo`\n\n*A test repository for testing*');
+      const embedData = embed.toJSON();
+      expect(embedData.color).toBe(DISCORD_COLORS.SUCCESS);
+      const embedData = embed.toJSON();
+      expect(embedData.timestamp).toBeDefined();
+      expect(DiscordUtils.createRepositoryFieldsForEmbed).toHaveBeenCalledWith(mockRepository);
+    });
+
+    it('should create repository selected embed without description', () => {
+      const repoWithoutDescription = { ...mockRepository, description: null };
+      
+      const embed = embedService.createRepositorySelectedEmbed(repoWithoutDescription);
+      
+      const embedData = embed.toJSON();
+      expect(embedData.description).toBe('**test-repo**\n`testuser/test-repo`');
+    });
+
+    it('should create repository selected embed with Claude workflow available', () => {
+      const embed = embedService.createRepositorySelectedEmbed(mockRepository, true);
+      
+      const embedData = embed.toJSON();
+      expect(embedData.fields).toContainEqual(
+        expect.objectContaining({
+          name: '🤖 Claude Code',
+          value: '✅ Available',
+          inline: true,
+        })
+      );
+    });
+
+    it('should create repository selected embed with Claude workflow not available', () => {
+      const embed = embedService.createRepositorySelectedEmbed(mockRepository, false);
+      
+      const embedData = embed.toJSON();
+      expect(embedData.fields).toContainEqual(
+        expect.objectContaining({
+          name: '🤖 Claude Code',
+          value: '❌ Not configured',
+          inline: true,
+        })
+      );
+    });
+  });
+
+  describe('createRepositorySelectionMessage', () => {
+    const mockPaginatedRepos: PaginatedRepositories = {
+      repositories: [mockRepository],
+      currentPage: 1,
+      totalPages: 1,
+      totalCount: 1,
+      hasNextPage: false,
+      hasPreviousPage: false,
+    };
+
+    it('should create complete repository selection message', () => {
+      const result = embedService.createRepositorySelectionMessage(mockPaginatedRepos, null);
+      
+      expect(result.embed).toBeDefined();
+      expect(result.components).toBeDefined();
+      expect(result.components).toHaveLength(1);
+      expect(DiscordUtils.createSelectMenuRow).toHaveBeenCalledWith([mockRepository]);
+    });
+
+    it('should create repository selection message with search query', () => {
+      const searchQuery = 'test';
+      
+      const result = embedService.createRepositorySelectionMessage(mockPaginatedRepos, searchQuery);
+      
+      expect(result.embed).toBeDefined();
+      expect(result.components).toBeDefined();
+    });
+  });
+
+  describe('createSearchLoadingEmbed', () => {
+    it('should create search loading embed', () => {
+      const query = 'react';
+      
+      const embed = embedService.createSearchLoadingEmbed(query);
+      
+      const embedData = embed.toJSON();
+      expect(embedData.title).toBe('🔍 Searching Repositories');
+      const embedData = embed.toJSON();
+      expect(embedData.description).toBe('🔄 Searching for "react"...');
+      const embedData = embed.toJSON();
+      expect(embedData.color).toBe(DISCORD_COLORS.INFO);
+    });
+  });
+
+  describe('createSearchErrorEmbed', () => {
+    it('should create search error embed', () => {
+      const query = 'react';
+      
+      const embed = embedService.createSearchErrorEmbed(query);
+      
+      const embedData = embed.toJSON();
+      expect(embedData.title).toBe('❌ Search Error');
+      const embedData = embed.toJSON();
+      expect(embedData.description).toBe('Failed to search repositories for "react". Please try again.');
+      const embedData = embed.toJSON();
+      expect(embedData.color).toBe(DISCORD_COLORS.ERROR);
+    });
+  });
+
+  describe('createPaginationErrorEmbed', () => {
+    it('should create pagination error embed', () => {
+      const embed = embedService.createPaginationErrorEmbed();
+      
+      const embedData = embed.toJSON();
+      expect(embedData.title).toBe('❌ Pagination Error');
+      const embedData = embed.toJSON();
+      expect(embedData.description).toBe(MESSAGES.PAGINATION_ERROR);
+      const embedData = embed.toJSON();
+      expect(embedData.color).toBe(DISCORD_COLORS.ERROR);
+    });
+  });
+
+  describe('createSessionExpiredEmbed', () => {
+    it('should create session expired embed', () => {
+      const embed = embedService.createSessionExpiredEmbed();
+      
+      const embedData = embed.toJSON();
+      expect(embedData.title).toBe('❌ Session Expired');
+      const embedData = embed.toJSON();
+      expect(embedData.description).toBe(MESSAGES.SESSION_EXPIRED);
+      const embedData = embed.toJSON();
+      expect(embedData.color).toBe(DISCORD_COLORS.ERROR);
+    });
+  });
+
+  describe('createWorkflowNotFoundEmbed', () => {
+    it('should create workflow not found embed', () => {
+      const owner = 'testuser';
+      const repo = 'test-repo';
+      
+      const embed = embedService.createWorkflowNotFoundEmbed(owner, repo);
+      
+      const embedData = embed.toJSON();
+      expect(embedData.title).toBe('⚠️ Claude Code Not Configured');
+      const embedData = embed.toJSON();
+      expect(embedData.description).toContain('Repository `testuser/test-repo` does not have Claude Code workflow configured.');
+      const embedData = embed.toJSON();
+      expect(embedData.description).toContain('To enable Claude Code analysis:');
+      const embedData = embed.toJSON();
+      expect(embedData.description).toContain('Add the Claude Code workflow file');
+      const embedData = embed.toJSON();
+      expect(embedData.color).toBe(DISCORD_COLORS.WARNING);
+    });
+  });
+
+  describe('createWorkflowDispatchedEmbed', () => {
+    const repository = 'testuser/test-repo';
+    const branch = 'main';
+    const prompt = 'Add unit tests for the service layer';
+
+    it('should create workflow dispatched embed without file paths', () => {
+      const embed = embedService.createWorkflowDispatchedEmbed(
+        repository,
+        branch,
+        prompt,
+        mockWorkflowRun
+      );
+      
+      const embedData = embed.toJSON();
+      expect(embedData.title).toBe('🚀 Claude Code Workflow Started');
+      const embedData = embed.toJSON();
+      expect(embedData.description).toBe('Claude is analyzing `testuser/test-repo` on branch `main`');
+      const embedData = embed.toJSON();
+      expect(embedData.color).toBe(DISCORD_COLORS.INFO);
+      const embedData = embed.toJSON();
+      expect(embedData.timestamp).toBeDefined();
+      
+      const embedData = embed.toJSON();
+      expect(embedData.fields).toContainEqual(
+        expect.objectContaining({
+          name: '📝 Task',
+          value: prompt,
+          inline: false,
+        })
+      );
+      
+      expect(WorkflowUtils.getWorkflowStatusText).toHaveBeenCalledWith(mockWorkflowRun.status, mockWorkflowRun.conclusion);
+    });
+
+    it('should truncate long prompts', () => {
+      const longPrompt = 'a'.repeat(600);
+      
+      const embed = embedService.createWorkflowDispatchedEmbed(
+        repository,
+        branch,
+        longPrompt,
+        mockWorkflowRun
+      );
+      
+      const taskField = embed.data.fields?.find(field => field.name === '📝 Task');
+      expect(taskField?.value).toBe(`${'a'.repeat(500)}...`);
+    });
+
+    it('should create workflow dispatched embed with file paths', () => {
+      const filePaths = ['src/service1.ts', 'src/service2.ts', 'tests/service.test.ts'];
+      
+      const embed = embedService.createWorkflowDispatchedEmbed(
+        repository,
+        branch,
+        prompt,
+        mockWorkflowRun,
+        filePaths
+      );
+      
+      const embedData = embed.toJSON();
+      expect(embedData.fields).toContainEqual(
+        expect.objectContaining({
+          name: '📁 File Context',
+          value: '`src/service1.ts, src/service2.ts, tests/service.test.ts`',
+          inline: false,
+        })
+      );
+    });
+
+    it('should handle many file paths with truncation', () => {
+      const filePaths = Array.from({ length: 10 }, (_, i) => `src/file${i}.ts`);
+      
+      const embed = embedService.createWorkflowDispatchedEmbed(
+        repository,
+        branch,
+        prompt,
+        mockWorkflowRun,
+        filePaths
+      );
+      
+      const fileContextField = embed.data.fields?.find(field => field.name === '📁 File Context');
+      expect(fileContextField?.value).toContain('(and 5 more)');
+    });
+  });
+
+  describe('createWorkflowStatusEmbed', () => {
+    it('should create workflow status embed for in progress run', () => {
+      const embed = embedService.createWorkflowStatusEmbed(mockWorkflowRun, 'testuser/test-repo');
+      
+      const embedData = embed.toJSON();
+      expect(embedData.title).toBe('🔄 Workflow Status');
+      const embedData = embed.toJSON();
+      expect(embedData.description).toBe('**testuser/test-repo** - Run #42');
+      const embedData = embed.toJSON();
+      expect(embedData.color).toBe(DISCORD_COLORS.INFO);
+      const embedData = embed.toJSON();
+      expect(embedData.footer?.text).toBe('Run ID: 123456789');
+      const embedData = embed.toJSON();
+      expect(embedData.timestamp).toBeDefined();
+      
+      expect(WorkflowUtils.getWorkflowStatusEmoji).toHaveBeenCalledWith(mockWorkflowRun.status, mockWorkflowRun.conclusion);
+      expect(WorkflowUtils.getWorkflowStatusText).toHaveBeenCalledWith(mockWorkflowRun.status, mockWorkflowRun.conclusion);
+    });
+
+    it('should create workflow status embed for successful run', () => {
+      const successfulRun = { ...mockWorkflowRun, status: 'completed', conclusion: 'success' };
+      
+      const embed = embedService.createWorkflowStatusEmbed(successfulRun, 'testuser/test-repo');
+      
+      const embedData = embed.toJSON();
+      expect(embedData.color).toBe(DISCORD_COLORS.SUCCESS);
+      const embedData = embed.toJSON();
+      expect(embedData.fields).toContainEqual(
+        expect.objectContaining({
+          name: '✅ Completed',
+          inline: true,
+        })
+      );
+    });
+
+    it('should create workflow status embed for failed run', () => {
+      const failedRun = { ...mockWorkflowRun, status: 'completed', conclusion: 'failure' };
+      
+      const embed = embedService.createWorkflowStatusEmbed(failedRun, 'testuser/test-repo');
+      
+      const embedData = embed.toJSON();
+      expect(embedData.color).toBe(DISCORD_COLORS.ERROR);
+    });
+  });
+
+  describe('createWorkflowCompletedEmbed', () => {
+    const startTime = new Date('2023-06-15T10:00:00Z');
+
+    it('should create workflow completed embed for successful run', () => {
+      const successfulRun = { 
+        ...mockWorkflowRun, 
+        status: 'completed', 
+        conclusion: 'success',
+        updated_at: '2023-06-15T10:05:30Z'
+      };
+      
+      const embed = embedService.createWorkflowCompletedEmbed('testuser/test-repo', successfulRun, startTime);
+      
+      const embedData = embed.toJSON();
+      expect(embedData.title).toBe('🔄 Workflow Completed');
+      const embedData = embed.toJSON();
+      expect(embedData.description).toBe('**testuser/test-repo** - Run #42');
+      const embedData = embed.toJSON();
+      expect(embedData.color).toBe(DISCORD_COLORS.SUCCESS);
+      
+      const embedData = embed.toJSON();
+      expect(embedData.fields).toContainEqual(
+        expect.objectContaining({
+          name: '🎉 Result',
+          value: 'Task completed successfully! Check for any pull requests that may have been created.',
+          inline: false,
+        })
+      );
+      
+      const embedData = embed.toJSON();
+      expect(embedData.fields).toContainEqual(
+        expect.objectContaining({
+          name: '⏱️ Duration',
+          value: '330s',
+          inline: true,
+        })
+      );
+    });
+
+    it('should create workflow completed embed for failed run', () => {
+      const failedRun = { 
+        ...mockWorkflowRun, 
+        status: 'completed', 
+        conclusion: 'failure',
+        updated_at: '2023-06-15T10:02:00Z'
+      };
+      
+      const embed = embedService.createWorkflowCompletedEmbed('testuser/test-repo', failedRun, startTime);
+      
+      const embedData = embed.toJSON();
+      expect(embedData.color).toBe(DISCORD_COLORS.ERROR);
+      const embedData = embed.toJSON();
+      expect(embedData.fields).toContainEqual(
+        expect.objectContaining({
+          name: '❌ Error',
+          value: 'Workflow failed. Click "View on GitHub" to see the error details.',
+          inline: false,
+        })
+      );
+    });
+
+    it('should handle other conclusion types', () => {
+      const cancelledRun = { 
+        ...mockWorkflowRun, 
+        status: 'completed', 
+        conclusion: 'cancelled',
+        updated_at: '2023-06-15T10:01:00Z'
+      };
+      
+      const embed = embedService.createWorkflowCompletedEmbed('testuser/test-repo', cancelledRun, startTime);
+      
+      const embedData = embed.toJSON();
+      expect(embedData.color).toBe(DISCORD_COLORS.WARNING);
+    });
+
+    it('should handle missing updated_at for duration calculation', () => {
+      const runWithoutUpdate = { 
+        ...mockWorkflowRun, 
+        status: 'completed', 
+        conclusion: 'success',
+        updated_at: undefined
+      };
+      
+      const embed = embedService.createWorkflowCompletedEmbed('testuser/test-repo', runWithoutUpdate, startTime);
+      
+      const durationField = embed.data.fields?.find(field => field.name === '⏱️ Duration');
+      expect(durationField?.value).toBe('Unknown');
+    });
+  });
+
+  describe('createFileSelectionEmbed', () => {
+    const mockFileTree = {
+      items: [
+        { name: 'src/', type: 'dir' },
+        { name: 'tests/', type: 'dir' },
+        { name: 'package.json', type: 'file' },
+      ],
+      totalItems: 15,
+      truncated: true,
+    };
+
+    it('should create file selection embed', () => {
+      const embed = embedService.createFileSelectionEmbed(mockRepository, mockFileTree);
+      
+      const embedData = embed.toJSON();
+      expect(embedData.title).toBe('📁 Select Files/Folders for Context');
+      const embedData = embed.toJSON();
+      expect(embedData.description).toContain('Choose files or folders to include as context');
+      const embedData = embed.toJSON();
+      expect(embedData.description).toContain('test-repo');
+      const embedData = embed.toJSON();
+      expect(embedData.color).toBe(DISCORD_COLORS.PRIMARY);
+      
+      const embedData = embed.toJSON();
+      expect(embedData.fields).toContainEqual(
+        expect.objectContaining({
+          name: '📊 Repository Info',
+          value: expect.stringContaining('**Files Found:** 3 (showing first 3 of 15)'),
+        })
+      );
+      
+      const embedData = embed.toJSON();
+      expect(embedData.fields).toContainEqual(
+        expect.objectContaining({
+          name: '💡 Tips',
+          value: expect.stringContaining('⭐ indicates commonly important files/folders'),
+        })
+      );
+    });
+
+    it('should handle non-truncated file tree', () => {
+      const nonTruncatedTree = {
+        items: mockFileTree.items,
+        totalItems: 3,
+        truncated: false,
+      };
+      
+      const embed = embedService.createFileSelectionEmbed(mockRepository, nonTruncatedTree);
+      
+      const repoInfoField = embed.data.fields?.find(field => field.name === '📊 Repository Info');
+      expect(repoInfoField?.value).toContain('**Files Found:** 3');
+      expect(repoInfoField?.value).not.toContain('showing first');
+    });
+
+    it('should handle repository without language', () => {
+      const repoWithoutLanguage = { ...mockRepository, language: null };
+      
+      const embed = embedService.createFileSelectionEmbed(repoWithoutLanguage, mockFileTree);
+      
+      const repoInfoField = embed.data.fields?.find(field => field.name === '📊 Repository Info');
+      expect(repoInfoField?.value).toContain('**Language:** Unknown');
+    });
+  });
+
+  describe('createPromptReadyEmbed', () => {
+    it('should create prompt ready embed with selected paths', () => {
+      const selectedPaths = ['src/services/', 'tests/', 'package.json'];
+      
+      const embed = embedService.createPromptReadyEmbed(mockRepository, selectedPaths);
+      
+      const embedData = embed.toJSON();
+      expect(embedData.title).toBe('✅ Ready for Analysis Prompt');
+      const embedData = embed.toJSON();
+      expect(embedData.description).toContain('File selection complete for **test-repo**');
+      const embedData = embed.toJSON();
+      expect(embedData.color).toBe(DISCORD_COLORS.SUCCESS);
+      
+      const embedData = embed.toJSON();
+      expect(embedData.fields).toContainEqual(
+        expect.objectContaining({
+          name: '📁 Selected Files/Folders',
+          value: '`src/services/`, `tests/`, `package.json`',
+          inline: false,
+        })
+      );
+    });
+
+    it('should create prompt ready embed with no selected paths', () => {
+      const selectedPaths: string[] = [];
+      
+      const embed = embedService.createPromptReadyEmbed(mockRepository, selectedPaths);
+      
+      const embedData = embed.toJSON();
+      expect(embedData.fields).toContainEqual(
+        expect.objectContaining({
+          name: '📁 Selected Files/Folders',
+          value: '*No files selected - you can add them manually in the prompt*',
+          inline: false,
+        })
+      );
+    });
+
+    it('should handle many selected paths with truncation', () => {
+      const selectedPaths = Array.from({ length: 15 }, (_, i) => `file${i}.ts`);
+      
+      const embed = embedService.createPromptReadyEmbed(mockRepository, selectedPaths);
+      
+      const selectedFilesField = embed.data.fields?.find(field => field.name === '📁 Selected Files/Folders');
+      expect(selectedFilesField?.value).toContain('*...and 5 more*');
+    });
+  });
+});

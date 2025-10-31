@@ -1,0 +1,21 @@
+// Mock chalk to avoid ESM import issues in Jest
+module.exports = {
+  red: (text) => text,
+  green: (text) => text,
+  blue: (text) => text,
+  yellow: (text) => text,
+  cyan: (text) => text,
+  magenta: (text) => text,
+  white: (text) => text,
+  gray: (text) => text,
+  grey: (text) => text,
+  black: (text) => text,
+  bold: (text) => text,
+  italic: (text) => text,
+  underline: (text) => text,
+  strikethrough: (text) => text,
+  dim: (text) => text,
+  inverse: (text) => text,
+  hidden: (text) => text,
+  default: (text) => text,
+};

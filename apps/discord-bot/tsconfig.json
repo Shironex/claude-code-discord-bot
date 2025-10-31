@@ -11,8 +11,20 @@
         "outDir": "./dist",
         "baseUrl": "./",
         "incremental": true,
-        "skipLibCheck": true
+        "skipLibCheck": true,
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "moduleResolution": "node",
+        "resolveJsonModule": true,
+        "types": ["node", "jest"],
+        "paths": {
+            "@/*": ["src/*"],
+            "@test/*": ["tests/*"],
+            "@fixtures/*": ["tests/fixtures/*"],
+            "@mocks/*": ["tests/mocks/*"]
+        }
     },
-    "include": ["src/**/*"]
+    "include": ["src/**/*", "tests/**/*", "jest.setup.ts"],
+    "exclude": ["node_modules", "dist", "coverage"]
 }
   

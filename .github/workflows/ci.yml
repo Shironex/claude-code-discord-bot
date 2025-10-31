@@ -191,3 +191,48 @@ jobs:
           lcov-file: apps/image-service/coverage/lcov.info
           github-token: ${{ secrets.GITHUB_TOKEN }}
           title: "Image Service Coverage Report"
+
+  test-discord-bot:
+    name: Test Discord Bot
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js and pnpm
+        uses: ./.github/actions/setup-node-pnpm
+
+      - name: Run discord bot tests with coverage
+        run: pnpm --filter=@claude-code/discord-bot test:ci --passWithNoTests=false
+        env:
+          NODE_ENV: test
+          
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: discord-bot-test-results
+          path: apps/discord-bot/coverage/junit.xml
+          retention-days: 30
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: discord-bot-coverage-reports
+          path: |
+            apps/discord-bot/coverage/lcov.info
+            apps/discord-bot/coverage/coverage-final.json
+            apps/discord-bot/coverage/html/
+          retention-days: 30
+
+      - name: Comment coverage on PR
+        uses: romeovs/lcov-reporter-action@v0.3.1
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        with:
+          lcov-file: apps/discord-bot/coverage/lcov.info
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          title: "Discord Bot Coverage Report"
