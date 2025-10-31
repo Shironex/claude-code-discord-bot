@@ -326,11 +326,7 @@ export class HealthCheckService extends BaseService {
 	/**
 	 * Wrap a promise with a timeout
 	 */
-	private async withTimeout<T>(
-		promise: Promise<T>,
-		timeoutMs: number,
-		componentName: string
-	): Promise<T> {
+	private async withTimeout<T>(promise: Promise<T>, timeoutMs: number, componentName: string): Promise<T> {
 		return Promise.race([
 			promise,
 			new Promise<T>((_, reject) =>

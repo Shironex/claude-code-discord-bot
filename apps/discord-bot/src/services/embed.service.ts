@@ -467,7 +467,9 @@ export class EmbedService extends BaseService implements IEmbedService {
 
 			// Memory info
 			if (details.memory) {
-				lines.push(`**Memory:** ${details.memory.used}MB / ${details.memory.total}MB (${details.memory.percentage}%)`);
+				lines.push(
+					`**Memory:** ${details.memory.used}MB / ${details.memory.total}MB (${details.memory.percentage}%)`
+				);
 			}
 
 			// Uptime
